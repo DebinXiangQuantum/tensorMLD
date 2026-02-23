@@ -36,6 +36,15 @@ python -m pip install -i https://pypi.org/simple \
   numpy scipy quimb opt_einsum cotengra \
   pynvml pyyaml psutil tqdm
 
+# GND ldpc_* code loader uses torch for reading serialized tensors.
+# This is optional for users who only run BB or matrix-based cases.
+if [[ "${INSTALL_TORCH:-1}" == "1" ]]; then
+  echo "[setup] installing torch (for GND ldpc_* TB code loading)..."
+  if ! python -m pip install -i https://pypi.org/simple torch; then
+    echo "[setup][warn] torch install failed; TB codegen cases may be skipped."
+  fi
+fi
+
 # Patch installed cudaq_qec package with local decoder sources.
 python scripts/linux/patch_cudaq_qec_plugins.py --workspace "${WORKSPACE}"
 

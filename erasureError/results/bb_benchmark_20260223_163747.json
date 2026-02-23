@@ -1,0 +1,128 @@
+{
+  "BB_72": {
+    "code_name": "BB_72",
+    "N": 72,
+    "K": 12,
+    "D": 6,
+    "timestamp": "2026-02-23T16:34:36.652030",
+    "num_shots": 50,
+    "error_rates": [
+      0.01,
+      0.05
+    ],
+    "erasure_rates": [
+      0.0,
+      0.2
+    ],
+    "data": [
+      {
+        "error_rate": 0.01,
+        "erasure_rate": 0.0,
+        "decoders": {
+          "tensor_network_mld": {
+            "decoder": "tensor_network_mld",
+            "logical_error_rate": 0.0,
+            "num_shots": 10,
+            "correct_count": 10,
+            "converged_count": 10
+          },
+          "bp_osd": {
+            "decoder": "bp_osd",
+            "logical_error_rate": 0.0,
+            "num_shots": 50,
+            "correct_count": 50,
+            "converged_count": 50
+          },
+          "min_sum_bp": {
+            "decoder": "min_sum_bp",
+            "logical_error_rate": 0.0,
+            "num_shots": 50,
+            "correct_count": 50,
+            "converged_count": 50
+          }
+        }
+      },
+      {
+        "error_rate": 0.05,
+        "erasure_rate": 0.0,
+        "decoders": {
+          "tensor_network_mld": {
+            "decoder": "tensor_network_mld",
+            "logical_error_rate": 0.09999999999999998,
+            "num_shots": 10,
+            "correct_count": 9,
+            "converged_count": 10
+          },
+          "bp_osd": {
+            "decoder": "bp_osd",
+            "logical_error_rate": 0.07999999999999996,
+            "num_shots": 50,
+            "correct_count": 46,
+            "converged_count": 50
+          },
+          "min_sum_bp": {
+            "decoder": "min_sum_bp",
+            "logical_error_rate": 0.24,
+            "num_shots": 50,
+            "correct_count": 38,
+            "converged_count": 27
+          }
+        }
+      },
+      {
+        "error_rate": 0.01,
+        "erasure_rate": 0.2,
+        "decoders": {
+          "tensor_network_mld": {
+            "decoder": "tensor_network_mld",
+            "logical_error_rate": 0.0,
+            "num_shots": 10,
+            "correct_count": 10,
+            "converged_count": 10
+          },
+          "bp_osd": {
+            "decoder": "bp_osd",
+            "logical_error_rate": 0.0,
+            "num_shots": 50,
+            "correct_count": 50,
+            "converged_count": 50
+          },
+          "min_sum_bp": {
+            "decoder": "min_sum_bp",
+            "logical_error_rate": 0.020000000000000018,
+            "num_shots": 50,
+            "correct_count": 49,
+            "converged_count": 46
+          }
+        }
+      },
+      {
+        "error_rate": 0.05,
+        "erasure_rate": 0.2,
+        "decoders": {
+          "tensor_network_mld": {
+            "decoder": "tensor_network_mld",
+            "logical_error_rate": 0.09999999999999998,
+            "num_shots": 10,
+            "correct_count": 9,
+            "converged_count": 10
+          },
+          "bp_osd": {
+            "decoder": "bp_osd",
+            "logical_error_rate": 0.18000000000000005,
+            "num_shots": 50,
+            "correct_count": 41,
+            "converged_count": 50
+          },
+          "min_sum_bp": {
+            "decoder": "min_sum_bp",
+            "logical_error_rate": 0.26,
+            "num_shots": 50,
+            "correct_count": 37,
+            "converged_count": 28
+          }
+        }
+      }
+    ]
+  }
+}

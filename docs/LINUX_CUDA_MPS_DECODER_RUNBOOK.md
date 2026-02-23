@@ -27,6 +27,12 @@
 bash scripts/linux/setup_cudaq_mps_env.sh .venv-mps-linux
 ```
 
+若不需要 GND `ldpc_*` TB 自动加载，可跳过 torch 安装：
+
+```bash
+INSTALL_TORCH=0 bash scripts/linux/setup_cudaq_mps_env.sh .venv-mps-linux
+```
+
 该脚本会执行：
 
 - 创建 `uv` 虚拟环境
@@ -35,28 +41,31 @@ bash scripts/linux/setup_cudaq_mps_env.sh .venv-mps-linux
   - `tensor_network_mps_decoder.py`
   - `mps_decoder_core.py`
 
+说明：
+
+- TB 的 `ldpc_*` 读取依赖 `torch`。若环境中未安装，`tb_25_3_4`/`tb_30_6_4`
+  会按配置 `skip_if_missing: true` 被自动跳过。
+
 ---
 
 ## 3. qLDPC 六码基准（默认）
 
-先初始化六码目录：
+可选：初始化 TB matrix 目录（仅 `tb_48_4_8` 需要）：
 
 ```bash
 bash scripts/linux/init_qldpc_case_dirs.sh experiments/data/cases
 ```
 
-然后把每个码的 `H.npy`、`logical.npy`（可选 `noise.npy`）放入对应目录：
-
-- `tb_25_3_4`
-- `tb_30_6_4`
-- `tb_48_4_8`
+若你要跑 `tb_48_4_8`，请把 `H.npy`、`logical.npy`（可选 `noise.npy`）放入：
+- `experiments/data/cases/tb_48_4_8/`
 
 说明：
 
 - BB 三个码（`bb_18_4_4`、`bb_60_8_4`、`bb_72_12_6`）由
   `experiments/codes/codes.py` 自动构造，无需手工矩阵文件。
-- TB 三个码默认从上述目录读取矩阵文件。
-  若 TB 文件缺失，当前配置会自动跳过 TB case。
+- TB 中 `tb_25_3_4`、`tb_30_6_4` 由
+  `experiments/codes/gnd_ldpc_codes.py` 从 `GND/code/ldpc_*` 自动加载。
+- `tb_48_4_8` 默认仍从 matrix 文件读取；缺文件时会自动跳过该 case。
 
 再执行：
 

@@ -35,16 +35,22 @@ cases:
 
   # Trivariate Bicycle (TB) codes
   - name: tb_25_3_4
-    source: matrix
-    h_path: experiments/data/cases/tb_25_3_4/H.npy
-    logical_path: experiments/data/cases/tb_25_3_4/logical.npy
+    source: codegen
+    module: experiments.codes.gnd_ldpc_codes
+    factory: load_ldpc_css_code
+    factory_args: [25, 3, 4, 0]
+    parity_attr: hz
+    logical_attr: lz
     skip_if_missing: true
     max_logicals: 1
 
   - name: tb_30_6_4
-    source: matrix
-    h_path: experiments/data/cases/tb_30_6_4/H.npy
-    logical_path: experiments/data/cases/tb_30_6_4/logical.npy
+    source: codegen
+    module: experiments.codes.gnd_ldpc_codes
+    factory: load_ldpc_css_code
+    factory_args: [30, 6, 4, 0]
+    parity_attr: hz
+    logical_attr: lz
     skip_if_missing: true
     max_logicals: 1
 

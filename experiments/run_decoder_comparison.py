@@ -398,18 +398,27 @@ def _expand_codegen_case(case_cfg: dict[str, Any],
     factory_name = str(case_cfg["factory"])
     factory_args = list(case_cfg.get("factory_args", []))
     factory_kwargs = dict(case_cfg.get("factory_kwargs", {}))
+    skip_if_missing = bool(case_cfg.get("skip_if_missing", False))
 
-    module = importlib.import_module(module_name)
-    if not hasattr(module, factory_name):
-        raise AttributeError(
-            f"Module '{module_name}' has no factory '{factory_name}'.")
-    factory = getattr(module, factory_name)
-    code_obj = factory(*factory_args, **factory_kwargs)
+    try:
+        module = importlib.import_module(module_name)
+        if not hasattr(module, factory_name):
+            raise AttributeError(
+                f"Module '{module_name}' has no factory '{factory_name}'.")
+        factory = getattr(module, factory_name)
+        code_obj = factory(*factory_args, **factory_kwargs)
 
-    parity_attr = str(case_cfg.get("parity_attr", "hz"))
-    logical_attr = str(case_cfg.get("logical_attr", "lz"))
-    h, logical = _extract_codegen_matrices(
-        code_obj, parity_attr=parity_attr, logical_attr=logical_attr)
+        parity_attr = str(case_cfg.get("parity_attr", "hz"))
+        logical_attr = str(case_cfg.get("logical_attr", "lz"))
+        h, logical = _extract_codegen_matrices(
+            code_obj, parity_attr=parity_attr, logical_attr=logical_attr)
+    except Exception as exc:
+        if skip_if_missing:
+            print(
+                f"[skip] codegen case '{case_cfg.get('name', 'unknown')}' "
+                f"failed to resolve ({type(exc).__name__}): {exc}")
+            return []
+        raise
 
     max_logicals = int(case_cfg.get("max_logicals", 1))
     max_logicals = max(1, min(max_logicals, logical.shape[0]))
@@ -438,6 +447,9 @@ def _expand_codegen_case(case_cfg: dict[str, Any],
             "N": int(getattr(code_obj, "N", h.shape[1])),
             "K": int(getattr(code_obj, "K", logical.shape[0])),
             "D": float(getattr(code_obj, "D", math.nan)),
+            "source_path": str(getattr(code_obj, "source_path", "")),
+            "source_format": str(getattr(code_obj, "source_format", "")),
+            "source_family": str(getattr(code_obj, "source_family", "")),
         }
         out_cases.append(new_cfg)
     return out_cases
