@@ -18,9 +18,11 @@ from __future__ import annotations
 
 import argparse
 import csv
+import importlib
 import json
 import math
 import re
+import sys
 import threading
 import time
 from dataclasses import dataclass
@@ -50,6 +52,13 @@ except Exception as exc:  # pragma: no cover
     qec = None  # type: ignore
     set_global_mps_decoder_config = None  # type: ignore
     _IMPORT_ERROR = exc
+
+# Make workspace root importable when running as
+# `python experiments/run_decoder_comparison.py`.
+SCRIPT_DIR = Path(__file__).resolve().parent
+WORKSPACE_DIR = SCRIPT_DIR.parent
+if str(WORKSPACE_DIR) not in sys.path:
+    sys.path.insert(0, str(WORKSPACE_DIR))
 
 
 def _load_yaml(path: Path) -> dict[str, Any]:
@@ -137,6 +146,27 @@ def _extract_code_matrices(code: Any,
     if logical.shape[1] != h.shape[1]:
         raise ValueError(
             f"logical columns {logical.shape[1]} != H columns {h.shape[1]}.")
+    return h, logical
+
+
+def _extract_codegen_matrices(
+        code_obj: Any,
+        parity_attr: str = "hz",
+        logical_attr: str = "lz") -> tuple[np.ndarray, np.ndarray]:
+    if not hasattr(code_obj, parity_attr):
+        raise AttributeError(
+            f"Generated code object has no parity attribute '{parity_attr}'.")
+    if not hasattr(code_obj, logical_attr):
+        raise AttributeError(
+            f"Generated code object has no logical attribute '{logical_attr}'.")
+
+    h = np.asarray(getattr(code_obj, parity_attr), dtype=np.float64)
+    logical = np.asarray(getattr(code_obj, logical_attr), dtype=np.float64)
+    h = _as_2d(h, f"codegen:{parity_attr}")
+    logical = _as_2d(logical, f"codegen:{logical_attr}")
+    if logical.shape[1] != h.shape[1]:
+        raise ValueError(
+            f"codegen logical columns {logical.shape[1]} != H columns {h.shape[1]}.")
     return h, logical
 
 
@@ -362,10 +392,70 @@ def _expand_builtin_case(case_cfg: dict[str, Any],
     return out_cases
 
 
+def _expand_codegen_case(case_cfg: dict[str, Any],
+                         default_noise_p: float) -> list[dict[str, Any]]:
+    module_name = str(case_cfg.get("module", "experiments.codes.codes"))
+    factory_name = str(case_cfg["factory"])
+    factory_args = list(case_cfg.get("factory_args", []))
+    factory_kwargs = dict(case_cfg.get("factory_kwargs", {}))
+
+    module = importlib.import_module(module_name)
+    if not hasattr(module, factory_name):
+        raise AttributeError(
+            f"Module '{module_name}' has no factory '{factory_name}'.")
+    factory = getattr(module, factory_name)
+    code_obj = factory(*factory_args, **factory_kwargs)
+
+    parity_attr = str(case_cfg.get("parity_attr", "hz"))
+    logical_attr = str(case_cfg.get("logical_attr", "lz"))
+    h, logical = _extract_codegen_matrices(
+        code_obj, parity_attr=parity_attr, logical_attr=logical_attr)
+
+    max_logicals = int(case_cfg.get("max_logicals", 1))
+    max_logicals = max(1, min(max_logicals, logical.shape[0]))
+    rows = list(range(max_logicals))
+    if "logical_rows" in case_cfg:
+        rows = [int(x) for x in case_cfg["logical_rows"]]
+
+    out_cases: list[dict[str, Any]] = []
+    for row in rows:
+        if row < 0 or row >= logical.shape[0]:
+            continue
+        new_cfg = dict(case_cfg)
+        new_cfg["resolved_h"] = h
+        new_cfg["resolved_logical"] = logical[row:row + 1, :]
+        new_cfg["resolved_noise"] = _infer_noise_vector(h.shape[1], case_cfg,
+                                                        default_noise_p)
+        new_cfg["resolved_case_id"] = f"{case_cfg['name']}::L{row}"
+        new_cfg["resolved_source"] = "codegen"
+        new_cfg["resolved_codegen_meta"] = {
+            "module": module_name,
+            "factory": factory_name,
+            "factory_args": factory_args,
+            "factory_kwargs": factory_kwargs,
+            "parity_attr": parity_attr,
+            "logical_attr": logical_attr,
+            "N": int(getattr(code_obj, "N", h.shape[1])),
+            "K": int(getattr(code_obj, "K", logical.shape[0])),
+            "D": float(getattr(code_obj, "D", math.nan)),
+        }
+        out_cases.append(new_cfg)
+    return out_cases
+
+
 def _expand_matrix_case(case_cfg: dict[str, Any],
                         default_noise_p: float) -> list[dict[str, Any]]:
-    h = _as_2d(_read_array(Path(str(case_cfg["h_path"]))), "H")
-    logical = _as_2d(_read_array(Path(str(case_cfg["logical_path"]))), "logical")
+    h_path = Path(str(case_cfg["h_path"]))
+    logical_path = Path(str(case_cfg["logical_path"]))
+    if bool(case_cfg.get("skip_if_missing", False)):
+        if not h_path.exists() or not logical_path.exists():
+            print(
+                f"[skip] matrix case '{case_cfg.get('name', 'unknown')}' missing files: "
+                f"H={h_path.exists()}, logical={logical_path.exists()}")
+            return []
+
+    h = _as_2d(_read_array(h_path), "H")
+    logical = _as_2d(_read_array(logical_path), "logical")
     if logical.shape[1] != h.shape[1]:
         raise ValueError(
             f"case={case_cfg['name']}: logical columns {logical.shape[1]} != H columns {h.shape[1]}"
@@ -398,6 +488,8 @@ def _flatten_cases(config_cases: list[dict[str, Any]],
         source = str(case_cfg.get("source", "builtin")).lower()
         if source == "builtin":
             flat.extend(_expand_builtin_case(case_cfg, default_noise_p))
+        elif source == "codegen":
+            flat.extend(_expand_codegen_case(case_cfg, default_noise_p))
         elif source == "matrix":
             flat.extend(_expand_matrix_case(case_cfg, default_noise_p))
         else:
@@ -540,6 +632,7 @@ def main() -> None:
         case_report: dict[str, Any] = {
             "case_id": case_id,
             "source": case.get("resolved_source", "unknown"),
+            "codegen_meta": case.get("resolved_codegen_meta"),
             "shape": {
                 "checks": int(h.shape[0]),
                 "errors": int(h.shape[1]),

@@ -7,21 +7,30 @@ defaults:
 cases:
   # Bivariate Bicycle (BB) codes
   - name: bb_18_4_4
-    source: matrix
-    h_path: experiments/data/cases/bb_18_4_4/H.npy
-    logical_path: experiments/data/cases/bb_18_4_4/logical.npy
+    source: codegen
+    module: experiments.codes.codes
+    factory: create_bivariate_bicycle_codes
+    factory_args: [3, 3, [1], [0, 1], [0, 2], [2]]
+    parity_attr: hz
+    logical_attr: lz
     max_logicals: 1
 
   - name: bb_60_8_4
-    source: matrix
-    h_path: experiments/data/cases/bb_60_8_4/H.npy
-    logical_path: experiments/data/cases/bb_60_8_4/logical.npy
+    source: codegen
+    module: experiments.codes.codes
+    factory: create_bivariate_bicycle_codes
+    factory_args: [3, 10, [0], [0, 2], [1, 2], [2]]
+    parity_attr: hz
+    logical_attr: lz
     max_logicals: 1
 
   - name: bb_72_12_6
-    source: matrix
-    h_path: experiments/data/cases/bb_72_12_6/H.npy
-    logical_path: experiments/data/cases/bb_72_12_6/logical.npy
+    source: codegen
+    module: experiments.codes.codes
+    factory: gen_BB_code
+    factory_args: [72]
+    parity_attr: hz
+    logical_attr: lz
     max_logicals: 1
 
   # Trivariate Bicycle (TB) codes
@@ -29,16 +38,19 @@ cases:
     source: matrix
     h_path: experiments/data/cases/tb_25_3_4/H.npy
     logical_path: experiments/data/cases/tb_25_3_4/logical.npy
+    skip_if_missing: true
     max_logicals: 1
 
   - name: tb_30_6_4
     source: matrix
     h_path: experiments/data/cases/tb_30_6_4/H.npy
     logical_path: experiments/data/cases/tb_30_6_4/logical.npy
+    skip_if_missing: true
     max_logicals: 1
 
   - name: tb_48_4_8
     source: matrix
     h_path: experiments/data/cases/tb_48_4_8/H.npy
     logical_path: experiments/data/cases/tb_48_4_8/logical.npy
+    skip_if_missing: true
     max_logicals: 1

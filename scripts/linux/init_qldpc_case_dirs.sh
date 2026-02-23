@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Initialize folder layout for six qLDPC benchmark codes.
+# Initialize folder layout for qLDPC benchmark codes.
+# BB codes are generated from experiments/codes/codes.py and do not need files.
+# TB codes use matrix files by default.
 # Usage:
 #   bash scripts/linux/init_qldpc_case_dirs.sh [base_dir]
 
@@ -10,9 +12,6 @@ WORKSPACE="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "${WORKSPACE}"
 
 CASES=(
-  "bb_18_4_4"
-  "bb_60_8_4"
-  "bb_72_12_6"
   "tb_25_3_4"
   "tb_30_6_4"
   "tb_48_4_8"
@@ -36,5 +35,5 @@ EOF
 done
 
 echo "[init] created qLDPC case directories under: ${BASE_DIR}"
-echo "[init] place matrix files, then run:"
+echo "[init] place TB matrix files, then run:"
 echo "       bash scripts/linux/run_decoder_sweep.sh .venv-mps-linux experiments/configs/qldpc_six_codes.yaml"

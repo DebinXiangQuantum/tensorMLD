@@ -32,11 +32,11 @@ For the default qLDPC six-code benchmark, initialize folders with:
 bash scripts/linux/init_qldpc_case_dirs.sh experiments/data/cases
 ```
 
-Expected six case folders:
+BB codes (`bb_18_4_4`, `bb_60_8_4`, `bb_72_12_6`) are generated directly from
+`experiments/codes/codes.py` in config `experiments/configs/qldpc_six_codes.yaml`.
 
-- `bb_18_4_4`
-- `bb_60_8_4`
-- `bb_72_12_6`
+You need matrix folders mainly for TB codes:
+
 - `tb_25_3_4`
 - `tb_30_6_4`
 - `tb_48_4_8`

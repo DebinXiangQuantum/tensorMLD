@@ -47,12 +47,16 @@ bash scripts/linux/init_qldpc_case_dirs.sh experiments/data/cases
 
 然后把每个码的 `H.npy`、`logical.npy`（可选 `noise.npy`）放入对应目录：
 
-- `bb_18_4_4`
-- `bb_60_8_4`
-- `bb_72_12_6`
 - `tb_25_3_4`
 - `tb_30_6_4`
 - `tb_48_4_8`
+
+说明：
+
+- BB 三个码（`bb_18_4_4`、`bb_60_8_4`、`bb_72_12_6`）由
+  `experiments/codes/codes.py` 自动构造，无需手工矩阵文件。
+- TB 三个码默认从上述目录读取矩阵文件。
+  若 TB 文件缺失，当前配置会自动跳过 TB case。
 
 再执行：
 
