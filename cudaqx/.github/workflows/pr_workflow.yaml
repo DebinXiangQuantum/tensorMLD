@@ -1,0 +1,214 @@
+name: PR workflow
+
+on:
+  push:
+    branches:
+      - "pull-request/[0-9]+"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check-changes:
+    name: Check changes
+    runs-on: ubuntu-latest
+    outputs:
+      build-cudaq: ${{ steps.filter.outputs.build-cudaq }}
+      build-docs: ${{ steps.filter.outputs.build-docs }}
+      build-all: ${{ steps.filter.outputs.build-all }}
+      build-qec: ${{ steps.filter.outputs.build-qec }}
+      build-solvers: ${{ steps.filter.outputs.build-solvers }}
+      build-examples-qec: ${{ steps.filter.outputs.build-examples-qec }}
+      build-examples-solvers: ${{ steps.filter.outputs.build-examples-solvers }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          set-safe-directory: true
+
+      - name: Lookup PR info
+        id: get-pr-info
+        env:
+          GH_TOKEN: ${{ github.token }}
+        uses: nv-gha-runners/get-pr-info@main
+
+      - name: Check what needs testing
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          base: ${{ fromJSON(steps.get-pr-info.outputs.pr-info).base.sha }}
+          filters: |
+            build-cudaq:
+              - '.github/workflows/cudaq_bump.yml'
+              - '.github/actions/get-cudaq-build/**'
+              - '.github/workflows/scripts/build_cudaq.sh'
+              - '.cudaq_version'
+            build-docs:
+              - '.github/workflows/docs.yaml'
+              - 'docs/**'
+              - '**/*.cpp'
+              - '**/*.h'
+              - '**/*.py'
+            build-all:
+              - '.github/actions/build-lib/action.yaml'
+              - '.github/actions/build-lib/build_all.yaml'
+              - '.github/workflows/all_libs.yaml'
+              - 'cmake/Modules/**'
+              - '**/CMakeLists.txt'
+            build-qec:
+              - '.github/actions/build-lib/action.yaml'
+              - '.github/actions/build-lib/build_qec.sh'
+              - '.github/workflows/lib_qec.yaml'
+              - 'cmake/Modules/**'
+              - 'libs/core/**/*.cpp'
+              - 'libs/core/**/*.h'
+              - 'libs/core/**/CMakeLists.txt'
+              - 'libs/qec/**/*.cpp'
+              - 'libs/qec/**/*.cu'
+              - 'libs/qec/**/*.cuh'
+              - 'libs/qec/**/*.h'
+              - 'libs/qec/**/*.in'
+              - 'libs/qec/**/*.py'
+              - 'libs/qec/**/CMakeLists.txt'
+            build-solvers:
+              - '.github/actions/build-lib/action.yaml'
+              - '.github/actions/build-lib/build_solvers.sh'
+              - '.github/workflows/lib_solvers.yaml'
+              - 'cmake/Modules/**'
+              - 'libs/core/**/*.cpp'
+              - 'libs/core/**/*.h'
+              - 'libs/core/**/CMakeLists.txt'
+              - 'libs/solvers/**/*.cpp'
+              - 'libs/solvers/**/*.h'
+              - 'libs/solvers/**/*.in'
+              - 'libs/solvers/**/*.py'
+              - 'libs/solvers/**/CMakeLists.txt'
+            build-examples-qec:
+              - 'docs/sphinx/examples/qec/**'
+            build-examples-solvers:
+              - 'docs/sphinx/examples/solvers/**'
+
+  build-cudaq:
+    name: Build CUDAQ
+    needs: [check-changes]
+    if: needs.check-changes.outputs.build-cudaq == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: ['amd64', 'arm64']
+        cuda_version: ['12.6', '13.0']
+    runs-on: ${{ startsWith(github.repository, 'NVIDIA/cudaqx') && format('linux-{0}-cpu32', matrix.platform) || 'ubuntu-latest' }}
+    container: ghcr.io/nvidia/cuda-quantum-devcontainer:${{ matrix.platform }}-cu${{ matrix.cuda_version }}-gcc11-main
+    permissions:
+      actions: write
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Get code
+        uses: actions/checkout@v4
+        with:
+          set-safe-directory: true
+
+      - name: Lookup PR info
+        id: get-pr-info
+        env:
+          GH_TOKEN: ${{ github.token }}
+        uses: nv-gha-runners/get-pr-info@main
+
+      - name: Configure
+        id: config
+        run: |
+          cuda_major=`echo ${{ matrix.cuda_version }} | cut -d . -f1`
+          echo "cuda_major=$cuda_major" >> $GITHUB_OUTPUT
+
+      - name: Get required CUDAQ version
+        id: get-cudaq-version
+        uses: ./.github/actions/get-cudaq-version
+
+      - name: Get CUDAQ build
+        uses: ./.github/actions/get-cudaq-build
+        with:
+          repo: ${{ steps.get-cudaq-version.outputs.repo }}
+          ref: ${{ steps.get-cudaq-version.outputs.ref }}
+          token: ${{ secrets.CUDAQ_ACCESS_TOKEN }}
+          pr-number: ${{ fromJSON(steps.get-pr-info.outputs.pr-info).number }}
+          save-build: true
+          save-ccache: false
+          platform: ${{ matrix.platform }}-cu${{ steps.config.outputs.cuda_major }}
+
+  build-docs:
+    name: Docs
+    needs: [check-changes, build-cudaq]
+    if: |
+      !failure() && !cancelled() &&
+      needs.check-changes.outputs.build-docs == 'true'
+    uses: ./.github/workflows/docs.yaml
+
+  build-all:
+    name: All libs
+    needs: [check-changes, build-cudaq]
+    if: |
+      !failure() && !cancelled() &&
+      (needs.check-changes.outputs.build-all == 'true' || needs.check-changes.outputs.build-cudaq == 'true')
+    uses: ./.github/workflows/all_libs.yaml
+
+  build-qec:
+    name: QEC
+    needs: [check-changes, build-cudaq]
+    if: |
+      !failure() && !cancelled() &&
+      (
+        needs.check-changes.outputs.build-qec == 'true' || 
+        needs.check-changes.outputs.build-cudaq == 'true' ||
+        needs.check-changes.outputs.build-examples-qec == 'true'
+      )
+    uses: ./.github/workflows/lib_qec.yaml
+
+  build-solvers:
+    name: Solvers
+    needs: [check-changes, build-cudaq]
+    if: |
+      !failure() && !cancelled() &&
+      (
+        needs.check-changes.outputs.build-solvers == 'true' || 
+        needs.check-changes.outputs.build-cudaq == 'true' ||
+        needs.check-changes.outputs.build-examples-solvers == 'true'
+      )
+    uses: ./.github/workflows/lib_solvers.yaml
+
+  # This job is used for branch protection checks.
+  verify:
+    name: Verify PR
+    if: ${{ always() }}
+    needs:
+      - build-cudaq
+      - build-all
+      - build-qec
+      - build-solvers
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check results
+        run: |
+          status="success"
+
+          check_result() {
+            name=$1
+            result=$2
+
+            # NOTE: "skipped" is considered success.
+            if [[  "$result" == "failure" || "$result" == "cancelled" ]]; then
+              echo "$name job failed"
+
+              status="failed"
+            fi
+          }
+
+          check_result "build-cudaq"   "${{needs.build-cudaq.result}}"
+          check_result "build-all"     "${{needs.build-all.result}}"
+          check_result "build-qec"     "${{needs.build-qec.result}}"
+          check_result "build-solvers" "${{needs.build-solvers.result}}"
+
+          if [[ "$status" != "success" ]]; then
+            exit 1
+          fi

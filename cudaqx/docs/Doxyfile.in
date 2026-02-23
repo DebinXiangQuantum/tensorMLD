@@ -1,0 +1,57 @@
+#---------------------------------------------------------------------------
+# Project related configuration options
+#---------------------------------------------------------------------------
+
+PROJECT_NAME           = "CUDA-QX"
+INPUT                  = @DOXYGEN_INPUT@
+FILE_PATTERNS          = *.h \
+                         *.hpp
+RECURSIVE              = YES
+OUTPUT_DIRECTORY       = @DOXYGEN_OUTPUT_DIR@
+
+ALIASES = "entry_point_kernel=\par This function is an entry-point CUDA-Q quantum kernel. It can be invoked from host."
+ALIASES += "pure_device_kernel=\par This function is a pure-device CUDA-Q quantum kernel. It cannot be invoked from host. It can only be invoked from other CUDA-Q kernel code."
+
+#---------------------------------------------------------------------------
+# Build related configuration options
+#---------------------------------------------------------------------------
+
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = YES
+EXTRACT_STATIC         = YES
+
+#---------------------------------------------------------------------------
+# Configuration options related to the preprocessor
+#---------------------------------------------------------------------------
+
+ENABLE_PREPROCESSING   = YES
+MACRO_EXPANSION        = YES
+EXPAND_ONLY_PREDEF     = YES
+PREDEFINED             = "__qpu__=" \
+                         "__attribute__(x)="
+
+#---------------------------------------------------------------------------
+# Configuration options related to the HTML output
+#---------------------------------------------------------------------------
+
+GENERATE_HTML          = NO
+
+#---------------------------------------------------------------------------
+# Configuration options related to the XML output
+#---------------------------------------------------------------------------
+
+GENERATE_XML           = YES
+XML_NS_MEMB_FILE_SCOPE = YES
+
+#---------------------------------------------------------------------------
+# Configuration options related to the LaTeX output
+#---------------------------------------------------------------------------
+
+GENERATE_LATEX         = NO
+
+#---------------------------------------------------------------------------
+# Configuration options related to the dot tool
+#---------------------------------------------------------------------------
+
+HAVE_DOT               = NO
+

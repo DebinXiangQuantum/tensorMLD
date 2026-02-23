@@ -1,0 +1,114 @@
+name: Solvers lib
+
+on:
+  workflow_call:
+
+jobs:
+  pr-build:
+    name: Build and test
+    if: startsWith(github.ref, 'refs/heads/pull-request/')
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: ['amd64', 'arm64']
+        cuda_version: ['12.6', '13.0']
+    runs-on: ${{ startsWith(github.repository, 'NVIDIA/cudaqx') && format('linux-{0}-cpu8', matrix.platform) || 'ubuntu-latest' }}
+    container: ghcr.io/nvidia/cuda-quantum-devcontainer:${{ matrix.platform }}-cu${{ matrix.cuda_version }}-gcc11-main
+    permissions:
+      actions: write
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          set-safe-directory: true
+
+      - name: Lookup PR info
+        id: get-pr-info
+        env:
+          GH_TOKEN: ${{ github.token }}
+        uses: nv-gha-runners/get-pr-info@main
+
+      - name: Export PR info
+        id: export-pr-info
+        run: |
+          echo "pr_number=${{ fromJSON(steps.get-pr-info.outputs.pr-info).number }}" >> $GITHUB_OUTPUT
+
+      - name: Configure
+        id: config
+        run: |
+          cuda_major=`echo ${{ matrix.cuda_version }} | cut -d . -f1`
+          echo "cuda_major=$cuda_major" >> $GITHUB_OUTPUT
+
+      # ========================================================================
+      # CUDA Quantum build
+      # ========================================================================
+
+      - name: Get required CUDAQ version
+        id: get-cudaq-version
+        uses: ./.github/actions/get-cudaq-version
+
+      - name: Get CUDAQ build
+        uses: ./.github/actions/get-cudaq-build
+        with:
+          repo: ${{ steps.get-cudaq-version.outputs.repo }}
+          ref: ${{ steps.get-cudaq-version.outputs.ref }}
+          token: ${{ secrets.CUDAQ_ACCESS_TOKEN }}
+          pr-number: ${{ steps.export-pr-info.outputs.pr_number }}
+          platform: ${{ matrix.platform }}-cu${{ steps.config.outputs.cuda_major }}
+
+      # ========================================================================
+      # Build library
+      # ========================================================================
+
+      - name: Install build requirements
+        run: |
+          apt install -y --no-install-recommends gfortran libblas-dev
+
+      - name: Build
+        id: build
+        uses: ./.github/actions/build-lib
+        with:
+          lib: "solvers"
+          cuda_version: ${{ matrix.cuda_version }}
+          pr-number: ${{ steps.export-pr-info.outputs.pr_number }}
+          save-ccache: true
+          platform: ${{ matrix.platform }}
+
+      # ========================================================================
+      # Run tests
+      # ========================================================================
+      
+      - name: Run tests
+        run: cmake --build ${{ steps.build.outputs.build-dir }} --target run_tests
+
+      # ========================================================================
+      # Run python tests
+      # ========================================================================
+
+      - name: Install python requirements
+        env:
+          LD_LIBRARY_PATH: ${{ env.MPI_PATH }}/lib:${{ env.LD_LIBRARY_PATH }}
+        run: |
+          # Install the correct torch first.
+          cuda_no_dot=$(echo ${{ matrix.cuda_version }} | sed 's/\.//')
+          pip install torch==2.9.0 --index-url https://download.pytorch.org/whl/cu${cuda_no_dot}
+          pip install numpy pytest onnxscript cupy-cuda${{ steps.config.outputs.cuda_major }}x cuquantum-cu${{ steps.config.outputs.cuda_major }} lightning ml_collections mpi4py transformers pytest
+
+
+      - name: Run Python tests
+        env:
+          LD_LIBRARY_PATH: ${{ env.MPI_PATH }}/lib:${{ env.LD_LIBRARY_PATH }}
+          OMPI_MCA_pml: ob1
+        run: cmake --build ${{ steps.build.outputs.build-dir }} --target run_python_tests
+
+      # ========================================================================
+      # Run example tests
+      # ========================================================================
+
+      - name: Run example tests
+        env:
+          LD_LIBRARY_PATH: ${{ env.MPI_PATH }}/lib:${{ env.LD_LIBRARY_PATH }}
+          OMPI_MCA_pml: ob1
+        run: bash scripts/ci/test_examples.sh solvers

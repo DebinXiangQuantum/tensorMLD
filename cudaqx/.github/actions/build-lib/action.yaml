@@ -1,0 +1,94 @@
+name: Build a CUDAQX library
+
+inputs:
+  lib:
+    description: 'Library name to build. (e.g, all, qec or solvers)'
+    required: true
+  cuda_version:
+    description: 'CUDA version to build against. (e.g, 12.6)'
+    required: true
+  pr-number:
+    description: 'Unique pull request identifier.'
+    default: ''
+    required: false
+  save-ccache:
+    description: 'Indicates whether to save the compilation cache'
+    default: 'false'
+    required: false
+  platform:
+    description: 'Platform (amd64 or arm64)'
+    default: ''
+    required: true
+  install-prefix:
+    description: 'Install prefix'
+    default: '~/.cudaqx'
+    required: false
+outputs:
+  build-dir:
+    description: 'Build dir.'
+    value: ${{ steps.build-lib.outputs.build_dir }}
+
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install requirements
+      run: |
+        apt update
+        apt install -y --no-install-recommends ccache
+      shell: bash
+
+    - name: Compilation cache key
+      id: ccache-key
+      run: |
+        echo "main=ccache-${{ inputs.lib }}-cu${{ inputs.cuda_version }}-gcc11-${{ inputs.platform }}" >> $GITHUB_OUTPUT
+        if [[ -n "${{ inputs.pr-number }}" ]]; then
+          echo "pr=-pr${{ inputs.pr-number }}" >> $GITHUB_OUTPUT
+        fi
+      shell: bash
+
+    - name: Try to restoring previous compilation cache
+      id: restore-ccache
+      uses: actions/cache/restore@v4
+      with:
+        fail-on-cache-miss: false
+        path: /ccache-${{ inputs.lib }}
+        key: ${{ steps.ccache-key.outputs.main }}${{ steps.ccache-key.outputs.pr }}
+        restore-keys: |
+          ${{ steps.ccache-key.outputs.main }}
+
+    - name: Install GitHub CLI
+      run: bash .github/workflows/scripts/install_git_cli.sh
+      shell: bash
+
+    - name: Build library
+      id: build-lib
+      env:
+        CCACHE_DIR: /ccache-${{ inputs.lib }}
+        GH_TOKEN: ${{ github.token }} # REVERT-WITH-CUDAQ-REALTIME-BUILD
+      run: |
+        build_dir=build_${{ inputs.lib }}
+        .github/actions/build-lib/build_${{ inputs.lib }}.sh $build_dir ${{ inputs.install-prefix }}
+        echo "build_dir=$build_dir" >> $GITHUB_OUTPUT
+      shell: bash
+
+    # We need to delete previous cache entry otherwise the new one won't be stored
+    - name: Delete previous main compilation cache
+      if: steps.restore-ccache.outputs.cache-hit == 'true' && inputs.save-ccache == 'true'
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        bash .github/workflows/scripts/install_git_cli.sh
+        gh cache delete \
+          ${{ steps.ccache-key.outputs.main }}${{ steps.ccache-key.outputs.pr }} \
+          --repo ${{ github.repository }}
+      shell: bash
+
+    - name: Store compilation cache
+      if: inputs.save-ccache == 'true'
+      uses: actions/cache/save@v4
+      continue-on-error: true
+      with:
+        path: /ccache-${{ inputs.lib }}
+        key: ${{ steps.ccache-key.outputs.main }}${{ steps.ccache-key.outputs.pr }}
+

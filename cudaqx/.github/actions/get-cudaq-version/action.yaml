@@ -1,0 +1,37 @@
+name: Get CUDAQ version
+
+outputs:
+  repo:
+    description: 'CUDAQ repository'
+    value: ${{ steps.get-cudaq-version.outputs.repo }}
+  ref:
+    description: 'The branch, tag or SHA to checkout'
+    value: ${{ steps.get-cudaq-version.outputs.ref }}
+
+runs:
+  using: "composite"
+  steps:
+
+    - name: Install jq
+      run: |
+        if [ ! -x "$(command -v jq)" ]; then
+          if [ -x "$(command -v apt-get)" ]; then
+            apt-get update
+            apt-get install -y --no-install-recommends jq
+          elif [ -x "$(command -v dnf)" ]; then
+            dnf install -y --nobest --setopt=install_weak_deps=False jq
+          fi
+        fi
+
+      shell: bash
+
+    - name: Get required CUDAQ version
+      id: get-cudaq-version
+      run: |
+        repo=$(jq -r '.cudaq.repository' .cudaq_version)
+        ref=$(jq -r '.cudaq.ref' .cudaq_version)
+        echo "repo=$repo" >> $GITHUB_OUTPUT
+        echo "ref=$ref" >> $GITHUB_OUTPUT
+      shell: bash
+
+

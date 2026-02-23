@@ -1,0 +1,55 @@
+defaults:
+  shots: 128
+  seed: 2026
+  noise_p: 0.01
+  noise_values: "0.005,0.01,0.02"
+
+cases:
+  # Built-in code sweep.
+  - name: steane_z
+    source: builtin
+    code_name: steane
+    logical_basis: z
+    max_logicals: 1
+
+  - name: repetition_d3_z
+    source: builtin
+    code_name: repetition
+    code_options:
+      distance: 3
+    logical_basis: z
+    max_logicals: 1
+
+  - name: repetition_d5_z
+    source: builtin
+    code_name: repetition
+    code_options:
+      distance: 5
+    logical_basis: z
+    max_logicals: 1
+
+  - name: surface_d3_z
+    source: builtin
+    code_name: surface_code
+    code_options:
+      distance: 3
+    logical_basis: z
+    max_logicals: 1
+
+  - name: surface_d5_z
+    source: builtin
+    code_name: surface_code
+    code_options:
+      distance: 5
+    logical_basis: z
+    max_logicals: 1
+
+  # External matrix cases can be added here directly, or auto-discovered
+  # under experiments/data/cases/<case_name>/{H.npy,logical.npy,noise.npy}.
+  #
+  # - name: bb_72_12_6
+  #   source: matrix
+  #   h_path: experiments/data/cases/bb_72_12_6/H.npy
+  #   logical_path: experiments/data/cases/bb_72_12_6/logical.npy
+  #   noise_path: experiments/data/cases/bb_72_12_6/noise.npy
+  #   max_logicals: 1

@@ -1,0 +1,33 @@
+# ============================================================================ #
+# Copyright (c) 2024 - 2025 NVIDIA Corporation & Affiliates.                   #
+# All rights reserved.                                                         #
+#                                                                              #
+# This source code and the accompanying materials are made available under     #
+# the terms of the Apache License 2.0 which accompanies this distribution.     #
+# ============================================================================ #
+
+# We have multi-platform wheels, so we make a multi-platform Docker image to
+# test those wheels.
+
+# Use the the .github/workflows/build_qa_wheel_test.yaml workflow to build an
+# image than can be delivered to QA for testing.
+
+# The resulting image can be tested with the wheels with
+# `scripts/validation/wheel/validate_wheels.sh`, which is copied into the image.
+#
+FROM ubuntu:24.04 
+ARG DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates vim wget openssh-client gfortran
+
+COPY wheels /root/wheels
+COPY scripts/validation/wheel/validate_wheels.sh /root
+COPY libs /root/libs
+COPY docs/sphinx/examples /root/examples
+
+RUN mkdir -p /root/.miniconda3 \
+    && wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-$(uname -m).sh -O /root/.miniconda3/miniconda.sh \
+    && bash /root/.miniconda3/miniconda.sh -b -u -p /root/.miniconda3 \
+    && rm -rf /root/.miniconda3/miniconda.sh \
+    && /root/.miniconda3/bin/conda init bash

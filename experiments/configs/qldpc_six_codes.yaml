@@ -1,0 +1,44 @@
+defaults:
+  shots: 256
+  seed: 2026
+  noise_p: 0.01
+  noise_values: "0.005,0.01,0.02"
+
+cases:
+  # Bivariate Bicycle (BB) codes
+  - name: bb_18_4_4
+    source: matrix
+    h_path: experiments/data/cases/bb_18_4_4/H.npy
+    logical_path: experiments/data/cases/bb_18_4_4/logical.npy
+    max_logicals: 1
+
+  - name: bb_60_8_4
+    source: matrix
+    h_path: experiments/data/cases/bb_60_8_4/H.npy
+    logical_path: experiments/data/cases/bb_60_8_4/logical.npy
+    max_logicals: 1
+
+  - name: bb_72_12_6
+    source: matrix
+    h_path: experiments/data/cases/bb_72_12_6/H.npy
+    logical_path: experiments/data/cases/bb_72_12_6/logical.npy
+    max_logicals: 1
+
+  # Trivariate Bicycle (TB) codes
+  - name: tb_25_3_4
+    source: matrix
+    h_path: experiments/data/cases/tb_25_3_4/H.npy
+    logical_path: experiments/data/cases/tb_25_3_4/logical.npy
+    max_logicals: 1
+
+  - name: tb_30_6_4
+    source: matrix
+    h_path: experiments/data/cases/tb_30_6_4/H.npy
+    logical_path: experiments/data/cases/tb_30_6_4/logical.npy
+    max_logicals: 1
+
+  - name: tb_48_4_8
+    source: matrix
+    h_path: experiments/data/cases/tb_48_4_8/H.npy
+    logical_path: experiments/data/cases/tb_48_4_8/logical.npy
+    max_logicals: 1

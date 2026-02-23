@@ -1,0 +1,74 @@
+
+\section*{Appendix}~\label{sec:appendix}
+% \subsection{Proof of Lemma~\ref{theorem:decodingTensor}}
+In this appendix, we give the brief proof of Lemma~\ref{theorem:decodingTensor} and see~\url{https://arxiv.org/pdf/xxxx.xxxx} for a detailed proof. This proof consists of three steps: representing logical probability via stabilizer subspace shifting, converting the probability calculation into a spin glass model, and calculating the spin glass model via tensor networks.
+
+% The maximum likelihood decoding for qLDPC codes centers on finding the most 
+% likely logical syndrome \( \vec{s}_L \) given an observed syndrome \( \vec{s} \), governed by the relationship:
+
+% \[
+% \begin{bmatrix}
+% H_x \\ L_x
+% \end{bmatrix} \vec{e_z} = \begin{bmatrix}
+% \vec{s} \\ \vec{s}_L
+% \end{bmatrix} \mod 2
+% \]
+% Here, we use $Z$-type errors $\vec{e_z}$ for illustration, where each error \( e_j \in \{0,1\} \) having prior probability \( p_j \).  \( H_x\) is the check matrix, \( L_x \) is the logical check matrix where each row is a logical $X$-operator, \( \vec{s} \) is the observed syndrome, and \( \vec{s}_L \) is the logical syndrome representing the logical error. The maximum likelihood decoding goal is to maximize:
+% \begin{equation}\small
+% \vec{s}_L = \arg\max_{\vec{s_L}} \sum_{\{\vec{e} \mid 
+% H_x \vec{e_z} = \vec{s}, L_x \vec{e_z}  =\vec{s}_L \}} P(\vec{e}) \label{eq:logicalsyndrome}
+% \end{equation}
+\subsection{Logical Probability Representation through Stabilizer Subspace Shifting}\label{subsec:proofA}
+Without loss of generality, here we consider decoding the $Z$-type error. Leveraging the relationship between destabilizers, stabilizers, and logical operators, we can further prove that this probability can be represented by 
+\begin{equation}\label{eq:logicalstab}
+    P(\vec{l}|\vec{s}) =  \textstyle  \sum_{\vec{z} \in \{0,1\}^M} P(H_{\text{des}}^T \vec{s} \oplus H_z^T \vec{z} \oplus L_z^T \vec{l})
+\end{equation}
+
+Where $H_{\text{des}}$ is the destabilizer matrix with each row an x-destabilizer. \( H_z\) is the $Z$-type check matrix, where each row is an x-stabilizer, \( L_z \) is the $Z$-type logical matrix where each row is a logical $z$-operator.
+% For a decoding problem, the probability of an error vector $\vec{e}$ is 
+% \begin{equation}
+% \small
+% P(\vec{e}) = e^{-\sum_{j=1}^n 2w_j e_j}, \quad w_j = \ln \left( (1 - p_j)/p_j \right) /2 \notag
+% \end{equation}
+% where \( P(\vec{e})  \) is the physical error probability and $p_j$ is the phyiscal probability of occuring error $e_j=1$.
+
+
+
+% For $X$-type error, the error vector in $Z$-stabilizer space \( H_z^T \vec{z}, \vec{z} \in \{0,1\}^M \) has zero syndrome and zero logical error since the $Z$-check matrix $H_z^T$ is the kernel space of $H_x$ and $L_x$. The logical-$Z$ operator space \( L_z^T \vec{l} , \vec{l} \in \{0,1\}^K \) has zero syndrome but a nonzero logical error.  
+% And we can prove that these two subspaces form the full $X$-type error space with zero syndrome. For given syndrome $\vec{s}$, we can get an initial error that has the syndrome $\vec{s}$ by \( H_{\text{des}}^T \vec{s} \) from the destabilizer matrix \( H_{\text{des}} \). Then we can express the error space as
+% \begin{equation} \small
+%     \vec{e}_x=\underbrace{\quad H_z^T  \vec{z} \quad}_{\text{stabilizer subspace}} \oplus \underbrace{ \quad L_z^T \vec{l} \quad}_{\text{logical shifting}} \oplus \underbrace{\quad H_{\text{des}}^T  \vec{s} \quad}_{\text{syndrome shifting}} \label{eq:error}
+% \end{equation}
+% It is easy to verify that all errors $\vec{e} $ are consistent with the syndrome $\vec{s}$ since the $Z$-stabilizer space and logical-$Z$ operator space have zero syndrome. Furthermore, since the logical-$Z$ operator space has the same rank as the logical operator, the errors $\vec{e}$ under the same $\vec{l}$ must belong to the same logical $X$ error $\vec{s}_L$.
+ % We can transform the decoding problem into:
+
+% After finding the optimal $\vec{l}^*$, the detected logical operator for correction is
+% \begin{equation} \small
+%     \vec{e}^* = H_{\text{des}}^T \vec{s} \oplus L_z^T \vec{l}^* \label{eq:recovererror}
+% \end{equation}
+% This unconstrained formulation simplifies the summation by parameterizing errors over stabilizer and logical operators.
+
+\subsection{Express Logical Probability in Spin Glass Model}\label{subsec:proofB}
+
+To handle the summation over \( \vec{z} \), we map the problem to a spin glass model, inspired by statistical mechanics~\cite{cao2025exact,sourlas1989spin}. We transform bits into spins: \( \epsilon_j = (-1)^{e_j} \), so \( e_j = (1 - \epsilon_j)/2 \). Under this transformation, the logical error probability in \autoref{eq:logicalstab} becomes:
+% \[\small
+% P(\vec{e}) = C \exp \left( \sum_{j=1}^n \omega_j \epsilon_j \right),  C = \exp(\sum_{j=1} w_j)
+% \]
+% where \( C \) is a normalization constant. Substituting \( \vec{e} \) with \autoref{eq:error} and use the spin representation $\vec{y},\vec{t},\vec{g}$ for bits $\vec{s},\vec{z},\vec{l}$ we can represent the error probability as
+\begin{equation} \small \label{eq:logicalprobH}
+    P(\vec{l}|\vec{s}) = C\exp \left( - H \right), C = \exp(\sum_{j=1} w_j)
+\end{equation}
+\begin{equation} \small\label{eq:hamiltonian}
+    {\tiny  H }= { \tiny -\sum_{j=1}^n \omega_j\prod_{\{k|H_{des}(k,j)\neq 0\}} y_k \prod_{\{k|H_{z}(k,j)\neq 0\}} t_k \prod_{\{k|L_z(k,j)\neq 0\}} g_k }
+\end{equation}
+Here, $H$ is the Hamiltonian of this spin glass system. Each energy term in the Hamiltonian is determined by the spins. 
+
+\subsection{Calculating Spin Glass Model via Tensor Network}\label{subsec:proofC}
+Since the summation term in the exponent is equivalent to the continuous multiplication of exponential terms, \eqref{eq:logicalprobH} and \eqref{eq:hamiltonian} can be written as
+\begin{equation}\small
+    P(\vec{l}|\vec{s}) = C\prod_j \exp \left (\omega_j \prod y_k \prod t_k \prod g_k \right )
+\end{equation}
+For the constraint part, we use the Kronecker tensor to represent it, so the formula transforms into contraction tensor network with a Tanner graph connection. Then, we can convert the summation into a contraction of the tensor network. 
+\begin{equation} \small
+    P(\vec{l}|\vec{s}) = \frac{{\text{contract}}(\mathcal{T}(\vec{l},\vec{s}))}{\text{contract}(\mathcal{T}(\vec{s}))}. 
+\end{equation}

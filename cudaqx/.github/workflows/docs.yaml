@@ -1,0 +1,102 @@
+name: Documentation
+
+on:
+  workflow_call:
+
+  workflow_dispatch:
+    branches:
+      - main
+
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/docs.yaml'
+      - 'docs/**'
+      - '**/*.cpp'
+      - '**/*.h'
+      - '**/*.py'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build
+    runs-on: ${{ startsWith(github.repository, 'NVIDIA/cudaqx') && 'linux-amd64-cpu8' || 'ubuntu-latest' }}
+    container: ghcr.io/nvidia/cuda-quantum-devcontainer:amd64-cu12.6-gcc11-main
+    permissions:
+      actions: write
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          set-safe-directory: true
+
+      # ========================================================================
+      # CUDA Quantum build
+      # ========================================================================
+
+      - name: Get required CUDAQ version
+        id: get-cudaq-version
+        uses: ./.github/actions/get-cudaq-version
+
+      - name: Get CUDAQ build
+        uses: ./.github/actions/get-cudaq-build
+        with:
+          repo: ${{ steps.get-cudaq-version.outputs.repo }}
+          ref: ${{ steps.get-cudaq-version.outputs.ref }}
+          token: ${{ secrets.CUDAQ_ACCESS_TOKEN }}
+          platform: 'amd64-cu12' # Just choose one platform for docs
+
+      # ========================================================================
+      # Build docs
+      # ========================================================================
+
+      - name: Install requirements
+        run: |
+          apt install -y --no-install-recommends \
+            gfortran libblas-dev doxygen
+
+          python3 -m pip install IPython breathe enum_tools myst_parser nbsphinx \
+            sphinx_copybutton sphinx_inline_tabs sphinx_gallery sphinx_rtd_theme \
+            sphinx_reredirects sphinx_toolbox cupy-cuda12x cuquantum-python-cu12
+
+      - name: Build docs
+        run: |
+          cmake -S . -B "build" \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER=gcc-11 \
+            -DCMAKE_CXX_COMPILER=g++-11 \
+            -DCUDAQ_DIR=/cudaq-install/lib/cmake/cudaq/ \
+            -DCUDAQX_ENABLE_LIBS="all" \
+            -DCUDAQX_INCLUDE_DOCS=ON \
+            -DCUDAQX_BINDINGS_PYTHON=ON
+
+          cmake --build "build" --target docs
+
+      # ========================================================================
+
+      - name: Upload
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/docs/build/
+
+  deploy:
+    name: Deploy latest docs
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+

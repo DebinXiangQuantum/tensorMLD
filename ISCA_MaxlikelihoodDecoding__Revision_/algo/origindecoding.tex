@@ -1,0 +1,85 @@
+\begin{algorithm}[t]
+\caption{Online Decoding via Conditional Marginal Probability}
+\label{alg:conditional-decoding}
+\KwIn{Measured syndrome vector $\boldsymbol{s} = (s_1, \dots, s_M)$; 
+Tensor chain $\mathcal{T} = \{\mathcal{T}_1, \dots, \mathcal{T}_{M+K}\}$ with maximum bond $\chi$.}
+\KwOut{Decoded logical spin vector $\boldsymbol{l} = (l_1, \dots, l_K)$.}
+
+% =========================================================
+\tcp{\textbf{Step 1: Contract measured syndrome indices}}
+\ForPar{$i = 1 \dots M$}{
+    \tcp{Fix physical index of $\mathcal{T}_i$ by measured $s_i$}
+    $\mathcal{T}_i(a,b) \leftarrow \mathcal{T}_i(a,b, s_i)$
+}
+
+% =========================================================
+\BlankLine
+\textbf{Step 2: Compute marginal probability for each logical spin} \\
+\ForPar{$i = 1 \dots K$}{
+    \tcp{(a) Contract MPS twice with $l_i = \pm1$}
+    \For{$\lambda \in \{+1,-1\}$}{
+        $\psi_\lambda \leftarrow [1]$ \tcp*[r]{Initialize scalar}
+        \For{$k = M+1 \dots M+K$}{
+            \If{$k=i$}{
+                $T_k \leftarrow \mathcal{T}_k(:,:, \lambda)$
+            }\Else{
+                $T_k \leftarrow \sum_{l_k} \mathcal{T}_k(:,:, l_k)$
+            }
+            $\psi_\lambda \leftarrow \psi_\lambda \times T_k$ \tcp*[r]{Matrix--matrix multiply}
+        }
+        $F_\lambda \leftarrow -\log|\psi_\lambda|$
+    }
+    \tcp{(b) Compute marginal probability}
+    $P_i \leftarrow \dfrac{e^{-F_{+}}}{e^{-F_{+}} + e^{-F_{-}}}$
+}
+
+% =========================================================
+\BlankLine
+\textbf{Step 3: Initial logical decision by thresholding} \\
+\For{$i = 1 \dots K$}{
+    \eIf{$P_i > 0.6$}{$l_i \leftarrow +1$}{
+        \eIf{$P_i < 0.4$}{$l_i \leftarrow -1$}{
+            $l_i \leftarrow \text{unknown}$
+        }
+    }
+}
+
+% =========================================================
+\BlankLine
+\textbf{Step 4: Conditional refinement of uncertain spins} \\
+\While{$\exists \, l_i = \text{unknown}$}{
+    \ForPar{$i = 1 \dots K$}{
+        \If{$l_i = \text{unknown}$}{
+            \tcp{Condition on known spins}
+            \For{$j = 1 \dots K$}{
+                \If{$l_j \in \{+1,-1\}$}{
+                    $\mathcal{T}_{M+j} \leftarrow \mathcal{T}_{M+j}(:,:, l_j)$
+                }
+            }
+            \tcp{Contract locally with $l_i = \pm 1$}
+            \For{$\lambda \in \{+1,-1\}$}{
+                $\psi_\lambda \leftarrow [1]$ \;
+                \For{$k = M+1 \dots M+K$}{
+                    \If{$k=i$}{
+                        $T_k \leftarrow \mathcal{T}_k(:,:, \lambda)$
+                    }\Else{
+                        $T_k \leftarrow \sum_{l_k} \mathcal{T}_k(:,:, l_k)$
+                    }
+                    $\psi_\lambda \leftarrow \psi_\lambda \times T_k$
+                }
+            }
+            $P_i^{\text{cond}} \leftarrow \dfrac{|\psi_{+}|}{|\psi_{+}| + |\psi_{-}|}$ \;
+            $l_i \leftarrow \operatorname{sign}(P_i^{\text{cond}} - 0.5)$
+        }
+    }
+}
+
+\BlankLine
+\Return{$\boldsymbol{l}$}
+
+\BlankLine
+\textbf{Complexity Summary:} \\
+Sequential: $O(M\chi^2 + \log K \cdot K^2\chi^4)$; \\
+Parallel: $O(M\chi^2 + \log K \cdot K\chi^4)$.
+
+\end{algorithm}

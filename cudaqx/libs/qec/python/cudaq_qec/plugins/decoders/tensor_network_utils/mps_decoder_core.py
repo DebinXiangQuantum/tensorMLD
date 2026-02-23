@@ -1,0 +1,998 @@
+# ============================================================================ #
+# Copyright (c) 2026 NVIDIA Corporation & Affiliates.                          #
+# All rights reserved.                                                         #
+#                                                                              #
+# This source code and the accompanying materials are made available under     #
+# the terms of the Apache License 2.0 which accompanies this distribution.     #
+# ============================================================================ #
+
+"""Core utilities for compressed tensor-network decoding.
+
+This module is intentionally independent from `cudaq_qec` extension bindings so
+its logic can be unit tested directly:
+1) exact tensor decomposition to MPS (with structured exact shortcuts),
+2) offline contraction-swap-merge compression (adapted from `catn/`),
+3) online decoding on a 1D-chain MPS.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+import math
+from pathlib import Path
+import sys
+import time
+from typing import Any, Optional
+
+import numpy as np
+from quimb import oset
+from quimb.tensor import Tensor, TensorNetwork
+
+try:
+    import cupy
+except Exception:  # pragma: no cover - optional dependency
+    cupy = None
+
+OUT_PREFIX = "__OUT__::"
+DELTA_TAG = "DELTA_INDEX"
+
+# Global defaults (can be changed via `set_global_decoder_config`).
+GLOBAL_BOND_DIM = 32
+GLOBAL_LOW_THRESHOLD = 0.4
+GLOBAL_HIGH_THRESHOLD = 0.6
+GLOBAL_MAX_CONDITIONAL_ROUNDS = 16
+
+
+def _validate_threshold_window(low: float, high: float) -> None:
+    if not (0.0 <= low <= 1.0):
+        raise ValueError("low_threshold must be in [0, 1].")
+    if not (0.0 <= high <= 1.0):
+        raise ValueError("high_threshold must be in [0, 1].")
+    if low > high:
+        raise ValueError("low_threshold must be <= high_threshold.")
+
+
+def set_global_decoder_config(
+        *,
+        bond_dim: Optional[int] = None,
+        low_threshold: Optional[float] = None,
+        high_threshold: Optional[float] = None,
+        max_conditional_rounds: Optional[int] = None) -> None:
+    """Set module-level defaults used by compressed MPS decoding."""
+    global GLOBAL_BOND_DIM
+    global GLOBAL_LOW_THRESHOLD
+    global GLOBAL_HIGH_THRESHOLD
+    global GLOBAL_MAX_CONDITIONAL_ROUNDS
+
+    next_low = (GLOBAL_LOW_THRESHOLD if low_threshold is None else
+                float(low_threshold))
+    next_high = (GLOBAL_HIGH_THRESHOLD if high_threshold is None else
+                 float(high_threshold))
+    _validate_threshold_window(next_low, next_high)
+
+    if bond_dim is not None:
+        if bond_dim <= 0:
+            raise ValueError("bond_dim must be > 0.")
+        GLOBAL_BOND_DIM = int(bond_dim)
+    if low_threshold is not None:
+        GLOBAL_LOW_THRESHOLD = next_low
+    if high_threshold is not None:
+        GLOBAL_HIGH_THRESHOLD = next_high
+    if max_conditional_rounds is not None:
+        if max_conditional_rounds <= 0:
+            raise ValueError("max_conditional_rounds must be > 0.")
+        GLOBAL_MAX_CONDITIONAL_ROUNDS = int(max_conditional_rounds)
+
+
+def _load_catn_mps_node() -> Any:
+    """Load `catn/mps_node_np.py` without requiring `catn` to be installed."""
+    try:
+        from mps_node_np import MPSNode  # type: ignore
+        return MPSNode
+    except Exception:
+        pass
+
+    this_file = Path(__file__).resolve()
+    for parent in this_file.parents:
+        candidate = parent / "catn" / "mps_node_np.py"
+        if candidate.exists():
+            catn_dir = str(candidate.parent)
+            if catn_dir not in sys.path:
+                sys.path.insert(0, catn_dir)
+            from mps_node_np import MPSNode  # type: ignore
+            return MPSNode
+
+    raise ImportError(
+        "Failed to locate catn/mps_node_np.py. "
+        "Expected a `catn/` directory in one of the parent directories."
+    )
+
+
+MPSNode = _load_catn_mps_node()
+
+
+def make_parametrized_syndrome_network(
+        check_inds: list[str],
+        syndrome_param_inds: list[str]) -> TensorNetwork:
+    """Create syndrome tensors with an explicit parameter index.
+
+    Each syndrome tensor is a Hadamard-like matrix `[[1, 1], [1, -1]]` with
+    indices `(check_i, syn_param_i)`. During online decoding, we contract the
+    `syn_param_i` index with `[1-s_i, s_i]`.
+    """
+    assert len(check_inds) == len(syndrome_param_inds)
+    hadamard = np.array([[1.0, 1.0], [1.0, -1.0]], dtype=np.float64)
+    return TensorNetwork([
+        Tensor(
+            data=hadamard,
+            inds=(c_ind, s_ind),
+            tags=oset([f"SYN_{i}", "SYNDROME", "SYNDROME_PARAM"]),
+        ) for i, (c_ind, s_ind) in enumerate(zip(check_inds,
+                                                 syndrome_param_inds))
+    ])
+
+
+def make_delta_tensor(dim: int, order: int) -> np.ndarray:
+    """Construct a Kronecker delta tensor with shape `(dim,) * order`."""
+    data = np.zeros((dim,) * order, dtype=np.float64)
+    for value in range(dim):
+        data[(value,) * order] = 1.0
+    return data
+
+
+def _is_delta_tensor(data: np.ndarray, atol: float = 1e-12) -> bool:
+    """Check whether `data` matches a Kronecker-delta tensor exactly."""
+    if data.ndim == 0:
+        return True
+    if len(set(data.shape)) != 1:
+        return False
+    dim = data.shape[0]
+    expected = make_delta_tensor(dim=dim, order=data.ndim)
+    return np.allclose(data, expected, atol=atol, rtol=0.0)
+
+
+def _delta_to_mps(data: np.ndarray) -> list[np.ndarray]:
+    """Exact MPS decomposition for Kronecker-delta tensors."""
+    if data.ndim == 0:
+        return []
+    if data.ndim == 1:
+        return [data.reshape(1, data.shape[0], 1)]
+
+    dim = data.shape[0]
+    order = data.ndim
+    cores: list[np.ndarray] = []
+
+    first = np.zeros((1, dim, dim), dtype=np.float64)
+    for a in range(dim):
+        first[0, a, a] = 1.0
+    cores.append(first)
+
+    for _ in range(order - 2):
+        core = np.zeros((dim, dim, dim), dtype=np.float64)
+        for state in range(dim):
+            core[state, state, state] = 1.0
+        cores.append(core)
+
+    last = np.zeros((dim, dim, 1), dtype=np.float64)
+    for a in range(dim):
+        last[a, a, 0] = 1.0
+    cores.append(last)
+    return cores
+
+
+def _parity_values(data: np.ndarray,
+                   atol: float = 1e-12) -> Optional[tuple[float, float]]:
+    """Detect parity-structured tensor: value depends only on parity of indices.
+
+    Returns `(even_value, odd_value)` if structured, else `None`.
+    """
+    if data.ndim == 0:
+        return float(data), float(data)
+    if any(dim != 2 for dim in data.shape):
+        return None
+
+    even_val: Optional[float] = None
+    odd_val: Optional[float] = None
+    for idx in np.ndindex(data.shape):
+        parity = sum(idx) & 1
+        val = float(data[idx])
+        if parity == 0:
+            if even_val is None:
+                even_val = val
+            elif not math.isclose(val, even_val, abs_tol=atol, rel_tol=0.0):
+                return None
+        else:
+            if odd_val is None:
+                odd_val = val
+            elif not math.isclose(val, odd_val, abs_tol=atol, rel_tol=0.0):
+                return None
+
+    if even_val is None:
+        even_val = 0.0
+    if odd_val is None:
+        odd_val = even_val
+    return even_val, odd_val
+
+
+def _parity_to_mps(data: np.ndarray) -> Optional[list[np.ndarray]]:
+    """Exact bond-2 MPS for parity-structured tensors."""
+    values = _parity_values(data)
+    if values is None:
+        return None
+    even_val, odd_val = values
+
+    if data.ndim == 0:
+        return []
+    if data.ndim == 1:
+        core = np.array([[even_val], [odd_val]], dtype=np.float64).reshape(
+            1, 2, 1)
+        return [core]
+
+    order = data.ndim
+    cores: list[np.ndarray] = []
+
+    first = np.zeros((1, 2, 2), dtype=np.float64)
+    first[0, 0, 0] = 1.0
+    first[0, 1, 1] = 1.0
+    cores.append(first)
+
+    for _ in range(order - 2):
+        core = np.zeros((2, 2, 2), dtype=np.float64)
+        core[0, 0, 0] = 1.0
+        core[0, 1, 1] = 1.0
+        core[1, 0, 1] = 1.0
+        core[1, 1, 0] = 1.0
+        cores.append(core)
+
+    last = np.zeros((2, 2, 1), dtype=np.float64)
+    for prev_parity in (0, 1):
+        for bit in (0, 1):
+            final_parity = prev_parity ^ bit
+            last[prev_parity, bit, 0] = even_val if final_parity == 0 else odd_val
+    cores.append(last)
+    return cores
+
+
+def _svd_to_mps(data: np.ndarray,
+                chi: int,
+                cutoff: float = 1e-12) -> list[np.ndarray]:
+    """Generic sequential SVD decomposition into an MPS."""
+    if data.ndim == 0:
+        return []
+    if data.ndim == 1:
+        return [data.reshape(1, data.shape[0], 1)]
+
+    dims = list(data.shape)
+    work = data.reshape(1, -1)
+    left_dim = 1
+    cores: list[np.ndarray] = []
+
+    for physical_dim in dims[:-1]:
+        work = work.reshape(left_dim * physical_dim, -1)
+        u, s, vh = np.linalg.svd(work, full_matrices=False)
+
+        keep = np.where(s > cutoff)[0]
+        if keep.size == 0:
+            keep = np.array([0], dtype=np.int64)
+        if chi > 0:
+            keep = keep[:chi]
+
+        rank = int(keep.size)
+        u = u[:, keep]
+        s = s[keep]
+        vh = vh[keep, :]
+
+        cores.append(u.reshape(left_dim, physical_dim, rank))
+        work = (s[:, None] * vh)
+        left_dim = rank
+
+    cores.append(work.reshape(left_dim, dims[-1], 1))
+    return cores
+
+
+def decompose_tensor_to_mps(data: np.ndarray,
+                            chi: int,
+                            cutoff: float = 1e-12) -> list[np.ndarray]:
+    """Decompose a tensor into MPS.
+
+    Priority:
+    1) exact Kronecker-delta decomposition,
+    2) exact parity decomposition,
+    3) generic SVD decomposition.
+    """
+    arr = np.asarray(data, dtype=np.float64)
+
+    if _is_delta_tensor(arr, atol=cutoff):
+        return _delta_to_mps(arr)
+
+    parity_mps = _parity_to_mps(arr)
+    if parity_mps is not None:
+        return parity_mps
+
+    return _svd_to_mps(arr, chi=chi, cutoff=cutoff)
+
+
+def mps_to_raw(mps: list[np.ndarray]) -> np.ndarray:
+    """Reconstruct a raw tensor from MPS cores."""
+    if not mps:
+        return np.array(1.0, dtype=np.float64)
+    if len(mps) == 1:
+        core = mps[0]
+        return core.reshape(core.shape[1])
+
+    shape = [mps[0].shape[1]]
+    mat = mps[0].reshape(mps[0].shape[1], mps[0].shape[2])
+    for core in mps[1:]:
+        shape.append(core.shape[1])
+        mat = np.einsum("ij,jkl->ikl", mat, core).reshape(mat.shape[0] *
+                                                          core.shape[1],
+                                                          core.shape[2])
+    return mat.reshape(shape)
+
+
+@dataclass
+class PairwiseGraphData:
+    node_tensors: dict[int, np.ndarray]
+    node_neighbors: dict[int, np.ndarray]
+    node_tags: dict[int, set[str]]
+    preserved_nodes: set[int]
+    initial_internal_edges: int
+
+
+def _out_token(index_name: str) -> str:
+    return f"{OUT_PREFIX}{index_name}"
+
+
+def out_token_to_index(token: str) -> str:
+    if not token.startswith(OUT_PREFIX):
+        return token
+    return token[len(OUT_PREFIX):]
+
+
+def build_pairwise_graph_from_tn(tn: TensorNetwork,
+                                 preserve_inds: set[str]) -> PairwiseGraphData:
+    """Convert a (hyper) tensor network into a pairwise graph.
+
+    For each index with degree > 2, we add an explicit delta node so that each
+    index is represented by pairwise edges between nodes.
+    """
+    tensors = list(tn.tensors)
+
+    node_tensors: dict[int, np.ndarray] = {}
+    node_neighbors: dict[int, np.ndarray] = {}
+    node_tags: dict[int, set[str]] = {}
+    preserved_nodes: set[int] = set()
+
+    for node_id, tensor in enumerate(tensors):
+        data = np.asarray(tensor.data, dtype=np.float64)
+        node_tensors[node_id] = data
+        node_neighbors[node_id] = np.empty(data.ndim, dtype=object)
+        node_tags[node_id] = set(tensor.tags)
+
+    index_to_legs: dict[str, list[tuple[int, int, int]]] = {}
+    for node_id, tensor in enumerate(tensors):
+        for axis, ind in enumerate(tensor.inds):
+            dim = int(tensor.shape[axis])
+            index_to_legs.setdefault(ind, []).append((node_id, axis, dim))
+
+    next_node_id = len(tensors)
+    for ind, legs in index_to_legs.items():
+        degree = len(legs)
+        if degree == 1:
+            node_id, axis, _ = legs[0]
+            node_neighbors[node_id][axis] = _out_token(ind)
+            if ind in preserve_inds:
+                preserved_nodes.add(node_id)
+            continue
+
+        if degree == 2:
+            (a, axis_a, _), (b, axis_b, _) = legs
+            if a != b:
+                node_neighbors[a][axis_a] = b
+                node_neighbors[b][axis_b] = a
+                continue
+            # Repeated index on the same tensor: promote to explicit delta.
+
+        dim = int(legs[0][2])
+        delta_node = next_node_id
+        next_node_id += 1
+
+        node_tensors[delta_node] = make_delta_tensor(dim=dim, order=degree)
+        node_neighbors[delta_node] = np.empty(degree, dtype=object)
+        node_tags[delta_node] = {DELTA_TAG, f"DELTA_{ind}"}
+
+        for delta_axis, (orig_node, orig_axis, _) in enumerate(legs):
+            node_neighbors[orig_node][orig_axis] = delta_node
+            node_neighbors[delta_node][delta_axis] = orig_node
+
+    for node_id, neighbors in node_neighbors.items():
+        if neighbors.size and np.any(neighbors == None):  # noqa: E711
+            missing_axes = np.where(neighbors == None)[0]  # noqa: E711
+            raise RuntimeError(
+                f"Incomplete pairwise graph for node {node_id}, "
+                f"missing neighbor mapping on axes {missing_axes.tolist()}.")
+
+    edge_count = count_internal_edges(set(node_tensors.keys()), node_neighbors)
+    return PairwiseGraphData(
+        node_tensors=node_tensors,
+        node_neighbors=node_neighbors,
+        node_tags=node_tags,
+        preserved_nodes=preserved_nodes,
+        initial_internal_edges=edge_count,
+    )
+
+
+def count_internal_edges(active_nodes: set[int],
+                         node_neighbors: dict[int,
+                                              np.ndarray]) -> int:
+    edges: set[tuple[int, int]] = set()
+    for i in active_nodes:
+        for nb in node_neighbors[i]:
+            if isinstance(nb, int) and nb in active_nodes:
+                a, b = (i, nb) if i < nb else (nb, i)
+                edges.add((a, b))
+    return len(edges)
+
+
+def build_mps_nodes(pairwise: PairwiseGraphData, chi: int,
+                    cutoff: float) -> dict[int, Any]:
+    """Instantiate catn-style MPS nodes with exact-structure decomposition."""
+    nodes: dict[int, Any] = {}
+    for node_id, raw_tensor in pairwise.node_tensors.items():
+        neighbors = np.array(pairwise.node_neighbors[node_id], dtype=object)
+        node = MPSNode(
+            np.asarray(raw_tensor, dtype=np.float64),
+            node_id,
+            neighbors,
+            chi=chi,
+            cutoff=cutoff,
+            norm_method=1,
+            svdopt=True,
+            swapopt=True,
+            verbose=0,
+        )
+        node.neighbor = neighbors
+        node.mps = decompose_tensor_to_mps(raw_tensor, chi=chi, cutoff=cutoff)
+        node.cano = len(node.mps) - 1 if node.mps else 0
+        nodes[node_id] = node
+    return nodes
+
+
+def _edge_cost(nodes: dict[int, Any], i: int, j: int) -> float:
+    idx = nodes[i].find_neighbor(j)
+    if idx < 0:
+        return float("inf")
+    return float(nodes[i].logdim() + nodes[j].logdim() -
+                 2.0 * nodes[i].logdim(idx))
+
+
+def _collect_internal_edges(active_nodes: set[int],
+                            nodes: dict[int, Any]) -> list[tuple[int, int]]:
+    edges: set[tuple[int, int]] = set()
+    for i in active_nodes:
+        for nb in nodes[i].neighbor:
+            if isinstance(nb, int) and nb in active_nodes:
+                a, b = (i, nb) if i < nb else (nb, i)
+                edges.add((a, b))
+    return sorted(edges)
+
+
+@dataclass
+class OfflineCompressionStats:
+    initial_nodes: int
+    initial_edges: int
+    preserved_target: int
+    steps: int
+    truncation_error: float
+    max_bond_dim: int
+    active_nodes: int
+    active_edges: int
+
+
+@dataclass
+class OfflineCompressionResult:
+    nodes: dict[int, Any]
+    active_nodes: set[int]
+    preserved_nodes: set[int]
+    stats: OfflineCompressionStats
+
+
+def compress_until_preserved(
+        nodes: dict[int, Any],
+        preserved_nodes: set[int],
+        max_steps: int = 100000,
+        reverse: bool = True,
+        compress_each_step: bool = True,
+        verbose: bool = False) -> OfflineCompressionResult:
+    """Run contraction-swap-merge until only preserved nodes remain active."""
+    active_nodes = set(nodes.keys())
+    target_preserved = len(preserved_nodes)
+    initial_edges = count_internal_edges(active_nodes,
+                                         {k: v.neighbor
+                                          for k, v in nodes.items()})
+    truncation_error = 0.0
+    steps = 0
+
+    while any(node_id not in preserved_nodes for node_id in active_nodes):
+        edges = _collect_internal_edges(active_nodes, nodes)
+        # Disallow contracting edges fully inside the preserved set.
+        candidates = [e for e in edges if not (e[0] in preserved_nodes
+                                               and e[1] in preserved_nodes)]
+        if not candidates:
+            if verbose:
+                print("No valid contraction edge left before reaching target set.")
+            break
+
+        i, j = min(candidates, key=lambda edge: _edge_cost(nodes, edge[0],
+                                                           edge[1]))
+        if nodes[j].order() > nodes[i].order():
+            i, j = j, i
+
+        idx_j_in_i = int(nodes[i].find_neighbor(j))
+        idx_i_in_j = int(nodes[j].find_neighbor(i))
+        if idx_j_in_i < 0 or idx_i_in_j < 0:
+            raise RuntimeError(f"Broken adjacency while contracting edge ({i}, {j}).")
+
+        if reverse:
+            if idx_j_in_i < len(nodes[i].neighbor) // 2:
+                nodes[i].reverse()
+                idx_j_in_i = int(nodes[i].find_neighbor(j))
+            if idx_i_in_j >= len(nodes[j].neighbor) // 2:
+                nodes[j].reverse()
+                idx_i_in_j = int(nodes[j].find_neighbor(i))
+
+        nodes[i].delete_neighbor(j)
+        neighbors_j = list(nodes[j].neighbor)
+        duplicate_neighbors: list[int] = []
+
+        for pos, k in enumerate(neighbors_j):
+            if pos == idx_i_in_j:
+                continue
+            nodes[i].add_neighbor(k)
+            if isinstance(k, int) and k in active_nodes:
+                idx_i_in_k = int(nodes[k].find_neighbor(i))
+                idx_j_in_k = int(nodes[k].delete_neighbor(j))
+                nodes[k].add_neighbor(i, idx_j_in_k)
+                if idx_i_in_k > -1:
+                    duplicate_neighbors.append(k)
+                    truncation_error += float(
+                        nodes[k].merge(i, cross=idx_i_in_k > idx_j_in_k))
+
+        _, err, _ = nodes[i].eat(nodes[j], idx_j_in_i, idx_i_in_j)
+        truncation_error += abs(float(err))
+
+        for k in duplicate_neighbors:
+            truncation_error += float(nodes[i].merge(k, cross=False))
+
+        if compress_each_step:
+            truncation_error += float(nodes[i].compress_opt())
+
+        nodes[j].clear()
+        active_nodes.remove(j)
+
+        if j in preserved_nodes:
+            preserved_nodes.remove(j)
+            preserved_nodes.add(i)
+
+        steps += 1
+        if verbose and (steps % 100 == 0):
+            edges_left = count_internal_edges(
+                active_nodes, {k: v.neighbor
+                               for k, v in nodes.items()})
+            print(f"[offline] step={steps}, active={len(active_nodes)}, edges={edges_left}")
+        if steps >= max_steps:
+            if verbose:
+                print(f"Reached max_steps={max_steps}, stopping offline compression.")
+            break
+
+    max_bond = 1
+    for node_id in active_nodes:
+        for core in nodes[node_id].mps:
+            max_bond = max(max_bond, int(core.shape[0]), int(core.shape[2]))
+
+    active_edges = count_internal_edges(active_nodes,
+                                        {k: v.neighbor
+                                         for k, v in nodes.items()})
+    stats = OfflineCompressionStats(
+        initial_nodes=len(nodes),
+        initial_edges=initial_edges,
+        preserved_target=target_preserved,
+        steps=steps,
+        truncation_error=float(truncation_error),
+        max_bond_dim=max_bond,
+        active_nodes=len(active_nodes),
+        active_edges=active_edges,
+    )
+    return OfflineCompressionResult(
+        nodes=nodes,
+        active_nodes=active_nodes,
+        preserved_nodes=preserved_nodes,
+        stats=stats,
+    )
+
+
+@dataclass
+class ChainSite:
+    label: Optional[str]
+    tensor: np.ndarray  # shape: [Dl, physical_dim, Dr]
+
+
+@dataclass
+class OneDChainMPS:
+    sites: list[ChainSite]
+    syndrome_labels: list[str]
+    logical_labels: list[str]
+
+    def _logical_set(self) -> set[str]:
+        return set(self.logical_labels)
+
+    def _prepare_matrix_chain(
+            self,
+            syndrome_values: dict[str, float],
+            fixed_logicals: dict[str, int],
+            target_label: Optional[str] = None,
+            target_value: Optional[int] = None,
+            use_gpu: bool = False) -> list[Any]:
+        xp = cupy if (use_gpu and cupy is not None) else np
+        syndrome_set = set(self.syndrome_labels)
+        logical_set = self._logical_set()
+        mats: list[Any] = []
+
+        for site in self.sites:
+            data = xp.asarray(site.tensor)
+            label = site.label
+            if label in syndrome_set:
+                if label not in syndrome_values:
+                    raise KeyError(
+                        f"Missing syndrome value for index '{label}'.")
+                p = float(syndrome_values[label])
+                vec = xp.asarray([1.0 - p, p], dtype=data.dtype)
+                mats.append(xp.tensordot(data, vec, axes=(1, 0)))
+                continue
+
+            if label in logical_set:
+                if label == target_label and target_value is not None:
+                    mats.append(data[:, int(target_value), :])
+                    continue
+                if label in fixed_logicals:
+                    mats.append(data[:, int(fixed_logicals[label]), :])
+                    continue
+                mats.append(data.sum(axis=1))
+                continue
+
+            mats.append(data.sum(axis=1))
+        return mats
+
+    @staticmethod
+    def _logabs_contract(mats: list[Any], use_gpu: bool) -> float:
+        xp = cupy if (use_gpu and cupy is not None) else np
+        if not mats:
+            return 0.0
+
+        acc = mats[0]
+        if acc.ndim == 0:
+            return float(np.log(abs(float(acc)))) if acc != 0 else -math.inf
+        if acc.ndim == 1:
+            acc = acc.reshape(1, -1)
+
+        log_scale = 0.0
+        for mat in mats[1:]:
+            if mat.ndim == 1:
+                mat = mat.reshape(mat.shape[0], 1)
+            acc = acc @ mat
+            norm = float(xp.max(xp.abs(acc)))
+            if norm > 0.0:
+                acc = acc / norm
+                log_scale += math.log(norm)
+
+        if acc.ndim != 2:
+            acc = acc.reshape(1, 1)
+        value = xp.trace(acc) if acc.shape[0] == acc.shape[1] else xp.sum(acc)
+        abs_value = float(xp.abs(value))
+        if abs_value <= 0.0:
+            return -math.inf
+        return log_scale + math.log(abs_value)
+
+    def marginal_probability(self,
+                             label: str,
+                             syndrome_values: dict[str, float],
+                             fixed_logicals: Optional[dict[str, int]] = None,
+                             use_gpu: bool = False) -> float:
+        fixed_logicals = fixed_logicals or {}
+        mats0 = self._prepare_matrix_chain(
+            syndrome_values=syndrome_values,
+            fixed_logicals=fixed_logicals,
+            target_label=label,
+            target_value=0,
+            use_gpu=use_gpu,
+        )
+        mats1 = self._prepare_matrix_chain(
+            syndrome_values=syndrome_values,
+            fixed_logicals=fixed_logicals,
+            target_label=label,
+            target_value=1,
+            use_gpu=use_gpu,
+        )
+        log0 = self._logabs_contract(mats0, use_gpu=use_gpu)
+        log1 = self._logabs_contract(mats1, use_gpu=use_gpu)
+        if math.isinf(log0) and math.isinf(log1):
+            return 0.5
+        if log1 > log0:
+            return 1.0 / (1.0 + math.exp(log0 - log1))
+        return math.exp(log1 - log0) / (1.0 + math.exp(log1 - log0))
+
+    def decode_logicals(
+            self,
+            syndrome_values: dict[str, float],
+            low_threshold: Optional[float] = None,
+            high_threshold: Optional[float] = None,
+            max_rounds: Optional[int] = None,
+            use_gpu: bool = False) -> tuple[dict[str, int], dict[str, float]]:
+        if low_threshold is None:
+            low_threshold = GLOBAL_LOW_THRESHOLD
+        if high_threshold is None:
+            high_threshold = GLOBAL_HIGH_THRESHOLD
+        _validate_threshold_window(float(low_threshold), float(high_threshold))
+        if max_rounds is None:
+            max_rounds = GLOBAL_MAX_CONDITIONAL_ROUNDS
+        if max_rounds <= 0:
+            raise ValueError("max_rounds must be > 0.")
+        assignments: dict[str, int] = {}
+        marginals: dict[str, float] = {}
+        unknown = set(self.logical_labels)
+
+        rounds = 0
+        while unknown and rounds < max_rounds:
+            rounds += 1
+            round_updates: dict[str, int] = {}
+            for label in list(unknown):
+                prob = self.marginal_probability(
+                    label=label,
+                    syndrome_values=syndrome_values,
+                    fixed_logicals=assignments,
+                    use_gpu=use_gpu,
+                )
+                marginals[label] = prob
+                if prob > high_threshold:
+                    round_updates[label] = 1
+                elif prob < low_threshold:
+                    round_updates[label] = 0
+
+            if not round_updates:
+                break
+            assignments.update(round_updates)
+            unknown.difference_update(round_updates.keys())
+
+        for label in list(unknown):
+            prob = self.marginal_probability(
+                label=label,
+                syndrome_values=syndrome_values,
+                fixed_logicals=assignments,
+                use_gpu=use_gpu,
+            )
+            marginals[label] = prob
+            assignments[label] = 1 if prob >= 0.5 else 0
+            unknown.remove(label)
+
+        return assignments, marginals
+
+
+def _build_internal_adjacency(active_nodes: set[int],
+                              nodes: dict[int, Any]) -> dict[int, set[int]]:
+    adjacency: dict[int, set[int]] = {n: set() for n in active_nodes}
+    for i in active_nodes:
+        for nb in nodes[i].neighbor:
+            if isinstance(nb, int) and nb in active_nodes:
+                adjacency[i].add(nb)
+                adjacency[nb].add(i)
+    return adjacency
+
+
+def _path_order_from_adjacency(
+        adjacency: dict[int, set[int]]) -> Optional[list[int]]:
+    if not adjacency:
+        return []
+    if len(adjacency) == 1:
+        return [next(iter(adjacency))]
+
+    if any(len(neigh) > 2 for neigh in adjacency.values()):
+        return None
+
+    endpoints = [node for node, neigh in adjacency.items() if len(neigh) == 1]
+    if len(endpoints) < 2:
+        return None
+
+    start = min(endpoints)
+    order = [start]
+    prev = None
+    current = start
+    while True:
+        nxt = [n for n in adjacency[current] if n != prev]
+        if not nxt:
+            break
+        prev, current = current, nxt[0]
+        order.append(current)
+        if len(order) > len(adjacency):
+            return None
+
+    if len(order) != len(adjacency):
+        return None
+    return order
+
+
+def _node_to_site_tensor(raw: np.ndarray,
+                         left_pos: Optional[int],
+                         open_pos: Optional[int],
+                         right_pos: Optional[int]) -> np.ndarray:
+    if raw.ndim == 0:
+        return raw.reshape(1, 1, 1)
+
+    selected = [p for p in (left_pos, open_pos, right_pos) if p is not None]
+    remaining = [axis for axis in range(raw.ndim) if axis not in selected]
+    perm = selected + remaining
+    arr = raw.transpose(perm) if perm != list(range(raw.ndim)) else raw
+
+    cursor = 0
+    if left_pos is not None:
+        dl = int(arr.shape[cursor])
+        cursor += 1
+    else:
+        dl = 1
+
+    if open_pos is not None:
+        dp = int(arr.shape[cursor])
+        cursor += 1
+    else:
+        dp = 1
+
+    if right_pos is not None:
+        dr = int(arr.shape[cursor])
+        cursor += 1
+    else:
+        dr = 1
+
+    if cursor < arr.ndim:
+        dp *= int(np.prod(arr.shape[cursor:], dtype=np.int64))
+    return arr.reshape(dl, dp, dr)
+
+
+def extract_1d_chain(active_nodes: set[int],
+                     nodes: dict[int, Any],
+                     syndrome_label_set: set[str],
+                     logical_label_set: set[str]) -> Optional[OneDChainMPS]:
+    """Extract a path-ordered 1D chain from active preserved nodes."""
+    adjacency = _build_internal_adjacency(active_nodes, nodes)
+    order = _path_order_from_adjacency(adjacency)
+    if order is None:
+        return None
+
+    sites: list[ChainSite] = []
+    syndrome_labels: list[str] = []
+    logical_labels: list[str] = []
+    expected_open_labels = syndrome_label_set | logical_label_set
+
+    for idx, node_id in enumerate(order):
+        prev_node = order[idx - 1] if idx > 0 else None
+        next_node = order[idx + 1] if idx < len(order) - 1 else None
+
+        node = nodes[node_id]
+        raw = mps_to_raw(node.mps)
+
+        left_pos = None
+        if prev_node is not None:
+            pos = int(node.find_neighbor(prev_node))
+            left_pos = pos if pos >= 0 else None
+        right_pos = None
+        if next_node is not None:
+            pos = int(node.find_neighbor(next_node))
+            right_pos = pos if pos >= 0 else None
+
+        open_tokens = []
+        for nb in node.neighbor:
+            if isinstance(nb, int) and nb in active_nodes:
+                continue
+            open_tokens.append(nb)
+
+        label: Optional[str] = None
+        open_pos: Optional[int] = None
+        # At this stage each preserved node must carry exactly one open index.
+        if len(open_tokens) != 1:
+            return None
+        token = open_tokens[0]
+        pos = int(node.find_neighbor(token))
+        open_pos = pos if pos >= 0 else None
+        if not isinstance(token, str):
+            return None
+        label = out_token_to_index(token)
+        if label not in expected_open_labels:
+            return None
+
+        site_tensor = _node_to_site_tensor(raw, left_pos, open_pos, right_pos)
+        if label is not None and site_tensor.shape[1] != 2:
+            return None
+
+        if label in syndrome_label_set:
+            syndrome_labels.append(label)
+        if label in logical_label_set:
+            logical_labels.append(label)
+        sites.append(ChainSite(label=label, tensor=site_tensor))
+
+    return OneDChainMPS(
+        sites=sites,
+        syndrome_labels=syndrome_labels,
+        logical_labels=logical_labels,
+    )
+
+
+@dataclass
+class CompileResult:
+    chain: Optional[OneDChainMPS]
+    offline_stats: OfflineCompressionStats
+
+
+def compile_to_1d_chain(
+        tn: TensorNetwork,
+        preserve_inds: set[str],
+        syndrome_inds: set[str],
+        logical_inds: set[str],
+        chi: Optional[int] = None,
+        cutoff: float = 1e-12,
+        max_steps: int = 100000,
+        verbose: bool = False) -> CompileResult:
+    if chi is None:
+        chi = GLOBAL_BOND_DIM
+    pairwise = build_pairwise_graph_from_tn(tn, preserve_inds=preserve_inds)
+    nodes = build_mps_nodes(pairwise, chi=chi, cutoff=cutoff)
+
+    offline = compress_until_preserved(
+        nodes=nodes,
+        preserved_nodes=set(pairwise.preserved_nodes),
+        max_steps=max_steps,
+        reverse=True,
+        compress_each_step=True,
+        verbose=verbose,
+    )
+
+    chain = extract_1d_chain(
+        active_nodes=offline.active_nodes,
+        nodes=offline.nodes,
+        syndrome_label_set=syndrome_inds,
+        logical_label_set=logical_inds,
+    )
+    return CompileResult(chain=chain, offline_stats=offline.stats)
+
+
+def timed_chain_decode(chain: OneDChainMPS,
+                       syndrome_values: dict[str, float],
+                       use_gpu: bool = False,
+                       low_threshold: Optional[float] = None,
+                       high_threshold: Optional[float] = None,
+                       max_rounds: Optional[int] = None) -> tuple[
+                           dict[str, int], dict[str, float], float]:
+    """Decode logicals and return `(assignments, marginals, latency_ms)`."""
+    if use_gpu and cupy is not None:
+        start = cupy.cuda.Event()
+        end = cupy.cuda.Event()
+        start.record()
+        assignments, marginals = chain.decode_logicals(
+            syndrome_values=syndrome_values,
+            low_threshold=low_threshold,
+            high_threshold=high_threshold,
+            max_rounds=max_rounds,
+            use_gpu=True,
+        )
+        end.record()
+        end.synchronize()
+        latency_ms = float(cupy.cuda.get_elapsed_time(start, end))
+        return assignments, marginals, latency_ms
+
+    t0 = time.perf_counter()
+    assignments, marginals = chain.decode_logicals(
+        syndrome_values=syndrome_values,
+        low_threshold=low_threshold,
+        high_threshold=high_threshold,
+        max_rounds=max_rounds,
+        use_gpu=False,
+    )
+    latency_ms = (time.perf_counter() - t0) * 1e3
+    return assignments, marginals, float(latency_ms)

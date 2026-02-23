@@ -1,0 +1,35 @@
+\begin{table}[t]
+\centering
+\renewcommand{\arraystretch}{1.2}
+\caption{Comparison with other qLDPC decoders.}
+\label{tab:intro_comparison}
+\resizebox{\linewidth}{!}{
+\begin{minipage}{\linewidth}
+\begin{tabular}{|l|c|c|c|c|}
+\toprule[1pt]
+    \textbf{\makecell{Decoder Type}} & \textbf{\makecell{Decoding\\Accuracy}} & \textbf{\makecell{Time\\Complexity}} & \textbf{\makecell{Technical\\Feature}} & \textbf{Principle} \\
+    \hline
+    AFS \cite{das2022afs} & \bad & \good & \makecell{Union-find} & MWD \\
+    \hline
+    Astrea \cite{vittal2023astrea} & \good & \medium & \makecell{Graph\\Matching}  & MWD \\
+    \hline
+    BP \cite{bp} & \bad & \good & \makecell{Message\\Passing}  & MWD \\
+    \hline
+    BP+OSD \cite{bposd} & \good & \bad & \makecell{Gaussian\\Elimination}  & MWD \\
+    \hline
+    BP+LSD \cite{bplsd} & \medium & \medium & \makecell{Matrix\\Factorization}  & MWD \\
+    \hline
+    \textbf{\papername} & \good & \good & \makecell{Tensor\\Compression} & \textbf{MLD} \\
+\bottomrule[1pt]
+\end{tabular}
+
+\vspace{0.15cm}
+\raggedright
+\footnotesize
+$^*$MWD refers to Minimum Weight Decoding, while MLD means Maximum Likelihood Decoding. \\
+$^*$The symbol $\odot$ indicates a medium level.
+\end{minipage}
+}
+\vspace{-0.4cm}
+\end{table}
+

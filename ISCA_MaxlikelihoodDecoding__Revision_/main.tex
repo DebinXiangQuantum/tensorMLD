@@ -1,0 +1,141 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+% The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
+%Template version as of 6/27/2024
+
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage[hyphens]{url}
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts,amsthm}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage[hyphens]{url}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+% \settopmatter{printfolios=true}
+% \settopmatter{printacmref=false}
+%\pagestyle{plain}
+\usepackage{enumitem}
+
+\usepackage[ruled,vlined,linesnumbered]{algorithm2e}
+\usepackage{parcolumns}
+
+
+\usepackage{makecell}
+\usepackage{threeparttable}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{pifont}
+\usepackage{soul}
+\usepackage{tabularx}
+\usepackage{csquotes}
+\usepackage{textcomp}
+\usepackage{pifont} % 带圈数字
+\usepackage{graphicx} % 提供缩放功能
+\usepackage{bm}
+\usepackage[most]{tcolorbox}
+\makeatletter
+\def\figureautorefname{Fig.}
+% \def\equationautorefname{Eq.}
+\renewcommand{\eqref}[1]{Equation~(\ref{#1})}
+\newcommand{\rmnum}[1]{\romannumeral #1}
+\newcommand{\papername}{TensorMLD\xspace}
+\newcommand{\Rmnum}[1]{\expandafter\@slowromancap\romannumeral #1@}
+\makeatother
+\newcommand{\etal}{\textit{et al}.}
+\newcommand{\ie}{\textit{i}.\textit{e}.}
+\newcommand{\eg}{\textit{e}.\textit{g}.}
+
+% 定义绿色对号 (cmark)
+\newcommand{\good}{\textcolor{black}{\large\ding{51}}}
+% 定义红色错号 (xmark)
+\newcommand{\bad}{\textcolor{black}{\large\ding{55}}}
+\newcommand{\medium}{\textcolor{black}{\large$\odot$}}
+
+\newtcbtheorem[auto counter, number within = section]{goal}{Goal}{
+	colbacktitle = bluecolor, colframe = bluecolor,
+	colback = bluecolor!5!white,
+	fonttitle=\bfseries,%fontupper=\itshape,
+        left=2pt,right=2pt,
+}{t}
+
+\newtheorem{lemma}{Lemma}
+
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+\begin{document}
+
+% Ensure letter paper
+\pdfpagewidth=8.5in
+\pdfpageheight=11in
+
+%%%%%%%%%%%---SETME-----%%%%%%%%%%%%%
+\newcommand{\iscasubmissionnumber}{1759}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\pagenumbering{arabic}
+
+%%%%%%%%%%%---SETME-----%%%%%%%%%%%%%
+% \title{\papername: Efficient 
+% \underline{D}etection of the Most Likely \underline{L}ogical \underline{E}rror via Tensor Compression}
+% \title{\papername: Efficient Maximum Likelihood Decoding for Quantum LDPC Codes via Tensor Compression}
+\title{\papername: A Tensorized and Compressed qLDPC Maximum-Likelihood Decoder for Accurate and Fast Detection of the Most Likely Logical Error}
+\author{\normalsize{ISCA 2026 Submission
+    \textbf{\#\iscasubmissionnumber} -- Confidential Draft -- Do NOT Distribute!!}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ 
+
+\maketitle
+\thispagestyle{plain}
+\pagestyle{plain}
+
+
+\begin{abstract}
+
+Quantum error correction is vital for building reliable quantum computers, and quantum Low-Density Parity-Check (qLDPC) codes are highly promising due to their efficient encoding. However, current decoders often struggle with low decoding accuracy. This is because they focus on identifying physical errors, which cannot always correct the underlying logical fault. While maximum likelihood decoding offers optimal performance by identifying the most likely logical error, its application to qLDPC codes is computationally prohibitive, largely due to the high-dimensional encoding between the logical and physical error spaces.
+
+We introduce \papername, an efficient MLD decoder that overcomes this barrier. Our key innovation maps decoding into a spin-glass model computable via tensor networks. We then compress this representation through tensor decomposition and offline contraction, reducing peak memory requirements by up to $10^{16}\times$ and computational workload by up to $10^{17}\times$. For practical decoding, we develop a parallel marginal probability strategy equipped with a GPU accelerator that enables polynomial-time logical error identification.
+Experiments demonstrate \papername achieves a $1.55 \sim 112\times$ lower logical error rate than the state-of-the-art BP+OSD decoder while maintaining lower latency.
+
+\end{abstract}
+
+
+
+\input{sections/01_introduction}
+\input{sections/02_background}
+% \input{sections/03_motivation}
+\input{sections/04_tensorization}
+\input{sections/05_decoding}
+% \input{sections/04_tensorization}
+% \input{sections/05_decoding}
+\input{sections/06_evaluation}
+\input{sections/07_related_work}
+\input{sections/08_discussion}
+\input{sections/09_conclusion}
+\input{sections/appendix}
+
+% \section*{Appendix}
+% \input{algo/decoding}
+
+% \section*{Acknowledgements}
+% This document is an updated version of HPCA 2022 and 2023, which, in
+% turn, has been derived from two previous conferences, in particular
+% HPCA 2021 and MICRO 2021, which, in turn, are derived from past MICRO,
+% HPCA, ISCA, and ASPLOS conferences.
+
+%%%%%%% -- PAPER CONTENT ENDS -- %%%%%%%%
+
+
+%%%%%%%%% -- BIB STYLE AND FILE -- %%%%%%%%
+\bibliographystyle{IEEEtranS}
+\bibliography{refs}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\end{document}
+

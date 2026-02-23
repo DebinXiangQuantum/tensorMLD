@@ -1,0 +1,482 @@
+name: Build wheels
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_type:
+        type: choice
+        required: true
+        description: 'Build Type (ignored if using artifacts from prior run)'
+        default: 'Release'
+        options:
+        - 'Release'
+        - 'Debug'
+      version:
+        type: string
+        description: Version number to create wheels with (e.g. 0.2.0). Defaults to 0.99.99 if unspecified
+        required: false
+      cudaq_wheels:
+        type: choice
+        required: true
+        description: 'CUDA-Q wheel source (released version from PyPI or Custom built using .cudaq_version in repo)'
+        default: 'Custom'
+        options:
+        - 'Custom'
+        - 'PyPI'
+      assets_repo:
+        type: string
+        description: Retrieve assets from a draft release from this repo (e.g. NVIDIA/cudaqx)
+        default: 'NVIDIA/cudaqx'
+        required: false
+      assets_tag:
+        type: string
+        description: Retrieve assets from a draft release with this tag (e.g. wheels-123)
+        required: false
+      artifacts_from_run:
+        type: string
+        description: Optional argument to take artifacts from a prior run of this workflow; facilitates rerunning a failed workflow without re-building the artifacts.
+        required: false
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-cudaqx-wheels:
+    name: Build CUDA-QX wheels
+    if: ${{ !inputs.artifacts_from_run }}
+    runs-on: linux-${{ matrix.platform }}-cpu8
+    # CUDAQ requires a highly specialized environment to build. Thus, it is much
+    # easier to rely on their's devdeps images to do the building.
+    # FIXME: there is no guarantee that this CUDA-Q image aligns with the CUDA-Q
+    # commit that we are trying to align with.
+    container:
+      image: ghcr.io/nvidia/cuda-quantum-devdeps:manylinux-${{ matrix.platform }}-cu${{ matrix.cuda_version }}-gcc11-main
+      options: --ulimit nofile=1048576:1048576
+    permissions: write-all
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11', '3.12', '3.13']
+        platform: ['amd64', 'arm64']
+        cuda_version: ['12.6', '13.0']
+        toolchain:
+          - cc: gcc-11
+            cxx: g++-11
+            build-type: Release
+
+    steps:
+      - name: Configure
+        id: config
+        run: |
+          cuda_major=`echo ${{ matrix.cuda_version }} | cut -d . -f1`
+          echo "cuda_major=$cuda_major" >> $GITHUB_OUTPUT
+          # Map CUDA 12.6 to 12.9 for TensorRT filename
+          if [ "${{ matrix.cuda_version }}" == "12.6" ]; then
+            tensorrt_cuda_version="12.9"
+            tensorrt_cuda_major="12"
+          else
+            tensorrt_cuda_version="${{ matrix.cuda_version }}"
+            tensorrt_cuda_major="$cuda_major"
+          fi
+          echo "tensorrt_cuda_version=$tensorrt_cuda_version" >> $GITHUB_OUTPUT
+          echo "tensorrt_cuda_major=$tensorrt_cuda_major" >> $GITHUB_OUTPUT
+          tensorrt_major_version="10.13.3"
+          tensorrt_minor_version="9"
+          tensorrt_version="${tensorrt_major_version}.${tensorrt_minor_version}"
+          echo "tensorrt_major_version=$tensorrt_major_version" >> $GITHUB_OUTPUT
+          echo "tensorrt_version=$tensorrt_version" >> $GITHUB_OUTPUT
+
+      - name: Install TensorRT (amd64)
+        shell: bash
+        if: matrix.platform == 'amd64'
+        run: |
+          mkdir -p /trt_download
+          pushd /trt_download
+          pwd
+          wget https://developer.nvidia.com/downloads/compute/machine-learning/tensorrt/${{ steps.config.outputs.tensorrt_major_version }}/tars/TensorRT-${{ steps.config.outputs.tensorrt_version }}.Linux.x86_64-gnu.cuda-${{ steps.config.outputs.tensorrt_cuda_version }}.tar.gz
+          tar -zxvf TensorRT-${{ steps.config.outputs.tensorrt_version }}.Linux.x86_64-gnu.cuda-${{ steps.config.outputs.tensorrt_cuda_version }}.tar.gz
+          pwd
+          popd
+          find /trt_download/TensorRT-${{ steps.config.outputs.tensorrt_version }} -name "NvInfer.h"
+          find /trt_download/TensorRT-${{ steps.config.outputs.tensorrt_version }} -name "NvInferRuntime.h"
+
+      - name: Install TensorRT (arm64)
+        shell: bash
+        if: matrix.platform == 'arm64'
+        run: |
+          mkdir -p /trt_download
+          pushd /trt_download
+          pwd
+          wget https://developer.nvidia.com/downloads/compute/machine-learning/tensorrt/${{ steps.config.outputs.tensorrt_major_version }}/tars/TensorRT-${{ steps.config.outputs.tensorrt_version }}.Linux.aarch64-gnu.cuda-13.0.tar.gz
+          tar -zxvf TensorRT-${{ steps.config.outputs.tensorrt_version }}.Linux.aarch64-gnu.cuda-13.0.tar.gz
+          pwd
+          popd
+          find /trt_download/TensorRT-${{ steps.config.outputs.tensorrt_version }} -name "NvInfer.h"
+          find /trt_download/TensorRT-${{ steps.config.outputs.tensorrt_version }} -name "NvInferRuntime.h"
+
+      - name: Get code
+        uses: actions/checkout@v4
+        with:
+          set-safe-directory: true
+
+      # Do this early to help validate user inputs (if present)
+      - name: Fetch assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        id: fetch-assets
+        run: |
+          bash .github/workflows/scripts/install_git_cli.sh
+          if [[ -n "${{ inputs.assets_repo }}" ]] && [[ -n "${{ inputs.assets_tag }}" ]]; then
+            # Fetch the assets into this directory
+            gh release download -R ${{ inputs.assets_repo }} ${{ inputs.assets_tag }}
+            ls
+          fi
+
+      - name: Get required CUDAQ version
+        id: get-cudaq-version
+        uses: ./.github/actions/get-cudaq-version
+
+      - name: Get CUDAQ code
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ steps.get-cudaq-version.outputs.repo }}
+          ref: ${{ steps.get-cudaq-version.outputs.ref }}
+          path: cudaq
+          set-safe-directory: true
+
+      - name: Build CUDAQ toolchain
+        run: |
+          .github/workflows/scripts/build_cudaq.sh --python-version ${{ matrix.python }} --cuda-version ${{ matrix.cuda_version }}
+
+      - name: Build CUDA-QX wheels
+        shell: bash
+        run: |
+          if [[ -n "${{ inputs.assets_repo }}" ]] && [[ -n "${{ inputs.assets_tag }}" ]]; then
+            # Extract the decoder that needs to be embedded in the wheel
+            mkdir -p tmp
+            tar -C tmp -xzvf nv-qldpc-decoder-${{ matrix.platform }}_ubuntu24.04_cuda${{ matrix.cuda_version }}_py${{ matrix.python }}_release.tar.gz
+            export QEC_EXTERNAL_DECODERS=$(pwd)/tmp/libcudaq-qec-nv-qldpc-decoder.so
+          fi
+          # This is needed to allow the "git rev-parse" commands in the build
+          # scripts to work.
+          git config --global --add safe.directory $GITHUB_WORKSPACE
+          .github/workflows/scripts/build_wheels.sh \
+              --cuda-version ${{ steps.config.outputs.cuda_major }} \
+              --cudaq-prefix /usr/local/cudaq \
+              --build-type ${{ inputs.build_type }} \
+              --python-version ${{ matrix.python }} \
+              --tensorrt-path /trt_download/TensorRT-${{ steps.config.outputs.tensorrt_version }} \
+              --version ${{ inputs.version || '0.99.99' }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-py${{ matrix.python }}-${{ matrix.platform }}-cu${{ steps.config.outputs.cuda_major }}
+          path: /wheels/**
+          retention-days: 14
+
+  build-cudaqx-metapackages:
+    name: Build CUDA-QX Meta Packages
+    if: ${{ !inputs.artifacts_from_run }}
+    runs-on: linux-amd64-cpu4 # No need to matrix this because it is a source distribution
+    container: ubuntu:24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          set-safe-directory: true
+
+      - name: Install requirements
+        shell: bash
+        run: |
+          apt update && apt install -y --no-install-recommends python3 python3-pip python3-venv
+          apt install -y --no-install-recommends ca-certificates
+          python3 -m pip install --break-system-packages build
+
+      - name: Build CUDA-QX Meta Packages
+        shell: bash
+        run: |
+          bash scripts/ci/build_metapackages.sh ${{ inputs.version || '0.99.99' }}
+          find libs -name dist | xargs ls -la
+          mkdir -p /metapackages
+          mv libs/{qec,solvers}/python/metapackages/dist/* /metapackages/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: metapackages
+          path: /metapackages/**
+          retention-days: 14
+
+  # Building the CUDA-Q wheels must be done outside of a container context, so
+  # this is a separate job.
+  build-cudaq-wheels:
+    name: Build CUDA-Q wheels
+    if: ${{ !inputs.artifacts_from_run && inputs.cudaq_wheels == 'Custom'}}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: ['amd64', 'arm64']
+        cuda_version: ['12.6', '13.0']
+    # Use 32 CPUs rather than 8 (above) because we are only spawning one job per
+    # platform rather than one job per Python version per platform.
+    runs-on: ${{ startsWith(github.repository, 'NVIDIA/cudaqx') && format('linux-{0}-cpu32', matrix.platform) || 'ubuntu-latest' }}
+    permissions:
+      actions: write
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Get code
+        uses: actions/checkout@v4
+        with:
+          set-safe-directory: true
+
+      - name: Configure
+        id: config
+        run: |
+          cuda_major=`echo ${{ matrix.cuda_version }} | cut -d . -f1`
+          echo "cuda_major=$cuda_major" >> $GITHUB_OUTPUT
+
+      - name: Get required CUDAQ version
+        id: get-cudaq-version
+        uses: ./.github/actions/get-cudaq-version
+
+      - name: Get CUDAQ wheels
+        uses: ./.github/actions/get-cudaq-wheels
+        with:
+          cuda_version: ${{ matrix.cuda_version }}
+          repo: ${{ steps.get-cudaq-version.outputs.repo }}
+          ref: ${{ steps.get-cudaq-version.outputs.ref }}
+          token: ${{ secrets.CUDAQ_ACCESS_TOKEN }}
+          save-build: true
+          platform: ${{ matrix.platform }}
+
+      - name: Upload CUDAQ wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: cudaq-wheels-${{ matrix.platform }}-cu${{ steps.config.outputs.cuda_major }}
+          path: /cudaq-wheels
+          retention-days: 14
+          if-no-files-found: error
+
+  test-cudaqx-wheels:
+    name: Test CUDA-QX wheels (CPU)
+    needs: [build-cudaqx-wheels, build-cudaq-wheels]
+    if: ${{ !failure() && !cancelled() }}
+    runs-on: linux-${{ matrix.platform }}-cpu4
+    container: ubuntu:24.04
+    permissions:
+      actions: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11', '3.12', '3.13']
+        platform: ['amd64', 'arm64']
+        cuda_version: ['12.6'] # intentionally not 13.0 because this is CPU.
+  
+    steps:
+      - name: Get code
+        uses: actions/checkout@v4
+        with:
+          set-safe-directory: true
+
+      - name: Configure
+        id: config
+        run: |
+          cuda_major=`echo ${{ matrix.cuda_version }} | cut -d . -f1`
+          echo "cuda_major=$cuda_major" >> $GITHUB_OUTPUT
+          echo "run_id_to_use=${{ inputs.artifacts_from_run || github.run_id }}" >> $GITHUB_OUTPUT
+          if [ -n "${{ inputs.artifacts_from_run }}" ]; then
+            echo "Using artifacts from workflow id ${{ inputs.artifacts_from_run }}" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "Using artifacts from this run (id ${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+          fi
+  
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+  
+      - name: Install requirements
+        shell: bash
+        run: |
+          apt update
+          apt install -y --no-install-recommends libgfortran5 unzip openmpi-bin libopenmpi3
+          apt install -y --no-install-recommends ca-certificates
+          # If this is x86_64, then install libquadmath0. This is normally
+          # installed by Ubuntu Python, but the action/setup-python package does
+          # not install it.
+          if [ "$(uname -m)" == "x86_64" ]; then
+            apt install -y --no-install-recommends libquadmath0
+          fi
+  
+      - name: Download CUDA-Q wheels
+        if: ${{ inputs.cudaq_wheels == 'Custom' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: cudaq-wheels-${{ matrix.platform }}-cu${{ steps.config.outputs.cuda_major }}
+          path: /cudaq-wheels
+          run-id: ${{ steps.config.outputs.run_id_to_use }}
+          github-token: ${{ inputs.artifacts_from_run && secrets.WORKFLOW_TOKEN || github.token }}
+
+      - name: Download CUDA-QX Meta Packages
+        uses: actions/download-artifact@v4
+        with:
+          name: metapackages
+          path: /metapackages
+          run-id: ${{ steps.config.outputs.run_id_to_use }}
+          github-token: ${{ inputs.artifacts_from_run && secrets.WORKFLOW_TOKEN || github.token }}
+
+      - name: Download CUDA-QX wheels
+        uses: actions/download-artifact@v4
+        with:
+          name: wheels-py${{ matrix.python }}-${{ matrix.platform }}-cu${{ steps.config.outputs.cuda_major }}
+          path: /wheels
+          run-id: ${{ steps.config.outputs.run_id_to_use }}
+          github-token: ${{ inputs.artifacts_from_run && secrets.WORKFLOW_TOKEN || github.token }}
+  
+      - name: Test wheels
+        run: |
+          # If using Custom CUDA-Q wheels, then /cudaq-wheels will exist.
+          # Otherwise, the directory will not exist, and that is ok.
+          WHEEL_DIRS="/wheels /metapackages"
+          if [ "${{ inputs.cudaq_wheels == 'Custom' }}" == "true" ]; then
+            WHEEL_DIRS+=" /cudaq-wheels"
+          fi
+          for f in $WHEEL_DIRS; do
+            echo "ls $f"
+            ls $f
+          done
+          bash scripts/ci/test_wheels.sh \
+             ${{ matrix.python }} \
+             ${{ matrix.platform }} \
+             ${{ matrix.cuda_version }} \
+             ${{ inputs.cudaq_wheels == 'Custom' && '0.99.99' || 'SKIP' }} \
+             ${{ inputs.version || '0.99.99' }}
+  
+  test-wheels-gpu:
+    name: Test CUDA-QX wheels (GPU)
+    needs: [build-cudaqx-wheels, build-cudaq-wheels]
+    if: ${{ !failure() && !cancelled() }}
+    runs-on: linux-${{ matrix.runner.arch }}-gpu-${{ matrix.runner.gpu }}-latest-1
+    container:
+      image: nvidia/cuda:${{ matrix.cuda_version }}.0-base-ubuntu24.04
+      # Enable this if you want to collect core files. (You may might to enable
+      # Debug builds if you're doing this.)
+      #options: --privileged --ulimit core=-1 --security-opt seccomp=unconfined
+      env:
+        NVIDIA_VISIBLE_DEVICES: ${{ env.NVIDIA_VISIBLE_DEVICES }}
+    permissions:
+      actions: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [
+          { arch: arm64, gpu: a100 },
+          { arch: amd64, gpu: a100 },
+        ]
+        python: ['3.11', '3.12', '3.13']
+        cuda_version: ['12.6', '13.0']
+  
+    steps:
+
+      - name: Install git for LFS
+        shell: bash
+        run: |
+          apt update
+          apt install -y --no-install-recommends git git-lfs
+
+      - name: Get code
+        uses: actions/checkout@v4
+        with:
+          set-safe-directory: true
+          lfs: true # download assets file(s) for TRT tests
+ 
+      - name: Configure
+        id: config
+        run: |
+          cuda_major=`echo ${{ matrix.cuda_version }} | cut -d . -f1`
+          echo "cuda_major=$cuda_major" >> $GITHUB_OUTPUT
+          echo "run_id_to_use=${{ inputs.artifacts_from_run || github.run_id }}" >> $GITHUB_OUTPUT
+          if [ -n "${{ inputs.artifacts_from_run }}" ]; then
+            echo "Using artifacts from workflow id ${{ inputs.artifacts_from_run }}" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "Using artifacts from this run (id ${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Install Python ${{ matrix.python }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+  
+      - name: Install requirements
+        shell: bash
+        run: |
+          apt update
+          apt install -y --no-install-recommends libgfortran5 unzip openmpi-bin libopenmpi3
+          apt install -y --no-install-recommends ca-certificates
+          # If this is x86_64, then install libquadmath0. This is normally
+          # installed by Ubuntu Python, but the action/setup-python package does
+          # not install it.
+          if [ "$(uname -m)" == "x86_64" ]; then
+            apt install -y --no-install-recommends libquadmath0
+          fi
+          #echo 'core.%p' | tee /proc/sys/kernel/core_pattern
+          #echo "Running cat /proc/sys/kernel/core_pattern"
+          #cat /proc/sys/kernel/core_pattern
+  
+      - name: Download CUDA-Q wheels
+        if: ${{ inputs.cudaq_wheels == 'Custom' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: cudaq-wheels-${{ matrix.runner.arch }}-cu${{ steps.config.outputs.cuda_major }}
+          path: /cudaq-wheels
+          run-id: ${{ steps.config.outputs.run_id_to_use }}
+          github-token: ${{ inputs.artifacts_from_run && secrets.WORKFLOW_TOKEN || github.token }}
+
+      - name: Download CUDA-QX Meta Packages
+        uses: actions/download-artifact@v4
+        with:
+          name: metapackages
+          path: /metapackages
+          run-id: ${{ steps.config.outputs.run_id_to_use }}
+          github-token: ${{ inputs.artifacts_from_run && secrets.WORKFLOW_TOKEN || github.token }}
+
+      - name: Download CUDA-QX wheels
+        uses: actions/download-artifact@v4
+        with:
+          name: wheels-py${{ matrix.python }}-${{ matrix.runner.arch }}-cu${{ steps.config.outputs.cuda_major }}
+          path: /wheels
+          run-id: ${{ steps.config.outputs.run_id_to_use }}
+          github-token: ${{ inputs.artifacts_from_run && secrets.WORKFLOW_TOKEN || github.token }}
+  
+      - name: Test wheels
+        run: |
+          # If using Custom CUDA-Q wheels, then /cudaq-wheels will exist.
+          # Otherwise, the directory will not exist, and that is ok.
+          WHEEL_DIRS="/wheels /metapackages"
+          if [ "${{ inputs.cudaq_wheels == 'Custom' }}" == "true" ]; then
+            WHEEL_DIRS+=" /cudaq-wheels"
+          fi
+          for f in $WHEEL_DIRS; do
+            echo "ls $f"
+            ls $f
+          done
+          bash scripts/ci/test_wheels.sh \
+             ${{ matrix.python }} \
+             ${{ matrix.runner.arch }} \
+             ${{ matrix.cuda_version }} \
+             ${{ inputs.cudaq_wheels == 'Custom' && '0.99.99' || 'SKIP' }} \
+             ${{ inputs.version || '0.99.99' }}
+
+      # - name: Upload any core files
+      #   if: success() || failure()
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: core-files-${{ matrix.python }}-arm64
+      #     path: core.*
