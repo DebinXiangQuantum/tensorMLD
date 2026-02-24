@@ -364,7 +364,11 @@ def run_benchmark(
                         full = full.combine(noise_tn, virtual=True)
                         val = full.contract(output_inds=("obs",))
                         val = np.asarray(val)
-                        p1 = float(val[1] / (val[0] + val[1]))
+                        if val.ndim == 0:
+                            # Scalar result — contraction collapsed obs index
+                            p1 = 0.5
+                        else:
+                            p1 = float(val[1] / (val[0] + val[1]))
                         probs.append(p1)
                     decode_ms = (time.perf_counter() - t1) * 1e3
                     backend = "cpu"

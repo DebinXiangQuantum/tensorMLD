@@ -25,9 +25,9 @@ from .tensor_network_utils.tensor_network_factory import (
     tensor_network_from_logical_observable, tensor_network_from_parity_check,
     tensor_network_from_single_syndrome, tensor_network_from_syndrome_batch)
 from .tensor_network_utils.mps_decoder_core import (
-    OneDChainMPS, compile_to_1d_chain, make_parametrized_syndrome_network,
-    set_global_decoder_config, timed_chain_decode,
-    _validate_threshold_window)
+    CompressedTNDecoder, OneDChainMPS, compile_to_1d_chain,
+    make_parametrized_syndrome_network, set_global_decoder_config,
+    timed_chain_decode, _validate_threshold_window)
 
 # Global defaults used by this decoder. They can be updated via
 # `set_global_mps_decoder_config`.
@@ -242,10 +242,6 @@ class TensorNetworkMPSDecoder:
                                                         virtual=True)
         self.full_param_tn = self.full_param_tn.combine(self.noise_model,
                                                         virtual=True)
-        if contract_noise_model:
-            for ind in self.error_inds:
-                self.full_param_tn.contract_ind(ind)
-
         preserve_inds = set(self.syndrome_param_inds + self.logical_obs_inds)
         compile_result = compile_to_1d_chain(
             tn=self.full_param_tn.copy(),
@@ -258,6 +254,7 @@ class TensorNetworkMPSDecoder:
             verbose=self.verbose,
         )
         self._compressed_chain = compile_result.chain
+        self._compressed_tn = compile_result.compressed_tn
         self.offline_stats = compile_result.offline_stats
         if self.verbose:
             print(
@@ -267,7 +264,8 @@ class TensorNetworkMPSDecoder:
                 f"max_bond={self.offline_stats.max_bond_dim}, "
                 f"steps={self.offline_stats.steps}, "
                 f"trunc_err={self.offline_stats.truncation_error:.3e}, "
-                f"chain_ready={self._compressed_chain is not None}")
+                f"chain_ready={self._compressed_chain is not None}, "
+                f"compressed_tn_ready={self._compressed_tn is not None}")
 
     def replace_logical_observable(
             self,
@@ -413,46 +411,77 @@ class TensorNetworkMPSDecoder:
             return False
 
     def decode(self, syndrome: list[float]) -> "qec.DecoderResult":
-        """Decode syndrome.  Returns K probabilities (one per logical observable)."""
+        """Decode syndrome.  Returns K probabilities (one per logical observable).
+
+        Uses three backends in priority order:
+        1. OneDChainMPS — fastest, available when graph is a 1D path.
+        2. CompressedTNDecoder — fully contracted MPS, works for any QLDPC code.
+        3. Exact contraction fallback — slowest, uses full TN contraction.
+        """
         assert len(syndrome) == len(self.check_inds), (
             f"Syndrome length {len(syndrome)} does not match check count "
             f"{len(self.check_inds)}.")
         assert all(isinstance(x, float) for x in syndrome), (
             "Syndrome values must be float.")
 
-        if self._compressed_chain is None:
+        syndrome_values = {
+            label: float(syndrome[i])
+            for i, label in enumerate(self.syndrome_param_inds)
+        }
+
+        # Path 1: 1D chain MPS (fastest)
+        if self._compressed_chain is not None:
+            _, marginals, latency_ms = timed_chain_decode(
+                self._compressed_chain,
+                syndrome_values=syndrome_values,
+                use_gpu=self._online_use_gpu(),
+                low_threshold=self.low_threshold,
+                high_threshold=self.high_threshold,
+                max_rounds=self.max_conditional_rounds,
+            )
+            probs = [float(marginals.get(label, 0.5))
+                     for label in self.logical_obs_inds]
+            self.last_decode_timing = {
+                "backend": "cupy" if self._online_use_gpu() else "numpy",
+                "method": "1d_chain",
+                "latency_ms": latency_ms,
+            }
             if self.verbose:
-                print("Compressed chain not available; using exact fallback.")
-            probs = self._decode_exact_fallback(syndrome)
-            self.last_decode_timing = {"backend": "exact_fallback"}
+                print(
+                    f"[online/1d_chain] p(logical=1)={probs}, "
+                    f"latency={latency_ms:.3f} ms")
             result = qec.DecoderResult()
             result.converged = True
             result.result = probs
             return result
 
-        syndrome_values = {
-            label: float(syndrome[i])
-            for i, label in enumerate(self.syndrome_param_inds)
-        }
-        _, marginals, latency_ms = timed_chain_decode(
-            self._compressed_chain,
-            syndrome_values=syndrome_values,
-            use_gpu=self._online_use_gpu(),
-            low_threshold=self.low_threshold,
-            high_threshold=self.high_threshold,
-            max_rounds=self.max_conditional_rounds,
-        )
-        probs = [float(marginals.get(label, 0.5))
-                 for label in self.logical_obs_inds]
-        self.last_decode_timing = {
-            "backend": "cupy" if self._online_use_gpu() else "numpy",
-            "latency_ms": latency_ms,
-        }
-        if self.verbose:
-            print(
-                f"[online] p(logical=1)={probs}, latency={latency_ms:.3f} ms, "
-                f"thresholds=({self.low_threshold:.3f}, {self.high_threshold:.3f})")
+        # Path 2: Compressed TN decoder (works for QLDPC codes)
+        if self._compressed_tn is not None:
+            t0 = time.perf_counter()
+            _, marginals = self._compressed_tn.decode_logicals(
+                syndrome_values=syndrome_values)
+            latency_ms = (time.perf_counter() - t0) * 1e3
+            probs = [float(marginals.get(label, 0.5))
+                     for label in self.logical_obs_inds]
+            self.last_decode_timing = {
+                "backend": "numpy",
+                "method": "compressed_tn",
+                "latency_ms": latency_ms,
+            }
+            if self.verbose:
+                print(
+                    f"[online/compressed_tn] p(logical=1)={probs}, "
+                    f"latency={latency_ms:.3f} ms")
+            result = qec.DecoderResult()
+            result.converged = True
+            result.result = probs
+            return result
 
+        # Path 3: Exact contraction fallback (slowest)
+        if self.verbose:
+            print("No compressed decoder available; using exact fallback.")
+        probs = self._decode_exact_fallback(syndrome)
+        self.last_decode_timing = {"backend": "exact_fallback", "method": "exact"}
         result = qec.DecoderResult()
         result.converged = True
         result.result = probs
@@ -504,6 +533,8 @@ class TensorNetworkMPSDecoder:
             label: float(syndrome[i])
             for i, label in enumerate(self.syndrome_param_inds)
         }
+
+        # Path 1: 1D chain
         if self._compressed_chain is not None:
             for _ in range(max(0, warmup)):
                 timed_chain_decode(
@@ -526,12 +557,31 @@ class TensorNetworkMPSDecoder:
                 )
                 times.append(latency_ms)
             return {
+                "method": "1d_chain",
                 "avg_ms": float(np.mean(times)),
                 "min_ms": float(np.min(times)),
                 "max_ms": float(np.max(times)),
             }
 
-        # Fallback path timing.
+        # Path 2: Compressed TN decoder
+        if self._compressed_tn is not None:
+            for _ in range(max(0, warmup)):
+                self._compressed_tn.decode_logicals(
+                    syndrome_values=syndrome_values)
+            times = []
+            for _ in range(repeats):
+                t0 = time.perf_counter()
+                self._compressed_tn.decode_logicals(
+                    syndrome_values=syndrome_values)
+                times.append((time.perf_counter() - t0) * 1e3)
+            return {
+                "method": "compressed_tn",
+                "avg_ms": float(np.mean(times)),
+                "min_ms": float(np.min(times)),
+                "max_ms": float(np.max(times)),
+            }
+
+        # Path 3: Exact fallback
         for _ in range(max(0, warmup)):
             self._decode_exact_fallback(syndrome)
         times = []
@@ -540,6 +590,7 @@ class TensorNetworkMPSDecoder:
             self._decode_exact_fallback(syndrome)
             times.append((time.perf_counter() - t0) * 1e3)
         return {
+            "method": "exact_fallback",
             "avg_ms": float(np.mean(times)),
             "min_ms": float(np.min(times)),
             "max_ms": float(np.max(times)),
