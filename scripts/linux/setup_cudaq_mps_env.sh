@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+
 set -euo pipefail
 
 # Usage:
@@ -11,8 +12,7 @@ echo "[setup] workspace: ${WORKSPACE}"
 echo "[setup] env path : ${ENV_PATH}"
 
 if ! command -v uv >/dev/null 2>&1; then
-  echo "[setup][error] uv not found. Install uv first: https://docs.astral.sh/uv/"
-  exit 1
+  echo "[setup][error] uv not found. Install uv first"
 fi
 
 if ! command -v nvidia-smi >/dev/null 2>&1; then
@@ -28,10 +28,10 @@ uv venv "${ENV_PATH}" --python 3.12
 # shellcheck disable=SC1090
 source "${ENV_PATH}/bin/activate"
 
-python -m pip install -U pip setuptools wheel
+uv pip install -U pip setuptools wheel
 
 # CUDA-Q QEC + decoder dependencies + profiling dependencies.
-python -m pip install -i https://pypi.org/simple \
+uv pip install -i https://pypi.org/simple \
   cudaq-qec \
   numpy scipy quimb opt_einsum cotengra \
   pynvml pyyaml psutil tqdm
@@ -40,7 +40,7 @@ python -m pip install -i https://pypi.org/simple \
 # This is optional for users who only run BB or matrix-based cases.
 if [[ "${INSTALL_TORCH:-1}" == "1" ]]; then
   echo "[setup] installing torch (for GND ldpc_* TB code loading)..."
-  if ! python -m pip install -i https://pypi.org/simple torch; then
+  if ! uv pip install -i https://pypi.org/simple torch; then
     echo "[setup][warn] torch install failed; TB codegen cases may be skipped."
   fi
 fi

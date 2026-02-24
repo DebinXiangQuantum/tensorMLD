@@ -535,6 +535,85 @@ class OfflineCompressionResult:
     stats: OfflineCompressionStats
 
 
+def _cut_bondim_opt(
+        nodes: dict[int, Any],
+        i: int,
+        idx_k_in_i: int,
+        Dmax: int,
+        cutoff: float = 1e-15) -> float:
+    """Truncate the physical bond dimension at a specific edge.
+
+    After merging duplicate edges, the bond dimension between nodes i and k
+    can grow large.  This function performs QR + SVD to reduce it back to
+    at most *Dmax*, returning the total truncation error.
+
+    This mirrors ``cut_bondim_opt`` from ``catn/tensor_network_np.py``.
+    """
+    k = nodes[i].neighbor[idx_k_in_i]
+    idx_i_in_k = int(nodes[k].find_neighbor(i))
+    if idx_i_in_k < 0:
+        return 0.0
+
+    # Canonicalise both nodes towards the connecting edge
+    nodes[i].cano_to(idx_k_in_i)
+    nodes[k].cano_to(idx_i_in_k)
+
+    core_i = nodes[i].mps[idx_k_in_i]
+    core_k = nodes[k].mps[idx_i_in_k]
+
+    da_l, d, da_r = core_i.shape
+    db_l, d2, db_r = core_k.shape
+    assert d == d2, f"bond dim mismatch: {d} vs {d2}"
+
+    mati = core_i.transpose(0, 2, 1).reshape(da_l * da_r, d)
+    matk = core_k.transpose(0, 2, 1).reshape(db_l * db_r, d)
+
+    # Optional QR to reduce SVD size
+    flag_left = mati.shape[0] > mati.shape[1]
+    if flag_left:
+        qi, ri = np.linalg.qr(mati)
+    else:
+        ri = mati
+
+    flag_right = matk.shape[0] > matk.shape[1]
+    if flag_right:
+        qk, rk = np.linalg.qr(matk)
+    else:
+        rk = matk
+
+    merged = ri @ rk.T
+    U, s, Vt = np.linalg.svd(merged, full_matrices=False)
+    V = Vt.T
+
+    s_eff = s[s > cutoff]
+    if len(s_eff) == 0:
+        s_eff = s[:1]
+
+    error = float(s[len(s_eff):].sum())
+    myd = min(len(s_eff), Dmax) if Dmax > 0 else len(s_eff)
+    if myd == 0:
+        myd = 1
+
+    error += float(s_eff[myd:].sum())
+    s_eff = s_eff[:myd]
+    s_diag = np.diag(np.sqrt(s_eff))
+    U = U[:, :myd]
+    V = V[:, :myd]
+    new_mati = U @ s_diag
+    new_matk = (s_diag @ V.T).T
+
+    if flag_left:
+        new_mati = qi @ new_mati
+    if flag_right:
+        new_matk = qk @ new_matk
+
+    nodes[i].mps[idx_k_in_i] = new_mati.reshape(
+        da_l, da_r, myd).transpose(0, 2, 1)
+    nodes[k].mps[idx_i_in_k] = new_matk.reshape(
+        db_l, db_r, myd).transpose(0, 2, 1)
+    return error
+
+
 def compress_until_preserved(
         nodes: dict[int, Any],
         preserved_nodes: set[int],
@@ -609,6 +688,12 @@ def compress_until_preserved(
             m_err = float(nodes[i].merge(k, cross=False))
             step_merge_err += m_err
             truncation_error += m_err
+            # Truncate the merged bond dimension (critical for 1D chain)
+            idx_k_in_i = int(nodes[i].find_neighbor(k))
+            if idx_k_in_i >= 0 and chi > 0:
+                cut_err = _cut_bondim_opt(nodes, i, idx_k_in_i, Dmax=chi)
+                step_merge_err += cut_err
+                truncation_error += cut_err
 
         step_compress_err = 0.0
         if compress_each_step:
@@ -1016,9 +1101,192 @@ def extract_1d_chain(active_nodes: set[int],
     )
 
 
+class CompressedTNDecoder:
+    """Online decoder using a fully-contracted compressed MPS.
+
+    After offline contraction-swap-merge removes non-preserved nodes, we
+    continue contracting ALL remaining edges (including between preserved
+    nodes) to produce a **single MPS** whose open indices are the syndrome
+    parameters and logical observables.
+
+    Online decode substitutes syndrome values into the single MPS and reads
+    the logical marginal directly — no further graph contraction needed.
+    """
+
+    def __init__(
+        self,
+        active_nodes: set[int],
+        nodes: dict[int, Any],
+        syndrome_label_set: set[str],
+        logical_label_set: set[str],
+        chi: int = 32,
+    ):
+        # Continue contracting all remaining edges to a single node
+        remaining = set(active_nodes)
+        while True:
+            edges = _collect_internal_edges(remaining, nodes)
+            if not edges:
+                break
+            # Greedy: pick cheapest edge
+            i, j = min(edges, key=lambda e: _edge_cost(nodes, e[0], e[1]))
+            if nodes[j].order() > nodes[i].order():
+                i, j = j, i
+
+            idx_j_in_i = int(nodes[i].find_neighbor(j))
+            idx_i_in_j = int(nodes[j].find_neighbor(i))
+            if idx_j_in_i < 0 or idx_i_in_j < 0:
+                break
+
+            # Reverse optimisation
+            if idx_j_in_i < len(nodes[i].neighbor) // 2:
+                nodes[i].reverse()
+                idx_j_in_i = int(nodes[i].find_neighbor(j))
+            if idx_i_in_j >= len(nodes[j].neighbor) // 2:
+                nodes[j].reverse()
+                idx_i_in_j = int(nodes[j].find_neighbor(i))
+
+            nodes[i].delete_neighbor(j)
+            neighbors_j = list(nodes[j].neighbor)
+            duplicate_neighbors: list[int] = []
+
+            for pos, k in enumerate(neighbors_j):
+                if pos == idx_i_in_j:
+                    continue
+                nodes[i].add_neighbor(k)
+                if isinstance(k, int) and k in remaining:
+                    idx_i_in_k = int(nodes[k].find_neighbor(i))
+                    idx_j_in_k = int(nodes[k].delete_neighbor(j))
+                    nodes[k].add_neighbor(i, idx_j_in_k)
+                    if idx_i_in_k > -1:
+                        duplicate_neighbors.append(k)
+                        nodes[k].merge(i, cross=idx_i_in_k > idx_j_in_k)
+
+            nodes[i].eat(nodes[j], idx_j_in_i, idx_i_in_j)
+
+            for k in duplicate_neighbors:
+                nodes[i].merge(k, cross=False)
+                idx_k_in_i = int(nodes[i].find_neighbor(k))
+                if idx_k_in_i >= 0 and chi > 0:
+                    _cut_bondim_opt(nodes, i, idx_k_in_i, Dmax=chi)
+
+            nodes[i].compress_opt()
+            nodes[j].clear()
+            remaining.remove(j)
+
+        # Now there should be a single node (or very few)
+        final_id = next(iter(remaining))
+        final_node = nodes[final_id]
+
+        # Map open indices to syndrome/logical labels
+        self.syndrome_labels: list[str] = []
+        self.logical_labels: list[str] = []
+        self._syndrome_positions: dict[str, int] = {}
+        self._logical_positions: dict[str, int] = {}
+
+        for pos, nb in enumerate(final_node.neighbor):
+            if isinstance(nb, str):
+                label = out_token_to_index(nb)
+                if label in syndrome_label_set:
+                    self.syndrome_labels.append(label)
+                    self._syndrome_positions[label] = pos
+                elif label in logical_label_set:
+                    self.logical_labels.append(label)
+                    self._logical_positions[label] = pos
+
+        self._mps = final_node.mps
+        self._neighbor = list(final_node.neighbor)
+
+    def decode_logicals(
+        self,
+        syndrome_values: dict[str, float],
+        use_gpu: bool = False,
+    ) -> tuple[dict[str, int], dict[str, float]]:
+        """Decode by substituting syndrome values into fully-contracted MPS."""
+        marginals: dict[str, float] = {}
+        assignments: dict[str, int] = {}
+
+        for log_label in self.logical_labels:
+            prob = self._marginal_for(log_label, syndrome_values)
+            marginals[log_label] = prob
+            assignments[log_label] = 1 if prob >= 0.5 else 0
+
+        return assignments, marginals
+
+    def _marginal_for(
+        self, logical_label: str, syndrome_values: dict[str, float]
+    ) -> float:
+        """Compute P(logical=1 | syndrome) via MPS contraction."""
+        log0 = self._contract_fixed(logical_label, 0, syndrome_values)
+        log1 = self._contract_fixed(logical_label, 1, syndrome_values)
+
+        if math.isinf(log0) and math.isinf(log1):
+            return 0.5
+        if log1 > log0:
+            return 1.0 / (1.0 + math.exp(log0 - log1))
+        return math.exp(log1 - log0) / (1.0 + math.exp(log1 - log0))
+
+    def _contract_fixed(
+        self,
+        logical_label: str,
+        logical_value: int,
+        syndrome_values: dict[str, float],
+    ) -> float:
+        """Contract single MPS with fixed syndrome+logical values.
+
+        Each MPS core at position `pos` has shape (left, phys, right).
+        The physical index corresponds to the open index at that position
+        (syndrome parameter, logical observable, or other open label).
+        We substitute syndrome/logical values and multiply the resulting
+        matrices left-to-right, returning log|trace(product)|.
+        """
+        log_scale = 0.0
+        acc = None  # Running matrix product
+
+        for pos, core in enumerate(self._mps):
+            # core shape: (left, phys, right)
+            nb = self._neighbor[pos]
+            if isinstance(nb, str):
+                label = out_token_to_index(nb)
+                if label in self._syndrome_positions:
+                    p = float(syndrome_values.get(label, 0.0))
+                    vec = np.array([1.0 - p, p], dtype=core.dtype)
+                    mat = np.tensordot(core, vec, axes=(1, 0))  # (left, right)
+                elif label == logical_label:
+                    mat = core[:, logical_value, :]  # (left, right)
+                elif label in self._logical_positions:
+                    mat = core.sum(axis=1)  # sum over unspecified logical
+                else:
+                    mat = core.sum(axis=1)
+            else:
+                # Internal — shouldn't exist after full contraction
+                mat = core.sum(axis=1)
+
+            if acc is None:
+                acc = mat
+            else:
+                acc = acc @ mat
+
+            # Numerical stability: rescale
+            norm = float(np.max(np.abs(acc)))
+            if norm > 0:
+                acc = acc / norm
+                log_scale += math.log(norm)
+
+        if acc is None:
+            return -math.inf
+
+        if acc.ndim == 2:
+            val = float(np.abs(np.trace(acc)))
+        else:
+            val = float(np.abs(np.sum(acc)))
+
+        return log_scale + math.log(val) if val > 0.0 else -math.inf
+
+
 @dataclass
 class CompileResult:
     chain: Optional[OneDChainMPS]
+    compressed_tn: Optional[CompressedTNDecoder]
     offline_stats: OfflineCompressionStats
 
 
@@ -1052,7 +1320,22 @@ def compile_to_1d_chain(
         syndrome_label_set=syndrome_inds,
         logical_label_set=logical_inds,
     )
-    return CompileResult(chain=chain, offline_stats=offline.stats)
+
+    # Build compressed TN decoder as fallback when 1D chain isn't available
+    compressed_tn: Optional[CompressedTNDecoder] = None
+    if chain is None:
+        compressed_tn = CompressedTNDecoder(
+            active_nodes=offline.active_nodes,
+            nodes=offline.nodes,
+            syndrome_label_set=syndrome_inds,
+            logical_label_set=logical_inds,
+        )
+
+    return CompileResult(
+        chain=chain,
+        compressed_tn=compressed_tn,
+        offline_stats=offline.stats,
+    )
 
 
 def timed_chain_decode(chain: OneDChainMPS,

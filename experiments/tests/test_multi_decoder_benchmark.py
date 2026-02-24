@@ -101,10 +101,10 @@ def _build_tn_and_compile(
     noise_p: float,
     chi: int = 32,
     verbose: bool = False,
-) -> tuple[Any, Any]:
+) -> tuple[Any, Any, Any]:
     """Build parameterised TN and compile to 1D chain.
 
-    Returns (chain, offline_stats).
+    Returns (chain, compressed_tn, offline_stats).
     """
     num_checks, num_errors = H.shape
     check_inds = [f"s_{i}" for i in range(num_checks)]
@@ -138,8 +138,6 @@ def _build_tn_and_compile(
     full_tn = full_tn.combine(logical_tn, virtual=True)
     full_tn = full_tn.combine(param_syn_tn, virtual=True)
     full_tn = full_tn.combine(noise_tn, virtual=True)
-    for ind in error_inds:
-        full_tn.contract_ind(ind)
 
     preserve_inds = set(syn_param_inds + logical_obs_inds)
     result = core.compile_to_1d_chain(
@@ -150,7 +148,7 @@ def _build_tn_and_compile(
         chi=chi,
         verbose=verbose,
     )
-    return result.chain, result.offline_stats
+    return result.chain, result.compressed_tn, result.offline_stats
 
 
 def _decode_mps_cpu(
@@ -262,7 +260,7 @@ def run_benchmark(
                 backend = "gpu"
             else:
                 # CPU path via core module
-                chain, stats = _build_tn_and_compile(H, logical_row, noise_p, chi=chi)
+                chain, compressed_tn, stats = _build_tn_and_compile(H, logical_row, noise_p, chi=chi)
                 init_ms = (time.perf_counter() - t0) * 1e3
                 if chain is not None:
                     probs = []
@@ -270,35 +268,15 @@ def run_benchmark(
                     for i in range(shots):
                         probs.append(_decode_mps_cpu(chain, syndromes[i], num_checks))
                     decode_ms = (time.perf_counter() - t1) * 1e3
-                else:
-                    # Chain extraction failed; use exact quimb contraction
-                    check_inds_ = [f"s_{i}" for i in range(num_checks)]
-                    error_inds_ = [f"e_{i}" for i in range(num_errors)]
-                    code_tn_ = factory.tensor_network_from_parity_check(
-                        H, col_inds=error_inds_, row_inds=check_inds_)
-                    l2d = logical_row.reshape(1, -1).astype(np.float64)
-                    log_tn_ = factory.tensor_network_from_parity_check(
-                        l2d, col_inds=error_inds_, row_inds=["l_0"], tags=["LOG_0"])
-                    log_tn_ = log_tn_.combine(factory.tensor_network_from_logical_observable(
-                        l2d, ["l_0"], ["obs"], ["LOG_0"]), virtual=True)
-                    noise_tn_ = TensorNetwork([Tensor(
-                        data=np.array([1.0-noise_p, noise_p]),
-                        inds=(error_inds_[j],), tags=oset([f"NOISE_{j}"]))
-                        for j in range(num_errors)])
+                elif compressed_tn is not None:
+                    # Use CompressedTNDecoder when chain extraction fails
                     probs = []
                     t1 = time.perf_counter()
                     for i in range(shots):
-                        syn_ts = [Tensor(
-                            data=float(syndromes[i,j])*np.array([1.,-1.])+(1.-float(syndromes[i,j]))*np.array([1.,1.]),
-                            inds=(check_inds_[j],), tags=oset([f"SYN_{j}"]))
-                            for j in range(num_checks)]
-                        full = TensorNetwork()
-                        full = full.combine(code_tn_, virtual=True)
-                        full = full.combine(log_tn_, virtual=True)
-                        full = full.combine(TensorNetwork(syn_ts), virtual=True)
-                        full = full.combine(noise_tn_, virtual=True)
-                        val = np.asarray(full.contract(output_inds=("obs",)))
-                        probs.append(float(val[1]/(val[0]+val[1])))
+                        syn_vals = {f"syn_param_{j}": float(syndromes[i, j])
+                                    for j in range(num_checks)}
+                        _, marginals = compressed_tn.decode_logicals(syndrome_values=syn_vals)
+                        probs.append(float(marginals.get("obs", 0.5)))
                     decode_ms = (time.perf_counter() - t1) * 1e3
                 backend = "cpu"
 

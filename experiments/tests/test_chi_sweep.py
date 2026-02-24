@@ -108,8 +108,6 @@ def _build_parameterised_tn(
     full_tn = full_tn.combine(log_tn, virtual=True)
     full_tn = full_tn.combine(param_syn_tn, virtual=True)
     full_tn = full_tn.combine(noise_tn, virtual=True)
-    for ind in error_inds:
-        full_tn.contract_ind(ind)
 
     return full_tn, syn_param_inds, logical_obs_inds
 
@@ -119,8 +117,11 @@ def _compile_chain_cpu(
     syn_param_inds: list[str],
     logical_obs_inds: list[str],
     chi: int,
-) -> tuple[Any, Any]:
-    """Compile TN to 1D chain with given chi (CPU path)."""
+) -> tuple[Any, Any, Any]:
+    """Compile TN to 1D chain with given chi (CPU path).
+
+    Returns (chain, compressed_tn, offline_stats).
+    """
     preserve = set(syn_param_inds + logical_obs_inds)
     result = core.compile_to_1d_chain(
         tn=full_tn.copy(),
@@ -129,7 +130,7 @@ def _compile_chain_cpu(
         logical_inds=set(logical_obs_inds),
         chi=chi,
     )
-    return result.chain, result.offline_stats
+    return result.chain, result.compressed_tn, result.offline_stats
 
 
 def _decode_shots_cpu(
@@ -147,48 +148,17 @@ def _decode_shots_cpu(
     return probs, total_ms
 
 
-def _decode_shots_exact_cpu(
-    H: np.ndarray, logical_row: np.ndarray, noise_p: float,
-    syndromes: np.ndarray,
+def _decode_shots_compressed_tn(
+    compressed_tn, syndromes: np.ndarray, num_checks: int
 ) -> tuple[np.ndarray, float]:
-    """Decode via exact quimb contraction (CPU fallback when chain is None)."""
-    num_checks, num_errors = H.shape
-    check_inds = [f"s_{i}" for i in range(num_checks)]
-    error_inds = [f"e_{i}" for i in range(num_errors)]
-
-    code_tn = factory.tensor_network_from_parity_check(
-        H.astype(np.float64), col_inds=error_inds, row_inds=check_inds)
-    logical_2d = logical_row.reshape(1, -1).astype(np.float64)
-    log_tn = factory.tensor_network_from_parity_check(
-        logical_2d, col_inds=error_inds, row_inds=["l_0"], tags=["LOG_0"])
-    log_tn = log_tn.combine(
-        factory.tensor_network_from_logical_observable(
-            logical_2d, ["l_0"], ["obs"], ["LOG_0"]),
-        virtual=True)
-    noise_ts = [Tensor(
-        data=np.array([1.0 - noise_p, noise_p]),
-        inds=(error_inds[j],), tags=oset([f"NOISE_{j}"]))
-        for j in range(num_errors)]
-    noise_tn = TensorNetwork(noise_ts)
-
+    """Decode all shots via CompressedTNDecoder, return (probs, total_ms)."""
     shots = syndromes.shape[0]
     probs = np.empty(shots)
     t0 = time.perf_counter()
     for i in range(shots):
-        syn_ts = []
-        for j in range(num_checks):
-            s = float(syndromes[i, j])
-            syn_ts.append(Tensor(
-                data=s * np.array([1.0, -1.0]) + (1.0 - s) * np.array([1.0, 1.0]),
-                inds=(check_inds[j],), tags=oset([f"SYN_{j}"])))
-        syn_tn = TensorNetwork(syn_ts)
-        full = TensorNetwork()
-        full = full.combine(code_tn, virtual=True)
-        full = full.combine(log_tn, virtual=True)
-        full = full.combine(syn_tn, virtual=True)
-        full = full.combine(noise_tn, virtual=True)
-        val = np.asarray(full.contract(output_inds=("obs",)))
-        probs[i] = float(val[1] / (val[0] + val[1]))
+        syn_vals = {f"syn_param_{j}": float(syndromes[i, j]) for j in range(num_checks)}
+        _, marginals = compressed_tn.decode_logicals(syndrome_values=syn_vals)
+        probs[i] = float(marginals.get("obs", 0.5))
     total_ms = (time.perf_counter() - t0) * 1e3
     return probs, total_ms
 
@@ -301,7 +271,7 @@ def run_chi_sweep(
                         record["offline_steps"] = int(stats.steps)
                 else:
                     t0 = time.perf_counter()
-                    chain, stats = _compile_chain_cpu(
+                    chain, compressed_tn, stats = _compile_chain_cpu(
                         full_tn, syn_param_inds, logical_obs_inds, chi)
                     compile_ms = (time.perf_counter() - t0) * 1e3
                     record["compile_ms"] = round(compile_ms, 2)
@@ -313,12 +283,10 @@ def run_chi_sweep(
                     if chain is not None:
                         probs, decode_ms = _decode_shots_cpu(chain, syndromes, num_checks)
                         record["decode_method"] = "mps_chain"
-                    else:
-                        # Chain extraction failed (non-path topology).
-                        # Fall back to exact quimb contraction.
-                        probs, decode_ms = _decode_shots_exact_cpu(
-                            H, logical_row, noise_p, syndromes)
-                        record["decode_method"] = "exact_fallback"
+                    elif compressed_tn is not None:
+                        probs, decode_ms = _decode_shots_compressed_tn(
+                            compressed_tn, syndromes, num_checks)
+                        record["decode_method"] = "compressed_tn"
 
                     record["total_decode_ms"] = round(decode_ms, 2)
                     record["per_shot_ms"] = round(decode_ms / shots, 3)

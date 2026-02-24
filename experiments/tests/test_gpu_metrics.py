@@ -83,51 +83,6 @@ from quimb import oset
 from quimb.tensor import Tensor, TensorNetwork
 
 
-def _decode_shots_exact_cpu(
-    H: np.ndarray, logical_row: np.ndarray, noise_p: float,
-    syndromes: np.ndarray,
-) -> tuple[np.ndarray, float]:
-    """Exact quimb contraction fallback when chain extraction fails."""
-    num_checks, num_errors = H.shape
-    check_inds = [f"s_{i}" for i in range(num_checks)]
-    error_inds = [f"e_{i}" for i in range(num_errors)]
-
-    code_tn = factory.tensor_network_from_parity_check(
-        H.astype(np.float64), col_inds=error_inds, row_inds=check_inds)
-    logical_2d = logical_row.reshape(1, -1).astype(np.float64)
-    log_tn = factory.tensor_network_from_parity_check(
-        logical_2d, col_inds=error_inds, row_inds=["l_0"], tags=["LOG_0"])
-    log_tn = log_tn.combine(
-        factory.tensor_network_from_logical_observable(
-            logical_2d, ["l_0"], ["obs"], ["LOG_0"]),
-        virtual=True)
-    noise_ts = [Tensor(
-        data=np.array([1.0 - noise_p, noise_p]),
-        inds=(error_inds[j],), tags=oset([f"NOISE_{j}"]))
-        for j in range(num_errors)]
-    noise_tn = TensorNetwork(noise_ts)
-
-    shots = syndromes.shape[0]
-    probs = np.empty(shots)
-    t0 = time.perf_counter()
-    for i in range(shots):
-        syn_ts = []
-        for j in range(num_checks):
-            s = float(syndromes[i, j])
-            syn_ts.append(Tensor(
-                data=s * np.array([1.0, -1.0]) + (1.0 - s) * np.array([1.0, 1.0]),
-                inds=(check_inds[j],), tags=oset([f"SYN_{j}"])))
-        syn_tn = TensorNetwork(syn_ts)
-        full = TensorNetwork()
-        full = full.combine(code_tn, virtual=True)
-        full = full.combine(log_tn, virtual=True)
-        full = full.combine(syn_tn, virtual=True)
-        full = full.combine(noise_tn, virtual=True)
-        val = np.asarray(full.contract(output_inds=("obs",)))
-        probs[i] = float(val[1] / (val[0] + val[1]))
-    total_ms = (time.perf_counter() - t0) * 1e3
-    return probs, total_ms
-
 # ---------------------------------------------------------------------------
 # GPU profiler (pynvml-based, same design as run_decoder_comparison.py)
 # ---------------------------------------------------------------------------
@@ -226,15 +181,13 @@ def _build_and_compile_cpu(H, logical_row, noise_p, chi):
     full_tn = full_tn.combine(log_tn, virtual=True)
     full_tn = full_tn.combine(param_syn, virtual=True)
     full_tn = full_tn.combine(noise_tn, virtual=True)
-    for ind in error_inds:
-        full_tn.contract_ind(ind)
 
     preserve = set(syn_param_inds + logical_obs_inds)
     result = core.compile_to_1d_chain(
         tn=full_tn.copy(), preserve_inds=preserve,
         syndrome_inds=set(syn_param_inds),
         logical_inds=set(logical_obs_inds), chi=chi)
-    return result.chain, result.offline_stats
+    return result.chain, result.compressed_tn, result.offline_stats
 
 
 def _sample(H, noise_p, shots, seed):
@@ -375,7 +328,7 @@ def run_gpu_metrics(
             chain = getattr(dec, "_compressed_chain", None)
             offline_stats = getattr(dec, "offline_stats", None)
         else:
-            chain, offline_stats = _build_and_compile_cpu(H, logical_row, noise_p, chi)
+            chain, compressed_tn_decoder, offline_stats = _build_and_compile_cpu(H, logical_row, noise_p, chi)
             dec = None
 
         compile_ms = (time.perf_counter() - t0) * 1e3
@@ -397,6 +350,7 @@ def run_gpu_metrics(
 
         # --- Online decode profiling ---
         has_chain = chain is not None
+        has_compressed_tn = (not use_gpu) and (not has_chain) and (compressed_tn_decoder is not None)
         profiler2 = GPUProfiler()
         profiler2.start()
 
@@ -418,13 +372,19 @@ def run_gpu_metrics(
                 probs[i] = float(marginals.get("obs", 0.5))
             total_decode_ms = (time.perf_counter() - t1) * 1e3
             record["decode_method"] = "mps_chain"
-        else:
-            # Chain extraction failed; use exact quimb contraction fallback
-            probs, total_decode_ms = _decode_shots_exact_cpu(
-                H, logical_row, noise_p, syndromes)
-            record["decode_method"] = "exact_fallback"
+        elif has_compressed_tn:
+            # Use CompressedTNDecoder when chain extraction fails
+            probs = np.empty(shots)
+            t1 = time.perf_counter()
+            for i in range(shots):
+                syn_vals = {f"syn_param_{j}": float(syndromes[i, j])
+                            for j in range(num_checks)}
+                _, marginals = compressed_tn_decoder.decode_logicals(syndrome_values=syn_vals)
+                probs[i] = float(marginals.get("obs", 0.5))
+            total_decode_ms = (time.perf_counter() - t1) * 1e3
+            record["decode_method"] = "compressed_tn"
             if verbose:
-                print("  Chain extraction failed, using exact contraction fallback")
+                print("  Chain extraction failed, using CompressedTNDecoder")
 
         decode_profile = profiler2.stop()
 
@@ -517,7 +477,7 @@ def test_gpu_metrics_smoke():
     for r in results:
         assert r.get("status") == "ok", f"Unexpected status: {r}"
         ok_count += 1
-        if r.get("decode_method") != "exact_fallback":
+        if r.get("decode_method") not in ("exact_fallback", "compressed_tn"):
             assert r["single_shot_latency"].get("avg_ms", 0) > 0
             assert r["chain_io"]["reload_decode_match"] is True
         assert r.get("logical_error_rate") is not None
