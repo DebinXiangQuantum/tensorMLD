@@ -169,3 +169,37 @@ def tb_48_4_8(seed: int = 0,
         code_dir=code_dir,
         strict_params=strict_params,
     )
+
+
+# ============================================================================ #
+# BB Code Loaders (from QCC files)                                             #
+# ============================================================================ #
+
+def bb_18_4_4(seed: int = 0,
+              code_dir: str | Path | None = None,
+              strict_params: bool = True) -> css_code:
+    """Load BB [[18,4,4]] code from qcc file."""
+    return load_ldpc_css_code(
+        n=18, k=4, d=4, seed=seed, code_dir=code_dir, c_type="qcc",
+        name="BB_18_4_4", strict_params=strict_params,
+    )
+
+
+def bb_60_8_4(seed: int = 0,
+              code_dir: str | Path | None = None,
+              strict_params: bool = True) -> css_code:
+    """Load BB [[60,8,4]] code from qcc file."""
+    return load_ldpc_css_code(
+        n=60, k=8, d=4, seed=seed, code_dir=code_dir, c_type="qcc",
+        name="BB_60_8_4", strict_params=strict_params,
+    )
+
+
+def bb_72_12_6(seed: int = 0,
+               code_dir: str | Path | None = None,
+               strict_params: bool = True) -> css_code:
+    """Load BB [[72,12,6]] code from qcc file."""
+    return load_ldpc_css_code(
+        n=72, k=12, d=6, seed=seed, code_dir=code_dir, c_type="qcc",
+        name="BB_72_12_6", strict_params=strict_params,
+    )

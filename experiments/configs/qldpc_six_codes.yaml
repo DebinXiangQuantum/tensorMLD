@@ -33,6 +33,52 @@ cases:
     logical_attr: lz
     max_logicals: 1
 
+  - name: bb_144_12_12
+    source: codegen
+    module: experiments.codes.codes
+    factory: gen_BB_code
+    factory_args: [144]
+    parity_attr: hz
+    logical_attr: lz
+    max_logicals: 1
+
+  - name: bb_288_12_12
+    source: codegen
+    module: experiments.codes.codes
+    factory: gen_BB_code
+    factory_args: [288]
+    parity_attr: hz
+    logical_attr: lz
+    max_logicals: 1
+
+  # Hypergraph Product (HP) codes
+  - name: hp_162_rank9_ring
+    source: codegen
+    module: experiments.codes.codes
+    factory: gen_HP_ring_code
+    factory_args: [9, 9]
+    parity_attr: hz
+    logical_attr: lz
+    max_logicals: 1
+
+  - name: hp_338_rank13_ring
+    source: codegen
+    module: experiments.codes.codes
+    factory: gen_HP_ring_code
+    factory_args: [13, 13]
+    parity_attr: hz
+    logical_attr: lz
+    max_logicals: 1
+
+  - name: hp_288_12_6
+    source: codegen
+    module: experiments.codes.codes
+    factory: get_benchmark_code
+    factory_args: ["HP_288"]
+    parity_attr: hz
+    logical_attr: lz
+    max_logicals: 1
+
   # Trivariate Bicycle (TB) codes
   - name: tb_25_3_4
     source: codegen

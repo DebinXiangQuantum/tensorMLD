@@ -169,7 +169,9 @@ class TensorNetworkDecoder:
                 f"but got {len(error_inds)}.")
             self.error_inds = error_inds
 
-        self.logical_obs_inds = ["obs"]  # Open logical index
+        K_logicals = logical_obs.shape[0]
+        self.logical_obs_inds = (["obs"] if K_logicals == 1
+                                 else [f"obs_{k}" for k in range(K_logicals)])
 
         # Construct the tensor network of the code
         self.parity_check_matrix = H.copy()
@@ -225,29 +227,29 @@ class TensorNetworkDecoder:
             logical_inds: Optional[list[str]] = None,
             logical_tags: Optional[list[str]] = None) -> None:
         """Add logical observables to the tensor network.
+
+        Supports both single (K=1) and multiple (K>1) logical observables.
+
         Args:
-            logical_obs (np.ndarray): The logical matrix.
-            logical_inds (Optional[list[str]], optional): The logical indices. If None, defaults to [l_0, l_1, ...].
-            logical_obs_inds (Optional[list[str]], optional): The logical observable indices. If None, defaults to [l_obs_0, l_obs_1, ...].
-            logical_tags (Optional[list[str]], optional): The logical tags. If None, defaults to [LOG_0, LOG_1, ...].
+            logical_obs (np.ndarray): Shape (K, n) logical matrix.
+            logical_inds (Optional[list[str]]): Logical indices, length K.
+            logical_tags (Optional[list[str]]): Logical tags, length K.
         """
-        assert logical_obs.shape == (1, len(self.error_inds)), (
-            "logical must be a single row matrix, shape (1, n), where n is the number of errors."
-            "Only single logical are supported for now.")
+        assert logical_obs.ndim == 2 and logical_obs.shape[1] == len(self.error_inds), (
+            f"logical_obs must have shape (K, {len(self.error_inds)}), "
+            f"got {logical_obs.shape}.")
+        K = logical_obs.shape[0]
         if logical_inds is None:
-            self.logical_inds = ["l_0"]  # Index before the Hadamard tensor
+            self.logical_inds = [f"l_{k}" for k in range(K)]
         else:
-            assert len(logical_inds) == 1, (
-                "logical_inds must be a list of length 1, "
-                "as only single logical observables are supported for now.")
+            assert len(logical_inds) == K
             self.logical_inds = logical_inds
 
         if logical_tags is None:
-            self.logical_tags = ["LOG_0"]
+            self.logical_tags = [f"LOG_{k}" for k in range(K)]
         else:
             self.logical_tags = logical_tags
 
-        # Construct the tensor network of the logical observables
         self.logical_obs = logical_obs.copy()
         self.logical_tn = tensor_network_from_parity_check(
             self.logical_obs,
@@ -256,7 +258,6 @@ class TensorNetworkDecoder:
             tags=self.logical_tags,
         )
 
-        # Add a Hadamard tensor for each logical observable for its outer leg
         self.logical_tn = self.logical_tn.combine(
             tensor_network_from_logical_observable(self.logical_obs,
                                                    self.logical_inds,
@@ -272,7 +273,6 @@ class TensorNetworkDecoder:
             if hasattr(self, "noise_model"):
                 self.full_tn = self.full_tn.combine(self.noise_model,
                                                     virtual=True)
-
             self._set_tensor_type(self.full_tn)
 
     def init_noise_model(self,
@@ -377,16 +377,18 @@ class TensorNetworkDecoder:
         self,
         syndrome: list[float],
     ) -> "qec.DecoderResult":
-        """
-        Decode the syndrome by contracting exactly the full tensor network.
+        """Decode the syndrome by contracting exactly the full tensor network.
+
+        Supports both single and multiple logical observables.  For K logicals
+        the tensor network is contracted K times, once per logical, marginalising
+        over the remaining logicals.
 
         Args:
-            syndrome (list[float]): 
+            syndrome (list[float]):
                 The syndrome soft decision probabilities ordered as the check indices.
 
         Returns:
-            qec.DecoderResult: The result of the decoding.
-                The probability that the logical observable flipped.
+            qec.DecoderResult: ``result`` contains K probabilities, one per logical.
         """
         assert hasattr(self, "noise_model")
         assert len(syndrome) == len(self.check_inds), (
@@ -395,27 +397,48 @@ class TensorNetworkDecoder:
         assert all(isinstance(s, float)
                    for s in syndrome), "Syndrome values must be float."
 
-        # adjust the values of the syndromes
         self.flip_syndromes(syndrome)
 
         if self.path_single is None:
-            # If the path is not set, we need to optimize it
-            self.optimize_path(optimize=self.path_single,)
+            self.optimize_path(optimize=self.path_single)
 
+        K = len(self.logical_obs_inds)
+        if K == 1:
+            contraction_value = self.contractor_config.contractor(
+                self.full_tn.get_equation(output_inds=(self.logical_obs_inds[0],)),
+                self.full_tn.arrays,
+                optimize=self.path_single,
+                slicing=self.slicing_single,
+                device_id=self.contractor_config.device_id,
+            )
+            res = qec.DecoderResult()
+            res.converged = True
+            res.result = [
+                float(contraction_value[1] /
+                      (contraction_value[1] + contraction_value[0]))
+            ]
+            return res
+
+        # Multi-logical: contract with all obs inds as output, then marginalise.
         contraction_value = self.contractor_config.contractor(
-            self.full_tn.get_equation(output_inds=(self.logical_obs_inds[0],)),
+            self.full_tn.get_equation(output_inds=tuple(self.logical_obs_inds)),
             self.full_tn.arrays,
             optimize=self.path_single,
             slicing=self.slicing_single,
             device_id=self.contractor_config.device_id,
         )
+        import numpy as np
+        arr = np.asarray(contraction_value, dtype=np.float64)
+        probs: list[float] = []
+        for k in range(K):
+            axes = tuple(ax for ax in range(K) if ax != k)
+            marginal = arr.sum(axis=axes)
+            p1 = float(marginal[1] / (marginal[0] + marginal[1]))
+            probs.append(p1)
 
         res = qec.DecoderResult()
         res.converged = True
-        res.result = [
-            float(contraction_value[1] /
-                  (contraction_value[1] + contraction_value[0]))
-        ]
+        res.result = probs
         return res
 
     def decode_batch(
@@ -424,55 +447,63 @@ class TensorNetworkDecoder:
     ) -> list["qec.DecoderResult"]:
         """Decode a batch of detection events.
 
+        Supports both single and multiple logical observables.
+
         Args:
-            syndrome_batch (np.ndarray): A numpy array of shape (batch_size, syndrome_length) where each row is a detection event.
+            syndrome_batch (np.ndarray): Shape (batch_size, syndrome_length).
 
         Returns:
-            list[qec.DecoderResult]: list of results for each detection event in the batch.
-                The probabilities that the logical observable flipped for each syndrome.
+            list[qec.DecoderResult]: One result per shot, each containing K probs.
         """
-
         assert hasattr(self, "noise_model")
         syndrome_length = syndrome_batch.shape[1]
         assert syndrome_length == len(self.check_inds)
 
-        # Remove the syndrome tensors from the full tensor network
+        K = len(self.logical_obs_inds)
+
         tn = TensorNetwork(
             [t for t in self.full_tn.tensors if "SYNDROME" not in t.tags])
-
         tn = tn.combine(tensor_network_from_syndrome_batch(
             syndrome_batch, self.check_inds, batch_index="batch_index"),
                         virtual=True)
-        # Set the tensor type for the new tensor network
         self._set_tensor_type(tn)
 
-        if self.path_batch is None or syndrome_batch.shape[
-                0] != self._batch_size:
-            # If the path is not set, we need to optimize it
+        if self.path_batch is None or syndrome_batch.shape[0] != self._batch_size:
             self.optimize_path(
                 optimize=self.path_batch,
                 batch_size=syndrome_batch.shape[0],
             )
             self._batch_size = syndrome_batch.shape[0]
 
+        output_inds = ("batch_index",) + tuple(self.logical_obs_inds)
         contraction_value = self.contractor_config.contractor(
-            tn.get_equation(output_inds=("batch_index",
-                                         self.logical_obs_inds[0])),
+            tn.get_equation(output_inds=output_inds),
             tn.arrays,
             optimize=self.path_batch,
             slicing=self.slicing_batch,
             device_id=self.contractor_config.device_id,
         )
 
-        res = []
+        import numpy as np
+        arr = np.asarray(contraction_value, dtype=np.float64)
+        res: list[qec.DecoderResult] = []
         for r in range(syndrome_batch.shape[0]):
-            res.append(qec.DecoderResult())
-            res[r].converged = True
-            res[r].result = [
-                float(contraction_value[r, 1] /
-                      (contraction_value[r, 1] + contraction_value[r, 0]))
-            ]
-
+            dr = qec.DecoderResult()
+            dr.converged = True
+            if K == 1:
+                dr.result = [
+                    float(arr[r, 1] / (arr[r, 1] + arr[r, 0]))
+                ]
+            else:
+                shot_arr = arr[r]  # shape (2,)*K
+                probs: list[float] = []
+                for k in range(K):
+                    axes = tuple(ax for ax in range(K) if ax != k)
+                    marginal = shot_arr.sum(axis=axes)
+                    p1 = float(marginal[1] / (marginal[0] + marginal[1]))
+                    probs.append(p1)
+                dr.result = probs
+            res.append(dr)
         return res
 
     def optimize_path(
@@ -509,10 +540,10 @@ class TensorNetworkDecoder:
                 fake_batch, self.check_inds, batch_index="batch_index"),
                             virtual=True)
             self._set_tensor_type(tn)
-            output_inds = ("batch_index", self.logical_obs_inds[0])
+            output_inds = ("batch_index",) + tuple(self.logical_obs_inds)
         else:
             tn = self.full_tn
-            output_inds = (self.logical_obs_inds[0],)
+            output_inds = tuple(self.logical_obs_inds)
 
         self._set_tensor_type(tn)
 

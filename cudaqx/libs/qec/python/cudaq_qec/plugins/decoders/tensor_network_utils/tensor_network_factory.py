@@ -183,21 +183,25 @@ def tensor_network_from_logical_observable(
 ) -> TensorNetwork:
     """Build a tensor network for logical observables.
 
+    Each logical row gets a Hadamard tensor connecting its logical index to its
+    observable (open-leg) index.  Supports both single and multiple logicals.
+
     Args:
-        logical (np.ndarray): The logical matrix.
-        logical_inds (list[str]): The logical indices.
-        logical_obs_inds (list[str]): The logical observable indices.
-        logical_tags (list[str], optional): The logical tags.
+        logical (np.ndarray): The logical matrix, shape (K, n).
+        logical_inds (list[str]): The logical indices, length K.
+        logical_obs_inds (list[str]): The logical observable indices, length K.
+        logical_tags (list[str], optional): The logical tags, length K.
 
     Returns:
         TensorNetwork: The tensor network for logical observables.
     """
     assert logical.ndim == 2, \
         "The logical matrix must be a 2D array."
-    assert len(logical_inds) == 1, \
-        "The number of logical indices must match the number of rows in the logical matrix."
-    assert len(logical_obs_inds) == 1, \
-        "The number of logical observable indices must match the number of columns in the logical matrix."
+    K = logical.shape[0]
+    assert len(logical_inds) == K, \
+        f"logical_inds length ({len(logical_inds)}) must match rows in logical matrix ({K})."
+    assert len(logical_obs_inds) == K, \
+        f"logical_obs_inds length ({len(logical_obs_inds)}) must match rows in logical matrix ({K})."
     assert all(isinstance(ind, str) for ind in logical_inds), \
         "All logical indices must be strings."
     assert all(isinstance(ind, str) for ind in logical_obs_inds), \
@@ -205,7 +209,7 @@ def tensor_network_from_logical_observable(
     assert logical_tags is None or all(isinstance(tag, str) for tag in logical_tags), \
         "All logical tags must be strings if provided."
     return tensor_network_from_parity_check(
-        np.eye(logical.shape[0]),
+        np.eye(K),
         row_inds=logical_inds,
         col_inds=logical_obs_inds,
         tags=logical_tags,

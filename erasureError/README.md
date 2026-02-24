@@ -10,7 +10,7 @@ Unlike depolarizing errors (where error location is unknown), erasure errors are
 ### Key Mathematical Extension
 For erasure errors, we set:
 - Error probability `p = 0.5` (maximum uncertainty)
-- Weight `β = (1/2) * ln((1-p)/p) = 0`
+- Weight `beta = (1/2) * ln((1-p)/p) = 0`
 - Tensor becomes `[0.5, 0.5]` (identity-like, "broken bond")
 
 This corresponds to "broken bonds" in the spin-glass model, where there is zero energy penalty for assigning an error to an erased qubit.
@@ -19,109 +19,107 @@ This corresponds to "broken bonds" in the spin-glass model, where there is zero 
 
 ```
 erasureError/
-├── src/                    # Source code
+├── src/                              # Source code
 │   ├── __init__.py
-│   ├── erasure_tensor_network_decoder.py  # Main decoder class
-│   ├── noise_models.py     # Erasure-aware noise models
-│   ├── simple_decoders.py  # BP/OSD/Relay comparison wrappers
-│   └── qldpc_cases.py      # Six qLDPC benchmark case loader
-├── tests/                  # Test code
-│   ├── test_erasure_decoder.py    # Unit tests
-│   ├── test_benchmark.py          # Tensor decoder benchmark (qLDPC)
-│   └── decoder_comparison.py      # Multi-decoder comparison (qLDPC)
-├── plots/                  # Plotting scripts
-│   └── plot_results.py     # Generate result plots
-├── data/cases/             # qLDPC case matrices (H.npy/logical.npy)
-├── results/                # JSON result files
-├── pyproject.toml          # Project configuration
-└── README.md               # This file
+│   ├── erasure_tensor_network_decoder.py  # Main tensor network MLD decoder
+│   └── simple_decoders.py            # LDPC decoder wrappers (BP+OSD, Min-Sum BP)
+├── codes/                            # Code construction
+│   ├── codes.py                      # CSS code class, BB/HP code generators
+│   ├── gnd_ldpc_codes.py             # GND file loaders for BB/TB codes
+│   └── utils.py                      # Linear algebra utilities
+├── tests/                            # Benchmark tests
+│   ├── test_erasure_decoder.py       # Unit tests
+│   ├── decoder_comparison.py         # Repetition/Surface code comparison
+│   ├── bb_code_benchmark.py          # BB code benchmark
+│   └── comprehensive_benchmark.py    # Full qLDPC benchmark (BB/TB/HP)
+├── plots/                            # Plotting scripts
+│   ├── plot_results.py               # Basic result plots
+│   ├── plot_bb_results.py            # BB code specific plots
+│   └── plot_comprehensive_results.py # Comprehensive benchmark plots
+├── results/                          # JSON result files
+├── .venv/                            # Python virtual environment
+└── README.md                         # This file
 ```
 
 ## Installation
 
-### Using uv (Recommended)
-
-```bash
-# Navigate to the erasureError directory
-cd erasureError
-
-# Create virtual environment with uv
-uv venv
-
-# Activate the virtual environment
-# On macOS/Linux:
-source .venv/bin/activate
-# On Windows:
-.venv\Scripts\activate
-
-# Install dependencies
-uv pip install -e .
-
-# For full features (including cudaq-qec and stim):
-uv pip install -e ".[all]"
-```
-
-### Using pip
+### Step 1: Create Virtual Environment
 
 ```bash
 cd erasureError
-pip install -e .
+
+# Create virtual environment
+python3 -m venv .venv
+
+# Install pip in venv
+.venv/bin/python -m ensurepip --upgrade
 ```
 
-## Usage
-
-### 1. Run Unit Tests
+### Step 2: Install Dependencies
 
 ```bash
-# Run all tests
-python -m pytest tests/ -v
+# Install core dependencies
+.venv/bin/python -m pip install numpy quimb autoray matplotlib scipy
 
-# Run specific test file
-python -m pytest tests/test_erasure_decoder.py -v -s
+# Install ldpc package for BP decoders
+.venv/bin/python -m pip install ldpc
+
+# Install torch for loading GND code files (BB/TB codes)
+.venv/bin/python -m pip install torch
 ```
 
-### 2. Prepare qLDPC Cases
-
-Put case matrices under `data/cases/<case_name>/`:
-
-- `H.npy`
-- `logical.npy`
-
-Required case names:
-
-- `bb_18_4_4`
-- `bb_60_8_4`
-- `bb_72_12_6`
-- `tb_25_3_4`
-- `tb_30_6_4`
-- `tb_48_4_8`
-
-### 3. Run Benchmark Tests
+### Step 3: Verify Installation
 
 ```bash
-# Run tensor decoder benchmark on qLDPC cases
-python tests/test_benchmark.py
+.venv/bin/python -c "import numpy, quimb, ldpc, torch; print('All dependencies installed!')"
 ```
 
-### 4. Run Decoder Comparison
+## Running Benchmarks
+
+### 1. Quick Test - Repetition and Surface Codes
 
 ```bash
-# Compare tensor MLD with BP+OSD / Min-Sum BP / Sequential Relay BP
-python tests/decoder_comparison.py
+.venv/bin/python tests/decoder_comparison.py
 ```
 
-### 5. Generate Plots
+This tests tensor network MLD against BP+OSD and Min-Sum BP on:
+- Repetition codes (d=5, 7, 9)
+- Surface code (d=3)
+
+### 3. Comprehensive qLDPC Benchmark (Recommended)
 
 ```bash
-# Generate plots from results
-python plots/plot_results.py
+.venv/bin/python tests/comprehensive_benchmark.py
 ```
 
-## Example Usage in Code
+Benchmarks all codes with 500 shots:
+
+| Code Type | Code | Parameters |
+|-----------|------|------------|
+| BB | BB_18_4_4 | [[18, 4, 4]] |
+| BB | BB_60_8_4 | [[60, 8, 4]] |
+| BB | BB_72_12_6 | [[72, 12, 6]] |
+| TB | TB_25_3_4 | [[25, 3, 4]] |
+| TB | TB_30_6_4 | [[30, 6, 4]] |
+| HP | HP_50 | [[50, 2, 4]] |
+| HP | HP_98 | [[98, 2, 4]] |
+
+### 4. Generate Plots
+
+```bash
+# For comprehensive benchmark results
+.venv/bin/python plots/plot_comprehensive_results.py
+
+```
+
+## Example Usage
 
 ```python
 import numpy as np
-from src.erasure_tensor_network_decoder import ErasureTensorNetworkDecoder
+import sys
+sys.path.insert(0, 'src')
+
+from erasure_tensor_network_decoder import ErasureTensorNetworkDecoder
 
 # Define a simple repetition code
 H = np.array([
@@ -134,7 +132,7 @@ logical_obs = np.array([[1, 1, 1]], dtype=np.float64)
 # Error probabilities for each qubit
 error_probs = [0.01, 0.01, 0.01]
 
-# Erasure mask: first qubit is erased
+# Erasure mask: first qubit is erased (location known, type unknown)
 erasure_mask = [True, False, False]
 
 # Create decoder
@@ -147,51 +145,61 @@ decoder = ErasureTensorNetworkDecoder(
 )
 
 # Decode a syndrome
-syndrome = [0.0, 0.0]  # No triggered checks
+syndrome = [0.0, 0.0]
 result = decoder.decode(syndrome)
 
 print(f"Logical error probability: {result['logical_error_prob']:.4f}")
 ```
 
+## Decoders Compared
+
+| Decoder | Description | Speed |
+|---------|-------------|-------|
+| `tensor_network_mld` | Exact MLD via tensor network contraction | Slow |
+| `bp_osd` | Belief Propagation + Ordered Statistics Decoding | Fast |
+| `min_sum_bp` | Min-Sum Belief Propagation | Fast |
+
 ## Results
 
-Results are saved as JSON files in the `results/` directory:
-- `benchmark_results_*.json`: Benchmark test results
-- `decoder_comparison_*.json`: Decoder comparison results
+Results are saved as JSON in `results/`:
+- `comprehensive_benchmark_*.json` - Full qLDPC benchmark results
+- `decoder_comparison_*.json` - Basic comparison results
 
-## Plots
+## Generated Plots
 
-After running tests, plots can be generated in the `plots/` directory:
-- `ler_vs_error_*.png`: Logical error rate vs physical error rate
-- `erasure_effect_*.png`: Effect of erasure rate on LER
-- `decoder_comparison_summary.png`: Summary comparison across codes
-- `verification_summary.png`: Fraction of points satisfying `LER < p`
+After running benchmarks, plots are saved in `plots/`:
 
-## Supported Codes
+| Plot | Description |
+|------|-------------|
+| `bb_codes_comparison.png` | BB codes LER vs error rate (3 erasure levels) |
+| `tb_codes_comparison.png` | TB codes LER vs error rate |
+| `hp_codes_comparison.png` | HP codes LER vs error rate |
+| `decoder_performance_summary.png` | Fraction of points where LER < p |
+| `erasure_impact_analysis.png` | Impact of erasure rate on LER |
+| `code_comparison_fixed_params.png` | All codes at fixed error rate |
 
-Currently tested with:
-- BB [[18,4,4]]
-- BB [[60,8,4]]
-- BB [[72,12,6]]
-- TB [[25,3,4]]
-- TB [[30,6,4]]
-- TB [[48,4,8]]
+## Key Results
+
+1. **Tensor Network MLD** achieves the best performance, especially at low error rates
+2. **BP+OSD** is the second-best decoder with much faster runtime
+3. Error correction is effective (LER < p) below threshold (~1-3% depending on code)
+4. Erasure errors increase LER but the decoder handles them correctly by setting p=0.5
 
 ## Dependencies
 
-Core:
-- Python >= 3.11
-- numpy >= 1.24.0
-- quimb >= 1.8.0
-- autoray >= 0.6.0
-- matplotlib >= 3.7.0
-
-Optional:
-- cudaq-qec: For nv-qldpc-decoder comparison
-- stim: For circuit-level noise simulation
+| Package | Version | Purpose |
+|---------|---------|---------|
+| numpy | >= 1.24 | Numerical operations |
+| quimb | >= 1.8 | Tensor network contraction |
+| autoray | >= 0.6 | Backend-agnostic array operations |
+| matplotlib | >= 3.7 | Plotting |
+| ldpc | >= 2.0 | BP+OSD and Min-Sum BP decoders |
+| torch | >= 2.0 | Loading GND code files |
+| scipy | >= 1.10 | Sparse matrix operations |
 
 ## References
 
-1. TensorMLD Paper: Maximum Likelihood Decoding using Tensor Networks
-2. NVIDIA CUDA-Q QEC Documentation
-3. Erasure Error in Neutral Atom Systems
+1. Bravyi et al., "Maximum Likelihood Decoding using Tensor Networks"
+2. IBM Gross Code Paper: Bivariate Bicycle Codes
+3. Voss et al., "Trivariate Bicycle Codes"
+4. Roffe et al., "LDPC: Python tools for low density parity check codes"

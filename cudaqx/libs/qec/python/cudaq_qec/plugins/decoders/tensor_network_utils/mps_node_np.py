@@ -2,7 +2,10 @@ import time
 import numpy as np
 import math
 import sys
-from npsvd import svd,rsvd
+try:
+    from .npsvd import svd, rsvd
+except ImportError:
+    from npsvd import svd, rsvd  # type: ignore[no-redef]
 
 class MPSNode:
     def __init__(self, tensor, index, neighbor,chi=32,cutoff=1.0e-15,norm_method=1,svdopt=True,swapopt=True,verbose=0):

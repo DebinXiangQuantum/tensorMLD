@@ -17,10 +17,10 @@ its logic can be unit tested directly:
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+import json
+from dataclasses import dataclass, field
 import math
 from pathlib import Path
-import sys
 import time
 from typing import Any, Optional
 
@@ -84,31 +84,23 @@ def set_global_decoder_config(
         GLOBAL_MAX_CONDITIONAL_ROUNDS = int(max_conditional_rounds)
 
 
-def _load_catn_mps_node() -> Any:
-    """Load `catn/mps_node_np.py` without requiring `catn` to be installed."""
-    try:
-        from mps_node_np import MPSNode  # type: ignore
-        return MPSNode
-    except Exception:
-        pass
-
-    this_file = Path(__file__).resolve()
-    for parent in this_file.parents:
-        candidate = parent / "catn" / "mps_node_np.py"
-        if candidate.exists():
-            catn_dir = str(candidate.parent)
-            if catn_dir not in sys.path:
-                sys.path.insert(0, catn_dir)
-            from mps_node_np import MPSNode  # type: ignore
-            return MPSNode
-
-    raise ImportError(
-        "Failed to locate catn/mps_node_np.py. "
-        "Expected a `catn/` directory in one of the parent directories."
-    )
-
-
-MPSNode = _load_catn_mps_node()
+try:
+    from .mps_node_np import MPSNode
+except ImportError:
+    # Fallback for standalone loading (e.g. importlib.util.spec_from_file_location)
+    import importlib.util as _ilu
+    _mps_spec = _ilu.spec_from_file_location(
+        "mps_node_np", Path(__file__).parent / "mps_node_np.py")
+    _mps_mod = _ilu.module_from_spec(_mps_spec)  # type: ignore[arg-type]
+    # Pre-load npsvd into the module's namespace so its relative import resolves
+    _svd_spec = _ilu.spec_from_file_location(
+        "npsvd", Path(__file__).parent / "npsvd.py")
+    _svd_mod = _ilu.module_from_spec(_svd_spec)  # type: ignore[arg-type]
+    _svd_spec.loader.exec_module(_svd_mod)  # type: ignore[union-attr]
+    import sys as _sys
+    _sys.modules["npsvd"] = _svd_mod
+    _mps_spec.loader.exec_module(_mps_mod)  # type: ignore[union-attr]
+    MPSNode = _mps_mod.MPSNode  # type: ignore[misc]
 
 
 def make_parametrized_syndrome_network(
@@ -478,6 +470,29 @@ def _collect_internal_edges(active_nodes: set[int],
 
 
 @dataclass
+class StepTruncationRecord:
+    """Per-step truncation error breakdown during offline compression."""
+    step: int
+    edge: tuple[int, int]
+    eat_error: float
+    merge_error: float
+    compress_error: float
+    total_error: float
+    active_nodes_after: int
+
+    def to_dict(self) -> dict:
+        return {
+            "step": self.step,
+            "edge": list(self.edge),
+            "eat_error": self.eat_error,
+            "merge_error": self.merge_error,
+            "compress_error": self.compress_error,
+            "total_error": self.total_error,
+            "active_nodes_after": self.active_nodes_after,
+        }
+
+
+@dataclass
 class OfflineCompressionStats:
     initial_nodes: int
     initial_edges: int
@@ -487,6 +502,29 @@ class OfflineCompressionStats:
     max_bond_dim: int
     active_nodes: int
     active_edges: int
+    chi: int = 0
+    step_errors: list[StepTruncationRecord] = field(default_factory=list)
+
+    def to_json(self, path: str | Path | None = None) -> str:
+        """Export compression stats to JSON, optionally writing to a file."""
+        data = {
+            "initial_nodes": self.initial_nodes,
+            "initial_edges": self.initial_edges,
+            "preserved_target": self.preserved_target,
+            "steps": self.steps,
+            "truncation_error": self.truncation_error,
+            "max_bond_dim": self.max_bond_dim,
+            "active_nodes": self.active_nodes,
+            "active_edges": self.active_edges,
+            "chi": self.chi,
+            "step_errors": [r.to_dict() for r in self.step_errors],
+        }
+        text = json.dumps(data, indent=2)
+        if path is not None:
+            p = Path(path)
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_text(text)
+        return text
 
 
 @dataclass
@@ -503,7 +541,8 @@ def compress_until_preserved(
         max_steps: int = 100000,
         reverse: bool = True,
         compress_each_step: bool = True,
-        verbose: bool = False) -> OfflineCompressionResult:
+        verbose: bool = False,
+        chi: int = 0) -> OfflineCompressionResult:
     """Run contraction-swap-merge until only preserved nodes remain active."""
     active_nodes = set(nodes.keys())
     target_preserved = len(preserved_nodes)
@@ -512,6 +551,7 @@ def compress_until_preserved(
                                           for k, v in nodes.items()})
     truncation_error = 0.0
     steps = 0
+    step_errors: list[StepTruncationRecord] = []
 
     while any(node_id not in preserved_nodes for node_id in active_nodes):
         edges = _collect_internal_edges(active_nodes, nodes)
@@ -545,6 +585,7 @@ def compress_until_preserved(
         neighbors_j = list(nodes[j].neighbor)
         duplicate_neighbors: list[int] = []
 
+        step_merge_err = 0.0
         for pos, k in enumerate(neighbors_j):
             if pos == idx_i_in_j:
                 continue
@@ -555,17 +596,24 @@ def compress_until_preserved(
                 nodes[k].add_neighbor(i, idx_j_in_k)
                 if idx_i_in_k > -1:
                     duplicate_neighbors.append(k)
-                    truncation_error += float(
+                    m_err = float(
                         nodes[k].merge(i, cross=idx_i_in_k > idx_j_in_k))
+                    step_merge_err += m_err
+                    truncation_error += m_err
 
         _, err, _ = nodes[i].eat(nodes[j], idx_j_in_i, idx_i_in_j)
-        truncation_error += abs(float(err))
+        step_eat_err = abs(float(err))
+        truncation_error += step_eat_err
 
         for k in duplicate_neighbors:
-            truncation_error += float(nodes[i].merge(k, cross=False))
+            m_err = float(nodes[i].merge(k, cross=False))
+            step_merge_err += m_err
+            truncation_error += m_err
 
+        step_compress_err = 0.0
         if compress_each_step:
-            truncation_error += float(nodes[i].compress_opt())
+            step_compress_err = float(nodes[i].compress_opt())
+            truncation_error += step_compress_err
 
         nodes[j].clear()
         active_nodes.remove(j)
@@ -575,6 +623,17 @@ def compress_until_preserved(
             preserved_nodes.add(i)
 
         steps += 1
+        step_total = step_eat_err + step_merge_err + step_compress_err
+        step_errors.append(StepTruncationRecord(
+            step=steps,
+            edge=(i, j),
+            eat_error=step_eat_err,
+            merge_error=step_merge_err,
+            compress_error=step_compress_err,
+            total_error=step_total,
+            active_nodes_after=len(active_nodes),
+        ))
+
         if verbose and (steps % 100 == 0):
             edges_left = count_internal_edges(
                 active_nodes, {k: v.neighbor
@@ -602,6 +661,8 @@ def compress_until_preserved(
         max_bond_dim=max_bond,
         active_nodes=len(active_nodes),
         active_edges=active_edges,
+        chi=chi,
+        step_errors=step_errors,
     )
     return OfflineCompressionResult(
         nodes=nodes,
@@ -622,6 +683,37 @@ class OneDChainMPS:
     sites: list[ChainSite]
     syndrome_labels: list[str]
     logical_labels: list[str]
+
+    def save(self, path: str | Path) -> None:
+        """Save the 1D chain MPS to a directory (NumPy arrays + JSON metadata)."""
+        out = Path(path)
+        out.mkdir(parents=True, exist_ok=True)
+        meta = {
+            "syndrome_labels": self.syndrome_labels,
+            "logical_labels": self.logical_labels,
+            "num_sites": len(self.sites),
+            "site_labels": [s.label for s in self.sites],
+        }
+        for i, site in enumerate(self.sites):
+            np.save(out / f"site_{i}.npy", site.tensor)
+        with open(out / "chain_meta.json", "w") as f:
+            json.dump(meta, f, indent=2)
+
+    @classmethod
+    def load(cls, path: str | Path) -> "OneDChainMPS":
+        """Load a 1D chain MPS from a directory saved by `save()`."""
+        src = Path(path)
+        with open(src / "chain_meta.json") as f:
+            meta = json.load(f)
+        sites: list[ChainSite] = []
+        for i in range(meta["num_sites"]):
+            tensor = np.load(src / f"site_{i}.npy")
+            sites.append(ChainSite(label=meta["site_labels"][i], tensor=tensor))
+        return cls(
+            sites=sites,
+            syndrome_labels=meta["syndrome_labels"],
+            logical_labels=meta["logical_labels"],
+        )
 
     def _logical_set(self) -> set[str]:
         return set(self.logical_labels)
@@ -951,6 +1043,7 @@ def compile_to_1d_chain(
         reverse=True,
         compress_each_step=True,
         verbose=verbose,
+        chi=chi,
     )
 
     chain = extract_1d_chain(

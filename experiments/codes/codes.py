@@ -733,7 +733,8 @@ def gen_BB_code(N):
             28, 14, [26], [6, 8], [9,20], [7]
         )  # 784
     else:
-        print("unsupported N")
+        raise ValueError(f"Unsupported BB code N={N}. "
+                         f"Supported: 32, 72, 90, 108, 144, 288, 360, 756, 784.")
     return bb_code
 
 def gen_HP_ring_code(d1,d2):

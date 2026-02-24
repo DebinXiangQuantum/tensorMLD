@@ -25,8 +25,9 @@ from .tensor_network_utils.tensor_network_factory import (
     tensor_network_from_logical_observable, tensor_network_from_parity_check,
     tensor_network_from_single_syndrome, tensor_network_from_syndrome_batch)
 from .tensor_network_utils.mps_decoder_core import (
-    compile_to_1d_chain, make_parametrized_syndrome_network,
-    set_global_decoder_config, timed_chain_decode)
+    OneDChainMPS, compile_to_1d_chain, make_parametrized_syndrome_network,
+    set_global_decoder_config, timed_chain_decode,
+    _validate_threshold_window)
 
 # Global defaults used by this decoder. They can be updated via
 # `set_global_mps_decoder_config`.
@@ -34,15 +35,6 @@ GLOBAL_BOND_DIM = 32
 GLOBAL_LOW_THRESHOLD = 0.4
 GLOBAL_HIGH_THRESHOLD = 0.6
 GLOBAL_MAX_CONDITIONAL_ROUNDS = 16
-
-
-def _validate_threshold_window(low: float, high: float) -> None:
-    if not (0.0 <= low <= 1.0):
-        raise ValueError("low_threshold must be in [0, 1].")
-    if not (0.0 <= high <= 1.0):
-        raise ValueError("high_threshold must be in [0, 1].")
-    if low > high:
-        raise ValueError("low_threshold must be <= high_threshold.")
 
 
 def set_global_mps_decoder_config(
@@ -192,7 +184,9 @@ class TensorNetworkMPSDecoder:
             assert len(error_inds) == num_errors
             self.error_inds = error_inds
 
-        self.logical_obs_inds = ["obs"]
+        K_logicals = logical_obs.shape[0]
+        self.logical_obs_inds = (["obs"] if K_logicals == 1
+                                 else [f"obs_{k}" for k in range(K_logicals)])
         self.syndrome_param_inds = [f"syn_param_{i}" for i in range(num_checks)]
 
         self.parity_check_matrix = H.copy()
@@ -280,16 +274,18 @@ class TensorNetworkMPSDecoder:
             logical_obs: npt.NDArray[Any],
             logical_inds: Optional[list[str]] = None,
             logical_tags: Optional[list[str]] = None) -> None:
-        assert logical_obs.shape == (1, len(self.error_inds)), (
-            "logical_obs must have shape (1, n_errors).")
+        """Replace logical observables.  Supports (K, n) with K >= 1."""
+        assert logical_obs.ndim == 2 and logical_obs.shape[1] == len(self.error_inds), (
+            f"logical_obs must have shape (K, {len(self.error_inds)}), "
+            f"got {logical_obs.shape}.")
+        K = logical_obs.shape[0]
         if logical_inds is None:
-            self.logical_inds = ["l_0"]
+            self.logical_inds = [f"l_{k}" for k in range(K)]
         else:
-            assert len(logical_inds) == 1
+            assert len(logical_inds) == K
             self.logical_inds = logical_inds
-        self.logical_tags = logical_tags if logical_tags is not None else [
-            "LOG_0"
-        ]
+        self.logical_tags = (logical_tags if logical_tags is not None
+                             else [f"LOG_{k}" for k in range(K)])
 
         self.logical_obs = logical_obs.copy()
         self.logical_tn = tensor_network_from_parity_check(
@@ -375,19 +371,37 @@ class TensorNetworkMPSDecoder:
         self.path_batch = _adjust_default_path_value(self.path_batch)
         self.path_single = _adjust_default_path_value(self.path_single)
 
-    def _decode_exact_fallback(self, syndrome: list[float]) -> float:
+    def _decode_exact_fallback(self, syndrome: list[float]) -> list[float]:
+        """Exact contraction fallback.  Returns K probabilities."""
         self.flip_syndromes(syndrome)
         if self.path_single is None:
             self.optimize_path(optimize=self.path_single)
 
+        K = len(self.logical_obs_inds)
+        if K == 1:
+            value = self.contractor_config.contractor(
+                self.full_tn.get_equation(output_inds=(self.logical_obs_inds[0],)),
+                self.full_tn.arrays,
+                optimize=self.path_single,
+                slicing=self.slicing_single,
+                device_id=self.contractor_config.device_id,
+            )
+            return [float(value[1] / (value[1] + value[0]))]
+
         value = self.contractor_config.contractor(
-            self.full_tn.get_equation(output_inds=(self.logical_obs_inds[0],)),
+            self.full_tn.get_equation(output_inds=tuple(self.logical_obs_inds)),
             self.full_tn.arrays,
             optimize=self.path_single,
             slicing=self.slicing_single,
             device_id=self.contractor_config.device_id,
         )
-        return float(value[1] / (value[1] + value[0]))
+        arr = np.asarray(value, dtype=np.float64)
+        probs: list[float] = []
+        for k in range(K):
+            axes = tuple(ax for ax in range(K) if ax != k)
+            marginal = arr.sum(axis=axes)
+            probs.append(float(marginal[1] / (marginal[0] + marginal[1])))
+        return probs
 
     def _online_use_gpu(self) -> bool:
         if cupy is None:
@@ -399,6 +413,7 @@ class TensorNetworkMPSDecoder:
             return False
 
     def decode(self, syndrome: list[float]) -> "qec.DecoderResult":
+        """Decode syndrome.  Returns K probabilities (one per logical observable)."""
         assert len(syndrome) == len(self.check_inds), (
             f"Syndrome length {len(syndrome)} does not match check count "
             f"{len(self.check_inds)}.")
@@ -408,36 +423,39 @@ class TensorNetworkMPSDecoder:
         if self._compressed_chain is None:
             if self.verbose:
                 print("Compressed chain not available; using exact fallback.")
-            prob = self._decode_exact_fallback(syndrome)
+            probs = self._decode_exact_fallback(syndrome)
             self.last_decode_timing = {"backend": "exact_fallback"}
-        else:
-            syndrome_values = {
-                label: float(syndrome[i])
-                for i, label in enumerate(self.syndrome_param_inds)
-            }
-            _, marginals, latency_ms = timed_chain_decode(
-                self._compressed_chain,
-                syndrome_values=syndrome_values,
-                use_gpu=self._online_use_gpu(),
-                low_threshold=self.low_threshold,
-                high_threshold=self.high_threshold,
-                max_rounds=self.max_conditional_rounds,
-            )
-            logical_label = self.logical_obs_inds[0]
-            prob = float(marginals.get(logical_label, 0.5))
-            self.last_decode_timing = {
-                "backend": "cupy" if self._online_use_gpu() else "numpy",
-                "latency_ms": latency_ms,
-            }
-            if self.verbose:
-                print(
-                    "[online] p(logical=1)="
-                    f"{prob:.6f}, latency={latency_ms:.3f} ms, "
-                    f"thresholds=({self.low_threshold:.3f}, {self.high_threshold:.3f})")
+            result = qec.DecoderResult()
+            result.converged = True
+            result.result = probs
+            return result
+
+        syndrome_values = {
+            label: float(syndrome[i])
+            for i, label in enumerate(self.syndrome_param_inds)
+        }
+        _, marginals, latency_ms = timed_chain_decode(
+            self._compressed_chain,
+            syndrome_values=syndrome_values,
+            use_gpu=self._online_use_gpu(),
+            low_threshold=self.low_threshold,
+            high_threshold=self.high_threshold,
+            max_rounds=self.max_conditional_rounds,
+        )
+        probs = [float(marginals.get(label, 0.5))
+                 for label in self.logical_obs_inds]
+        self.last_decode_timing = {
+            "backend": "cupy" if self._online_use_gpu() else "numpy",
+            "latency_ms": latency_ms,
+        }
+        if self.verbose:
+            print(
+                f"[online] p(logical=1)={probs}, latency={latency_ms:.3f} ms, "
+                f"thresholds=({self.low_threshold:.3f}, {self.high_threshold:.3f})")
 
         result = qec.DecoderResult()
         result.converged = True
-        result.result = [prob]
+        result.result = probs
         return result
 
     def decode_batch(self,
@@ -461,10 +479,10 @@ class TensorNetworkMPSDecoder:
                 fake_batch, self.check_inds, batch_index="batch_index"),
                             virtual=True)
             self._set_tensor_type(tn)
-            output_inds = ("batch_index", self.logical_obs_inds[0])
+            output_inds = ("batch_index",) + tuple(self.logical_obs_inds)
         else:
             tn = self.full_tn
-            output_inds = (self.logical_obs_inds[0],)
+            output_inds = tuple(self.logical_obs_inds)
 
         path, info = optimize_path(optimize, output_inds, tn)
         slices = info.slices if hasattr(info, "slices") else tuple()
