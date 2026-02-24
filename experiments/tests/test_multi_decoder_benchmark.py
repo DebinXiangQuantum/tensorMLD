@@ -363,12 +363,13 @@ def run_benchmark(
                         full = full.combine(syn_tn, virtual=True)
                         full = full.combine(noise_tn, virtual=True)
                         val = full.contract(output_inds=("obs",))
-                        val = np.asarray(val)
-                        if val.ndim == 0:
-                            # Scalar result — contraction collapsed obs index
+                        arr = val.data if hasattr(val, 'data') else np.asarray(val)
+                        arr = np.asarray(arr).ravel()
+                        if len(arr) < 2:
                             p1 = 0.5
                         else:
-                            p1 = float(val[1] / (val[0] + val[1]))
+                            total = float(arr[0] + arr[1])
+                            p1 = float(arr[1] / total) if total > 0 else 0.5
                         probs.append(p1)
                     decode_ms = (time.perf_counter() - t1) * 1e3
                     backend = "cpu"
@@ -467,7 +468,7 @@ if __name__ == "__main__":
     print(f"ldpc available: {HAS_LDPC}")
     print()
 
-    results = run_benchmark(shots=64, noise_p=0.01, chi=16, seed=2026, verbose=True)
+    results = run_benchmark(shots=20000, noise_p=0.01, chi=16, seed=2026, verbose=True)
 
     out_dir = WORKSPACE / "experiments" / "results"
     out_dir.mkdir(parents=True, exist_ok=True)
