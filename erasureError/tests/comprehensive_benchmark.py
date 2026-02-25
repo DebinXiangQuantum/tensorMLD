@@ -32,7 +32,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from codes.codes import gen_BB_code, gen_HP_ring_code, hypergraph_product, rep_code
 from codes.gnd_ldpc_codes import (
     bb_18_4_4, bb_60_8_4, bb_72_12_6,
-    tb_25_3_4, tb_30_6_4
+    tb_25_3_4, tb_30_6_4,tor_n50_d5_k2
 )
 from erasure_tensor_network_decoder import ErasureTensorNetworkDecoder
 from simple_decoders import (
@@ -184,6 +184,7 @@ CODE_LOADER_REGISTRY: Dict[str, Any] = {
     'BB_72_12_6': lambda: bb_72_12_6(),
     'TB_25_3_4': lambda: tb_25_3_4(),
     'TB_30_6_4': lambda: tb_30_6_4(),
+    'TOR_50_5_2': lambda: tor_n50_d5_k2(),
     "BB_90":lambda: gen_BB_code(90),
     "BB_108":lambda: gen_BB_code(108),
     "BB_144":lambda: gen_BB_code(144)
