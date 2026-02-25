@@ -37,10 +37,11 @@ import pytest
 SCRIPT_DIR = Path(__file__).resolve().parent
 WORKSPACE = SCRIPT_DIR.parent.parent
 QEC_PY = WORKSPACE / "cudaqx" / "libs" / "qec" / "python"
+# NOTE: Add WORKSPACE first (for experiments.codes etc), but defer QEC_PY
+# until AFTER cudaq_qec import so the installed package (with compiled C
+# extensions) takes precedence over the local source tree.
 if str(WORKSPACE) not in sys.path:
     sys.path.insert(0, str(WORKSPACE))
-if str(QEC_PY) not in sys.path:
-    sys.path.insert(0, str(QEC_PY))
 
 # ---------------------------------------------------------------------------
 # GPU detection
@@ -58,6 +59,10 @@ try:
     HAS_CUDAQ = True
 except Exception:
     qec = None  # type: ignore
+
+# Now add local source path for tensor_network_utils (pure Python modules).
+if str(QEC_PY) not in sys.path:
+    sys.path.insert(0, str(QEC_PY))
 
 # ---------------------------------------------------------------------------
 # Core module import (always available, no cudaq dependency)

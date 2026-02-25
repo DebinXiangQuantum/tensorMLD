@@ -337,7 +337,7 @@ if __name__ == "__main__":
 
     results = run_chi_sweep(
         chi_values=[2, 4, 8, 16, 32, 64],
-        shots=1000, noise_p=0.01, seed=2026, verbose=True)
+        shots=10000, noise_p=0.01, seed=2026, verbose=True)
 
     out_dir = WORKSPACE / "experiments" / "results"
     out_dir.mkdir(parents=True, exist_ok=True)
