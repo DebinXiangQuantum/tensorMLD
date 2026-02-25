@@ -176,11 +176,13 @@ def tb_48_4_8(seed: int = 0,
               code_dir: str | Path | None = None,
               strict_params: bool = True) -> css_code:
     return load_ldpc_css_code(
-        n=48,
-        k=4,
-        d=8,
+        n=50,
+        k=2,
+        d=5,
         seed=seed,
         code_dir=code_dir,
+        c_type="tor",
+        name="TB_48_4_8",
         strict_params=strict_params,
     )
 

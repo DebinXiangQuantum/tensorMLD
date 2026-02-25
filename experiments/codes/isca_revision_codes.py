@@ -106,17 +106,11 @@ def load_isca_revision_code(
             strict_params=strict_params,
         )
     if key == "TB_48_4_8":
-        try:
-            return tb_48_4_8(
-                seed=seed,
-                code_dir=code_dir,
-                strict_params=strict_params,
-            )
-        except (FileNotFoundError, ImportError):
-            return _load_tb48_from_matrix(
-                h_path=tb48_h_path,
-                logical_path=tb48_logical_path,
-            )
+        return tb_48_4_8(
+            seed=seed,
+            code_dir=code_dir,
+            strict_params=strict_params,
+        )
     if key == "BB_18_4_4":
         return bb_18_4_4(
             seed=seed,
