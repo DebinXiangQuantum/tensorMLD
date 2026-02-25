@@ -1102,15 +1102,19 @@ def extract_1d_chain(active_nodes: set[int],
 
 
 class CompressedTNDecoder:
-    """Online decoder using a fully-contracted compressed MPS.
+    """Online decoder that substitutes syndrome values FIRST, then contracts.
 
-    After offline contraction-swap-merge removes non-preserved nodes, we
-    continue contracting ALL remaining edges (including between preserved
-    nodes) to produce a **single MPS** whose open indices are the syndrome
-    parameters and logical observables.
+    After offline contraction-swap-merge (phase 1) removes non-preserved
+    nodes, we store the residual graph of preserved nodes (syndrome +
+    logical).  At online decode time:
 
-    Online decode substitutes syndrome values into the single MPS and reads
-    the logical marginal directly — no further graph contraction needed.
+    1. Substitute concrete syndrome values (0/1) into each node's MPS,
+       collapsing the syndrome physical index (dim 2 → scalar matrix).
+    2. Contract the now-simplified residual graph to a single MPS.
+    3. Read the logical marginal from the final 1-site MPS.
+
+    This avoids the exponential bond growth that occurs when trying to
+    contract all preserved nodes *before* knowing the syndrome.
     """
 
     def __init__(
@@ -1119,15 +1123,133 @@ class CompressedTNDecoder:
         nodes: dict[int, Any],
         syndrome_label_set: set[str],
         logical_label_set: set[str],
-        chi: int = 32,
+        chi: int = 0,  # online chi for residual graph contraction
     ):
-        # Continue contracting all remaining edges to a single node
-        remaining = set(active_nodes)
+        import copy
+        # Store deep copies of the preserved graph for online reuse.
+        # Each decode call will work on a fresh copy.
+        self._active_ids = set(active_nodes)
+        self._chi = chi
+        self._node_snapshots: dict[int, Any] = {}
+        for nid in active_nodes:
+            self._node_snapshots[nid] = copy.deepcopy(nodes[nid])
+
+        self._syndrome_label_set = set(syndrome_label_set)
+        self._logical_label_set = set(logical_label_set)
+        self.phase2_truncation_error = 0.0
+
+        # Build label → (node_id, position) mapping for fast substitution
+        self.syndrome_labels: list[str] = []
+        self.logical_labels: list[str] = []
+        self._syndrome_node_pos: dict[str, tuple[int, int]] = {}
+        self._logical_node_pos: dict[str, tuple[int, int]] = {}
+
+        for nid in active_nodes:
+            node = self._node_snapshots[nid]
+            for pos, nb in enumerate(node.neighbor):
+                if isinstance(nb, str):
+                    label = out_token_to_index(nb)
+                    if label in syndrome_label_set:
+                        self.syndrome_labels.append(label)
+                        self._syndrome_node_pos[label] = (nid, pos)
+                    elif label in logical_label_set:
+                        self.logical_labels.append(label)
+                        self._logical_node_pos[label] = (nid, pos)
+
+    def decode_logicals(
+        self,
+        syndrome_values: dict[str, float],
+        use_gpu: bool = False,
+    ) -> tuple[dict[str, int], dict[str, float]]:
+        """Decode by substituting syndrome, then contracting residual graph."""
+        marginals: dict[str, float] = {}
+        assignments: dict[str, int] = {}
+
+        for log_label in self.logical_labels:
+            prob = self._marginal_for(log_label, syndrome_values)
+            marginals[log_label] = prob
+            assignments[log_label] = 1 if prob >= 0.5 else 0
+
+        return assignments, marginals
+
+    def _marginal_for(
+        self, logical_label: str, syndrome_values: dict[str, float]
+    ) -> float:
+        """Compute P(logical=1 | syndrome) by substituting then contracting."""
+        log0 = self._substitute_and_contract(logical_label, 0, syndrome_values)
+        log1 = self._substitute_and_contract(logical_label, 1, syndrome_values)
+
+        if math.isinf(log0) and math.isinf(log1):
+            return 0.5
+        if log1 > log0:
+            return 1.0 / (1.0 + math.exp(log0 - log1))
+        return math.exp(log1 - log0) / (1.0 + math.exp(log1 - log0))
+
+    def _substitute_and_contract(
+        self,
+        logical_label: str,
+        logical_value: int,
+        syndrome_values: dict[str, float],
+    ) -> float:
+        """Substitute syndrome+logical values, contract residual graph.
+
+        Steps:
+        1. Deep-copy the stored node graph.
+        2. For each syndrome site, contract phys index with [1-s, s] → scalar.
+        3. For the target logical, select phys index = logical_value.
+        4. For other logicals, sum over phys index (marginalise).
+        5. Contract all remaining internal edges to a single node.
+        6. Return log|trace| of the final matrix.
+        """
+        import copy
+        nodes = {nid: copy.deepcopy(n) for nid, n in self._node_snapshots.items()}
+        remaining = set(self._active_ids)
+
+        # Step 1-4: Substitute concrete values into MPS cores.
+        for nid in list(remaining):
+            node = nodes[nid]
+            for pos in range(len(node.neighbor)):
+                nb = node.neighbor[pos]
+                if not isinstance(nb, str):
+                    continue
+                label = out_token_to_index(nb)
+                if label in self._syndrome_label_set:
+                    p = float(syndrome_values.get(label, 0.0))
+                    vec = np.array([1.0 - p, p], dtype=node.mps[pos].dtype)
+                    # Contract phys dim: (left, 2, right) @ [1-p, p] → (left, right)
+                    node.mps[pos] = np.tensordot(
+                        node.mps[pos], vec, axes=(1, 0))
+                    # Mark as contracted (no more open leg at this position)
+                    node.neighbor[pos] = f"{OUT_PREFIX}_contracted_syn"
+                elif label == logical_label:
+                    node.mps[pos] = node.mps[pos][:, logical_value, :]
+                    node.neighbor[pos] = f"{OUT_PREFIX}_fixed_log"
+                elif label in self._logical_label_set:
+                    node.mps[pos] = node.mps[pos].sum(axis=1)
+                    node.neighbor[pos] = f"{OUT_PREFIX}_summed_log"
+
+        # Step 5: Contract residual graph using catn eat/merge/compress.
+        # After substitution, syndrome/logical positions become 2D (left, right).
+        # Reshape them to 3D (left, 1, right) so catn operations (reverse, eat,
+        # merge, compress) continue to work.  The key advantage: syndrome dims
+        # are now 1 instead of 2, dramatically reducing bond growth.
+        for nid in remaining:
+            node = nodes[nid]
+            for pos in range(len(node.mps)):
+                if node.mps[pos].ndim == 2:
+                    l, r = node.mps[pos].shape
+                    node.mps[pos] = node.mps[pos].reshape(l, 1, r)
+
+        # Use large chi for online contraction — after substitution the
+        # effective tensor dims are much smaller, so moderate chi suffices.
+        online_chi = max(self._chi, 256) if self._chi > 0 else 256
+        for nid in remaining:
+            nodes[nid].chi = online_chi
+
         while True:
             edges = _collect_internal_edges(remaining, nodes)
             if not edges:
                 break
-            # Greedy: pick cheapest edge
             i, j = min(edges, key=lambda e: _edge_cost(nodes, e[0], e[1]))
             if nodes[j].order() > nodes[i].order():
                 i, j = j, i
@@ -1137,7 +1259,6 @@ class CompressedTNDecoder:
             if idx_j_in_i < 0 or idx_i_in_j < 0:
                 break
 
-            # Reverse optimisation
             if idx_j_in_i < len(nodes[i].neighbor) // 2:
                 nodes[i].reverse()
                 idx_j_in_i = int(nodes[i].find_neighbor(j))
@@ -1162,112 +1283,25 @@ class CompressedTNDecoder:
                         nodes[k].merge(i, cross=idx_i_in_k > idx_j_in_k)
 
             nodes[i].eat(nodes[j], idx_j_in_i, idx_i_in_j)
-
             for k in duplicate_neighbors:
                 nodes[i].merge(k, cross=False)
-                idx_k_in_i = int(nodes[i].find_neighbor(k))
-                if idx_k_in_i >= 0 and chi > 0:
-                    _cut_bondim_opt(nodes, i, idx_k_in_i, Dmax=chi)
-
             nodes[i].compress_opt()
             nodes[j].clear()
             remaining.remove(j)
 
-        # Now there should be a single node (or very few)
+        # Final: contract the single remaining node's MPS chain
         final_id = next(iter(remaining))
         final_node = nodes[final_id]
 
-        # Map open indices to syndrome/logical labels
-        self.syndrome_labels: list[str] = []
-        self.logical_labels: list[str] = []
-        self._syndrome_positions: dict[str, int] = {}
-        self._logical_positions: dict[str, int] = {}
-
-        for pos, nb in enumerate(final_node.neighbor):
-            if isinstance(nb, str):
-                label = out_token_to_index(nb)
-                if label in syndrome_label_set:
-                    self.syndrome_labels.append(label)
-                    self._syndrome_positions[label] = pos
-                elif label in logical_label_set:
-                    self.logical_labels.append(label)
-                    self._logical_positions[label] = pos
-
-        self._mps = final_node.mps
-        self._neighbor = list(final_node.neighbor)
-
-    def decode_logicals(
-        self,
-        syndrome_values: dict[str, float],
-        use_gpu: bool = False,
-    ) -> tuple[dict[str, int], dict[str, float]]:
-        """Decode by substituting syndrome values into fully-contracted MPS."""
-        marginals: dict[str, float] = {}
-        assignments: dict[str, int] = {}
-
-        for log_label in self.logical_labels:
-            prob = self._marginal_for(log_label, syndrome_values)
-            marginals[log_label] = prob
-            assignments[log_label] = 1 if prob >= 0.5 else 0
-
-        return assignments, marginals
-
-    def _marginal_for(
-        self, logical_label: str, syndrome_values: dict[str, float]
-    ) -> float:
-        """Compute P(logical=1 | syndrome) via MPS contraction."""
-        log0 = self._contract_fixed(logical_label, 0, syndrome_values)
-        log1 = self._contract_fixed(logical_label, 1, syndrome_values)
-
-        if math.isinf(log0) and math.isinf(log1):
-            return 0.5
-        if log1 > log0:
-            return 1.0 / (1.0 + math.exp(log0 - log1))
-        return math.exp(log1 - log0) / (1.0 + math.exp(log1 - log0))
-
-    def _contract_fixed(
-        self,
-        logical_label: str,
-        logical_value: int,
-        syndrome_values: dict[str, float],
-    ) -> float:
-        """Contract single MPS with fixed syndrome+logical values.
-
-        Each MPS core at position `pos` has shape (left, phys, right).
-        The physical index corresponds to the open index at that position
-        (syndrome parameter, logical observable, or other open label).
-        We substitute syndrome/logical values and multiply the resulting
-        matrices left-to-right, returning log|trace(product)|.
-        """
         log_scale = 0.0
-        acc = None  # Running matrix product
-
-        for pos, core in enumerate(self._mps):
-            # core shape: (left, phys, right)
-            nb = self._neighbor[pos]
-            if isinstance(nb, str):
-                label = out_token_to_index(nb)
-                if label in self._syndrome_positions:
-                    p = float(syndrome_values.get(label, 0.0))
-                    vec = np.array([1.0 - p, p], dtype=core.dtype)
-                    mat = np.tensordot(core, vec, axes=(1, 0))  # (left, right)
-                elif label == logical_label:
-                    mat = core[:, logical_value, :]  # (left, right)
-                elif label in self._logical_positions:
-                    mat = core.sum(axis=1)  # sum over unspecified logical
-                else:
-                    mat = core.sum(axis=1)
-            else:
-                # Internal — shouldn't exist after full contraction
-                mat = core.sum(axis=1)
-
+        acc = None
+        for core in final_node.mps:
+            mat = core if core.ndim == 2 else core.sum(axis=1)
             if acc is None:
                 acc = mat
             else:
                 acc = acc @ mat
-
-            # Numerical stability: rescale
-            norm = float(np.max(np.abs(acc)))
+            norm = float(np.max(np.abs(acc))) if acc is not None else 0
             if norm > 0:
                 acc = acc / norm
                 log_scale += math.log(norm)
