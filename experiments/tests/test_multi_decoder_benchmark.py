@@ -9,8 +9,10 @@ Compares decoders:
   - BP      (ldpc package, CPU)
 
 Codes:
-  - BB [72,12,6], BB [144,12,12]
-  - HP_162 (ring 9×9), HP_288
+  - ISCA revision 9-code suite:
+    TB_25_3_4, TB_30_6_4, TB_48_4_8,
+    BB_18_4_4, BB_60_8_4, BB_72_12_6,
+    BB_90, BB_108, BB_144
 
 Usage:
   .venv-mps/bin/python experiments/tests/test_multi_decoder_benchmark.py
@@ -18,10 +20,10 @@ Usage:
 """
 from __future__ import annotations
 
+import concurrent.futures as cf
 import importlib
 import importlib.util
 import json
-import math
 import sys
 import time
 from dataclasses import dataclass
@@ -81,7 +83,10 @@ def _load_module(name: str, path: Path):
 core = _load_module("mps_decoder_core", _TNU / "mps_decoder_core.py")
 factory = _load_module("tensor_network_factory", _TNU / "tensor_network_factory.py")
 
-from experiments.codes.codes import gen_BB_code, gen_HP_ring_code, get_benchmark_code
+from experiments.tests._isca_code_registry import (
+    load_isca_code_cases,
+    resolve_parallel_workers,
+)
 
 # ---------------------------------------------------------------------------
 # BP decoders (ldpc package)
