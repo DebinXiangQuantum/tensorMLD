@@ -10,6 +10,8 @@ dependencies = [
     "autoray>=0.6.0",
     "matplotlib>=3.7.0",
     "scipy>=1.10.0",
+    "ldpc",
+    "torch",
 ]
 
 [project.optional-dependencies]

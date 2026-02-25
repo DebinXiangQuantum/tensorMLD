@@ -82,7 +82,7 @@ def test_mps_decoder_latency_api():
                               logical_obs=logical,
                               noise_model=noise)
     stats = decoder.benchmark_decode_latency([1.0, 0.0], warmup=1, repeats=3)
-    assert set(stats.keys()) == {"avg_ms", "min_ms", "max_ms"}
+    assert {"avg_ms", "min_ms", "max_ms"} <= set(stats.keys())
     assert stats["avg_ms"] >= 0.0
 
 
@@ -106,6 +106,61 @@ def test_mps_decoder_bond_dim_priority_over_offline_chi():
                               offline_chi=8)
     assert decoder.bond_dim == 24
     assert decoder.offline_chi == 24
+
+
+def test_mps_decoder_matches_exact_simple():
+    """Verify MPS decoder gives same probabilities as exact decoder on a small code."""
+    H, logical, noise = _simple_case()
+    exact_dec = qec.get_decoder("tensor_network_decoder",
+                                H,
+                                logical_obs=logical,
+                                noise_model=noise)
+    mps_dec = qec.get_decoder("tensor_network_mps_decoder",
+                              H,
+                              logical_obs=logical,
+                              noise_model=noise,
+                              bond_dim=32,
+                              verbose=False)
+    syndromes = [[0.0, 0.0], [1.0, 0.0], [0.0, 1.0], [1.0, 1.0]]
+    for syn in syndromes:
+        exact_out = exact_dec.decode(syn)
+        mps_out = mps_dec.decode(syn)
+        assert abs(exact_out.result[0] - mps_out.result[0]) < 1e-6, (
+            f"syndrome={syn}: exact={exact_out.result[0]:.8f}, "
+            f"mps={mps_out.result[0]:.8f}")
+
+
+def test_mps_decoder_matches_exact_steane():
+    """Verify MPS decoder matches exact on a Steane-like code (higher check count)."""
+    # Steane [[7,1,3]] code parity check matrix (Hz)
+    H = np.array([
+        [1, 1, 1, 1, 0, 0, 0],
+        [1, 1, 0, 0, 1, 1, 0],
+        [1, 0, 1, 0, 1, 0, 1],
+    ], dtype=np.float64)
+    logical = np.array([[1, 1, 1, 0, 0, 0, 0]], dtype=np.float64)
+    noise = [0.05] * 7
+
+    exact_dec = qec.get_decoder("tensor_network_decoder",
+                                H,
+                                logical_obs=logical,
+                                noise_model=noise)
+    mps_dec = qec.get_decoder("tensor_network_mps_decoder",
+                              H,
+                              logical_obs=logical,
+                              noise_model=noise,
+                              bond_dim=64,
+                              verbose=False)
+
+    rng = np.random.default_rng(42)
+    for _ in range(10):
+        error = (rng.random(7) < 0.05).astype(np.int8)
+        syn = ((error @ H.T.astype(np.int8)) % 2).astype(np.float64).tolist()
+        exact_out = exact_dec.decode(syn)
+        mps_out = mps_dec.decode(syn)
+        assert abs(exact_out.result[0] - mps_out.result[0]) < 1e-4, (
+            f"syndrome={syn}: exact={exact_out.result[0]:.8f}, "
+            f"mps={mps_out.result[0]:.8f}")
 
 
 def test_mps_decoder_global_threshold_validation():

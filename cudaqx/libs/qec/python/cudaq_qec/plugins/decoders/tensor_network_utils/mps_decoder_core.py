@@ -1198,14 +1198,23 @@ class CompressedTNDecoder:
         2. For each syndrome site, contract phys index with [1-s, s] → scalar.
         3. For the target logical, select phys index = logical_value.
         4. For other logicals, sum over phys index (marginalise).
-        5. Contract all remaining internal edges to a single node.
-        6. Return log|trace| of the final matrix.
+        5. Reconstruct each node as a raw tensor (from its MPS chain).
+        6. Contract the residual graph using direct tensor operations.
+        7. Return log|value| of the final scalar.
+
+        NOTE: After substituting syndrome/logical values, the MPS cores at
+        those positions become 2D matrices (left, right) instead of the
+        normal 3D (left, phys, right).  We do NOT try to reshape them back
+        to 3D and use eat/merge/compress (those operations assume meaningful
+        physical dimensions).  Instead, we reconstruct each node as a raw
+        tensor and contract the residual graph directly.
         """
         import copy
         nodes = {nid: copy.deepcopy(n) for nid, n in self._node_snapshots.items()}
         remaining = set(self._active_ids)
 
         # Step 1-4: Substitute concrete values into MPS cores.
+        # Track which MPS positions have been contracted (became 2D).
         for nid in list(remaining):
             node = nodes[nid]
             for pos in range(len(node.neighbor)):
@@ -1219,7 +1228,6 @@ class CompressedTNDecoder:
                     # Contract phys dim: (left, 2, right) @ [1-p, p] → (left, right)
                     node.mps[pos] = np.tensordot(
                         node.mps[pos], vec, axes=(1, 0))
-                    # Mark as contracted (no more open leg at this position)
                     node.neighbor[pos] = f"{OUT_PREFIX}_contracted_syn"
                 elif label == logical_label:
                     node.mps[pos] = node.mps[pos][:, logical_value, :]
@@ -1228,93 +1236,195 @@ class CompressedTNDecoder:
                     node.mps[pos] = node.mps[pos].sum(axis=1)
                     node.neighbor[pos] = f"{OUT_PREFIX}_summed_log"
 
-        # Step 5: Contract residual graph using catn eat/merge/compress.
-        # After substitution, syndrome/logical positions become 2D (left, right).
-        # Reshape them to 3D (left, 1, right) so catn operations (reverse, eat,
-        # merge, compress) continue to work.  The key advantage: syndrome dims
-        # are now 1 instead of 2, dramatically reducing bond growth.
+        # Step 5-6: Reconstruct each node as a raw tensor from its MPS chain,
+        # then contract the residual graph using direct numpy operations.
+        # After substitution, each node's MPS contains a mix of:
+        #   - 3D cores (left, phys_dim, right) for internal (inter-node) bonds
+        #   - 2D matrices (left, right) for substituted (contracted) positions
+        # We contract the MPS chain within each node into a single tensor
+        # that has one axis per remaining internal neighbor.
+
+        # Build raw tensor for each remaining node.
+        # The raw tensor has one axis per MPS position that corresponds to
+        # an internal edge (neighbor is an int in remaining).
+        node_raw: dict[int, np.ndarray] = {}
+        # Map: node_id -> list of (axis_in_raw, neighbor_id) for internal edges
+        node_axes: dict[int, list[tuple[int, int]]] = {}
+
         for nid in remaining:
             node = nodes[nid]
+            # Contract the MPS chain into a single tensor.
+            # Positions with 2D cores have been substituted (no physical dim).
+            # Positions with 3D cores still have a physical dim = bond to neighbor.
+            # We keep track of which axes in the raw tensor correspond to
+            # internal neighbors.
+            internal_axes: list[tuple[int, int]] = []  # (axis_idx, neighbor_id)
+            raw_axis = 0
+
+            # Contract MPS chain: multiply all cores sequentially.
+            # For 3D core: shape (l, d, r) - keep the d dimension
+            # For 2D core: shape (l, r) - no physical dimension to keep
+            acc = None
+            physical_dims: list[int] = []  # track which positions have phys dim
+
             for pos in range(len(node.mps)):
-                if node.mps[pos].ndim == 2:
-                    l, r = node.mps[pos].shape
-                    node.mps[pos] = node.mps[pos].reshape(l, 1, r)
+                core = node.mps[pos]
+                nb = node.neighbor[pos]
+                has_phys = (core.ndim == 3)
 
-        # Use large chi for online contraction — after substitution the
-        # effective tensor dims are much smaller, so moderate chi suffices.
-        online_chi = max(self._chi, 256) if self._chi > 0 else 256
-        for nid in remaining:
-            nodes[nid].chi = online_chi
+                if acc is None:
+                    if has_phys:
+                        # First core with phys dim: (1, d, r) -> keep shape
+                        acc = core
+                    else:
+                        # First core is 2D: (1, r) -> reshape for chaining
+                        acc = core
+                else:
+                    if has_phys:
+                        # acc has shape (accumulated..., bond)
+                        # core has shape (bond, d, r)
+                        # Result: (accumulated..., d, r)
+                        if acc.ndim == 2:
+                            # acc shape: (X, bond), core: (bond, d, r)
+                            acc = np.einsum('ij,jkl->ikl', acc, core)
+                        else:
+                            # acc shape: (..., bond), core: (bond, d, r)
+                            shape_pre = acc.shape[:-1]
+                            bond = acc.shape[-1]
+                            acc_flat = acc.reshape(-1, bond)
+                            merged = np.einsum('ij,jkl->ikl', acc_flat, core)
+                            acc = merged.reshape(*shape_pre, core.shape[1], core.shape[2])
+                    else:
+                        # core is 2D: (bond, r)
+                        if acc.ndim == 2:
+                            acc = acc @ core
+                        else:
+                            shape_pre = acc.shape[:-1]
+                            bond = acc.shape[-1]
+                            acc = acc.reshape(-1, bond) @ core
+                            acc = acc.reshape(*shape_pre, core.shape[-1])
 
-        while True:
-            edges = _collect_internal_edges(remaining, nodes)
-            if not edges:
-                break
-            i, j = min(edges, key=lambda e: _edge_cost(nodes, e[0], e[1]))
-            if nodes[j].order() > nodes[i].order():
-                i, j = j, i
+                if has_phys:
+                    physical_dims.append(pos)
 
-            idx_j_in_i = int(nodes[i].find_neighbor(j))
-            idx_i_in_j = int(nodes[j].find_neighbor(i))
-            if idx_j_in_i < 0 or idx_i_in_j < 0:
-                break
-
-            if idx_j_in_i < len(nodes[i].neighbor) // 2:
-                nodes[i].reverse()
-                idx_j_in_i = int(nodes[i].find_neighbor(j))
-            if idx_i_in_j >= len(nodes[j].neighbor) // 2:
-                nodes[j].reverse()
-                idx_i_in_j = int(nodes[j].find_neighbor(i))
-
-            nodes[i].delete_neighbor(j)
-            neighbors_j = list(nodes[j].neighbor)
-            duplicate_neighbors: list[int] = []
-
-            for pos, k in enumerate(neighbors_j):
-                if pos == idx_i_in_j:
-                    continue
-                nodes[i].add_neighbor(k)
-                if isinstance(k, int) and k in remaining:
-                    idx_i_in_k = int(nodes[k].find_neighbor(i))
-                    idx_j_in_k = int(nodes[k].delete_neighbor(j))
-                    nodes[k].add_neighbor(i, idx_j_in_k)
-                    if idx_i_in_k > -1:
-                        duplicate_neighbors.append(k)
-                        nodes[k].merge(i, cross=idx_i_in_k > idx_j_in_k)
-
-            nodes[i].eat(nodes[j], idx_j_in_i, idx_i_in_j)
-            for k in duplicate_neighbors:
-                nodes[i].merge(k, cross=False)
-            nodes[i].compress_opt()
-            nodes[j].clear()
-            remaining.remove(j)
-
-        # Final: contract the single remaining node's MPS chain
-        final_id = next(iter(remaining))
-        final_node = nodes[final_id]
-
-        log_scale = 0.0
-        acc = None
-        for core in final_node.mps:
-            mat = core if core.ndim == 2 else core.sum(axis=1)
             if acc is None:
-                acc = mat
-            else:
-                acc = acc @ mat
-            norm = float(np.max(np.abs(acc))) if acc is not None else 0
-            if norm > 0:
-                acc = acc / norm
-                log_scale += math.log(norm)
+                node_raw[nid] = np.array(1.0, dtype=np.float64)
+                node_axes[nid] = []
+                continue
 
-        if acc is None:
-            return -math.inf
+            # Now acc has shape: (1, d1, d2, ..., dk, 1) or similar
+            # where d_i are the physical dimensions of unsubstituted positions.
+            # We need to:
+            # 1. Remove the leading "1" (left boundary) and trailing "1" (right boundary)
+            # 2. Identify which dimensions correspond to internal neighbors
 
-        if acc.ndim == 2:
-            val = float(np.abs(np.trace(acc)))
-        else:
-            val = float(np.abs(np.sum(acc)))
+            # Determine the shape: the leading dim is left-boundary (=1 for first),
+            # trailing dim is right-boundary (=1 for last).
+            # In between are the physical dimensions in order of `physical_dims`.
 
-        return log_scale + math.log(val) if val > 0.0 else -math.inf
+            # Squeeze boundary dimensions
+            shape = list(acc.shape)
+            # The first axis is the left bond of the first core (should be 1)
+            # The last axis is the right bond of the last core (should be 1)
+            if shape[0] == 1:
+                acc = acc.reshape(shape[1:])
+                shape = list(acc.shape)
+            if len(shape) > 0 and shape[-1] == 1:
+                acc = acc.reshape(shape[:-1])
+                shape = list(acc.shape)
+
+            if acc.ndim == 0:
+                node_raw[nid] = acc
+                node_axes[nid] = []
+                continue
+
+            # Map physical dimensions to internal neighbors
+            axis_idx = 0
+            for pos in physical_dims:
+                nb = node.neighbor[pos]
+                if isinstance(nb, int) and nb in remaining:
+                    internal_axes.append((axis_idx, nb))
+                axis_idx += 1
+
+            node_raw[nid] = acc
+            node_axes[nid] = internal_axes
+
+        # Step 6: Contract all internal edges by pairwise tensor contraction.
+        # Greedily contract pairs of nodes that share an edge.
+        while len(remaining) > 1:
+            # Find a pair with a shared internal edge
+            pair_found = False
+            for nid_i in list(remaining):
+                for (ax_i, nb_i) in node_axes.get(nid_i, []):
+                    if nb_i in remaining and nb_i != nid_i:
+                        nid_j = nb_i
+                        # Find the matching axis in node j
+                        ax_j = None
+                        for (ax_jj, nb_jj) in node_axes.get(nid_j, []):
+                            if nb_jj == nid_i:
+                                ax_j = ax_jj
+                                break
+                        if ax_j is None:
+                            continue
+
+                        # Contract: sum over ax_i in nid_i and ax_j in nid_j
+                        raw_i = node_raw[nid_i]
+                        raw_j = node_raw[nid_j]
+
+                        contracted = np.tensordot(raw_i, raw_j, axes=([ax_i], [ax_j]))
+                        # After contraction, axes from i come first (minus ax_i),
+                        # then axes from j (minus ax_j).
+                        # Update axis mappings.
+                        new_axes: list[tuple[int, int]] = []
+                        offset = 0
+                        for (a, nb) in node_axes[nid_i]:
+                            if a == ax_i:
+                                continue
+                            new_a = a if a < ax_i else a - 1
+                            new_axes.append((new_a, nb))
+                            offset = max(offset, new_a + 1)
+
+                        # Axes from j start after i's axes
+                        ndim_i_after = raw_i.ndim - 1  # i lost one axis
+                        for (a, nb) in node_axes[nid_j]:
+                            if a == ax_j:
+                                continue
+                            new_a = ndim_i_after + (a if a < ax_j else a - 1)
+                            new_axes.append((new_a, nb))
+
+                        # Also update references: any node that pointed to nid_j
+                        # should now point to nid_i (since we merge into nid_i)
+                        for other_nid in remaining:
+                            if other_nid == nid_i or other_nid == nid_j:
+                                continue
+                            updated = []
+                            for (a, nb) in node_axes.get(other_nid, []):
+                                if nb == nid_j:
+                                    updated.append((a, nid_i))
+                                else:
+                                    updated.append((a, nb))
+                            node_axes[other_nid] = updated
+
+                        node_raw[nid_i] = contracted
+                        node_axes[nid_i] = new_axes
+                        del node_raw[nid_j]
+                        del node_axes[nid_j]
+                        remaining.remove(nid_j)
+                        pair_found = True
+                        break
+                if pair_found:
+                    break
+            if not pair_found:
+                break
+
+        # Step 7: Compute log|value| of the final scalar.
+        final_id = next(iter(remaining))
+        result = node_raw[final_id]
+
+        # The result should be a scalar (all indices contracted).
+        # If not, sum over remaining dimensions.
+        val = float(np.abs(np.sum(result)))
+        return math.log(val) if val > 0.0 else -math.inf
 
 
 @dataclass
