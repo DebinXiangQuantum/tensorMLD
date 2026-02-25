@@ -12,10 +12,9 @@
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import shutil
 from pathlib import Path
-
-import cudaq_qec
 
 
 def _copy_file(src: Path, dst: Path) -> None:
@@ -38,22 +37,26 @@ def main() -> None:
     if not src_root.exists():
         raise FileNotFoundError(f"Cannot find source decoder path: {src_root}")
 
-    installed_root = Path(cudaq_qec.__file__).resolve().parent
+    # Find cudaq_qec install path WITHOUT fully importing it (avoids
+    # triggering plugin auto-discovery which may fail on partial patches).
+    spec = importlib.util.find_spec("cudaq_qec")
+    if spec is None or spec.origin is None:
+        raise RuntimeError(
+            "cudaq_qec is not installed. Run: pip install cudaq-qec")
+    installed_root = Path(spec.origin).resolve().parent
     dst_root = installed_root / "plugins/decoders"
     print(f"[patch] installed cudaq_qec root: {installed_root}")
 
-    targets = [
-        ("tensor_network_mps_decoder.py", "tensor_network_mps_decoder.py"),
-        ("tensor_network_utils/mps_decoder_core.py",
-         "tensor_network_utils/mps_decoder_core.py"),
-    ]
+    # Copy MPS decoder entry point.
+    _copy_file(src_root / "tensor_network_mps_decoder.py",
+               dst_root / "tensor_network_mps_decoder.py")
 
-    for rel_src, rel_dst in targets:
-        src = src_root / rel_src
-        dst = dst_root / rel_dst
-        if not src.exists():
-            raise FileNotFoundError(src)
-        _copy_file(src, dst)
+    # Copy ALL .py files in tensor_network_utils/ (mps_decoder_core, mps_node_np,
+    # npsvd, tensor_network_factory, contractors, noise_models, __init__, etc.)
+    tnu_src = src_root / "tensor_network_utils"
+    tnu_dst = dst_root / "tensor_network_utils"
+    for py_file in sorted(tnu_src.glob("*.py")):
+        _copy_file(py_file, tnu_dst / py_file.name)
 
     print("[patch] done")
 

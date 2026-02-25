@@ -219,9 +219,9 @@ def run_benchmark(
     codes = _get_codes()
 
     for cc in codes:
-        H = cc.code.hz.astype(np.float64)
-        lz = cc.code.lz.astype(np.float64)
-        logical_row = lz[0]  # first logical
+        H = np.ascontiguousarray(cc.code.hz.astype(np.float64))
+        lz = np.ascontiguousarray(cc.code.lz.astype(np.float64))
+        logical_row = np.ascontiguousarray(lz[0])  # first logical
         num_checks, num_errors = H.shape
 
         if verbose:
