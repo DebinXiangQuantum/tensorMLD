@@ -23,13 +23,13 @@ Usage:
 """
 from __future__ import annotations
 
+import concurrent.futures as cf
 import importlib.util
 import json
 import math
 import sys
 import time
 import tracemalloc
-from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Optional
 
@@ -60,24 +60,30 @@ _TNU = QEC_PY / "cudaq_qec" / "plugins" / "decoders" / "tensor_network_utils"
 core = _load_module("mps_decoder_core", _TNU / "mps_decoder_core.py")
 factory = _load_module("tensor_network_factory", _TNU / "tensor_network_factory.py")
 
-from experiments.codes.codes import gen_BB_code, gen_HP_ring_code
+from experiments.tests._isca_code_registry import (
+    load_isca_code_cases,
+    resolve_parallel_workers,
+)
 from quimb import oset
 from quimb.tensor import Tensor, TensorNetwork
 
 # ---------------------------------------------------------------------------
 # Codes to test
 # ---------------------------------------------------------------------------
-CODES = [
-    ("BB_72",  lambda: gen_BB_code(72)),
-    ("BB_90",  lambda: gen_BB_code(90)),
-    ("BB_144", lambda: gen_BB_code(144)),
-    ("HP_162", lambda: gen_HP_ring_code(9, 9)),
+CODES_DEFAULT = [
+    "TB_25_3_4",
+    "TB_30_6_4",
+    "TB_48_4_8",
+    "BB_18_4_4",
+    "BB_60_8_4",
+    "BB_72_12_6",
+    "BB_90",
+    "BB_108",
+    "BB_144",
 ]
 
-# Smaller set for smoke test
-CODES_SMOKE = [
-    ("BB_72",  lambda: gen_BB_code(72)),
-]
+# Smaller set for smoke test.
+CODES_SMOKE = ["BB_90"]
 
 
 # ---------------------------------------------------------------------------
@@ -501,13 +507,15 @@ def method_our_mps(
 # Run ablation study
 # ---------------------------------------------------------------------------
 def run_ablation(
-    codes: list[tuple[str, Any]] | None = None,
+    codes: list[str] | list[tuple[str, Any]] | None = None,
     shots: int = 32,
     noise_p: float = 0.01,
     chi: int = 32,
     seed: int = 2026,
     verbose: bool = True,
     skip_naive_above: int = 200,
+    skip_missing: bool = False,
+    parallel_workers: Optional[int] = None,
 ) -> list[dict]:
     """Run the full ablation study across all codes and methods.
 
@@ -516,12 +524,28 @@ def run_ablation(
             (too slow/memory-intensive).
     """
     if codes is None:
-        codes = CODES
+        loaded_codes, skipped = load_isca_code_cases(
+            code_names=CODES_DEFAULT,
+            skip_missing=skip_missing,
+        )
+    else:
+        if codes and isinstance(codes[0], tuple):
+            loaded_codes = list(codes)  # type: ignore[arg-type]
+            skipped = []
+        else:
+            loaded_codes, skipped = load_isca_code_cases(
+                code_names=[str(x) for x in codes],  # type: ignore[arg-type]
+                skip_missing=skip_missing,
+            )
 
-    all_results: list[dict] = []
+    if verbose and skipped:
+        print(f"[codes] skipped {len(skipped)} code(s):")
+        for line in skipped:
+            print(f"  - {line}")
+    if not loaded_codes:
+        raise RuntimeError("No codes were loaded for ablation.")
 
-    for code_name, code_factory in codes:
-        code = code_factory()
+    def _run_one(code_name: str, code: Any) -> list[dict]:
         H = code.hz.astype(np.float64)
         logical_row = code.lz[0].astype(np.float64)
         num_checks, num_errors = H.shape
@@ -533,6 +557,8 @@ def run_ablation(
             print(f"\n{'='*70}")
             print(f"Code: {code_name}  N={code.N} K={code.K}  "
                   f"H=({num_checks}x{num_errors})  shots={shots}")
+
+        out: list[dict] = []
 
         # --- Method A: Naive direct contraction ---
         if num_errors <= skip_naive_above:
@@ -546,7 +572,7 @@ def run_ablation(
                 res_a["N"] = int(code.N)
                 res_a["K"] = int(code.K)
                 res_a["noise_p"] = noise_p
-                all_results.append(res_a)
+                out.append(res_a)
                 if verbose:
                     print(f"    LER={res_a['logical_error_rate']:.4f}, "
                           f"time={res_a['actual_total_ms']:.1f}ms, "
@@ -555,7 +581,7 @@ def run_ablation(
             except Exception as e:
                 if verbose:
                     print(f"    ERROR: {e}")
-                all_results.append({
+                out.append({
                     "method": "naive_direct", "code": code_name,
                     "N": int(code.N), "K": int(code.K),
                     "status": "error", "error": str(e),
@@ -563,7 +589,7 @@ def run_ablation(
         else:
             if verbose:
                 print(f"\n  Method A: SKIPPED (N={num_errors} > {skip_naive_above})")
-            all_results.append({
+            out.append({
                 "method": "naive_direct", "code": code_name,
                 "N": int(code.N), "K": int(code.K),
                 "status": "skipped", "reason": f"N={num_errors} > {skip_naive_above}",
@@ -580,7 +606,7 @@ def run_ablation(
             res_b["N"] = int(code.N)
             res_b["K"] = int(code.K)
             res_b["noise_p"] = noise_p
-            all_results.append(res_b)
+            out.append(res_b)
             if verbose:
                 print(f"    LER={res_b['logical_error_rate']:.4f}, "
                       f"time={res_b['actual_total_ms']:.1f}ms, "
@@ -589,7 +615,7 @@ def run_ablation(
         except Exception as e:
             if verbose:
                 print(f"    ERROR: {e}")
-            all_results.append({
+            out.append({
                 "method": "quimb_compress", "code": code_name,
                 "N": int(code.N), "K": int(code.K),
                 "status": "error", "error": str(e),
@@ -606,7 +632,7 @@ def run_ablation(
             res_c["N"] = int(code.N)
             res_c["K"] = int(code.K)
             res_c["noise_p"] = noise_p
-            all_results.append(res_c)
+            out.append(res_c)
             if verbose:
                 print(f"    LER={res_c['logical_error_rate']:.4f}, "
                       f"offline={res_c['offline_ms']:.1f}ms, "
@@ -616,12 +642,39 @@ def run_ablation(
         except Exception as e:
             if verbose:
                 print(f"    ERROR: {e}")
-            all_results.append({
+            out.append({
                 "method": "our_mps", "code": code_name,
                 "N": int(code.N), "K": int(code.K),
                 "status": "error", "error": str(e),
             })
+        return out
 
+    workers = resolve_parallel_workers(
+        use_gpu=False,
+        parallel_workers=parallel_workers,
+    )
+    if verbose:
+        print(f"[ablation] codes={len(loaded_codes)}, workers={workers}")
+
+    if workers == 1 or len(loaded_codes) == 1:
+        all_results: list[dict] = []
+        for code_name, code in loaded_codes:
+            all_results.extend(_run_one(code_name, code))
+        return all_results
+
+    ordered: list[Optional[list[dict]]] = [None] * len(loaded_codes)
+    with cf.ThreadPoolExecutor(max_workers=workers) as executor:
+        future_map = {
+            executor.submit(_run_one, code_name, code): idx
+            for idx, (code_name, code) in enumerate(loaded_codes)
+        }
+        for future in cf.as_completed(future_map):
+            ordered[future_map[future]] = future.result()
+
+    all_results: list[dict] = []
+    for part in ordered:
+        if part:
+            all_results.extend(part)
     return all_results
 
 
@@ -673,8 +726,15 @@ def test_ablation_smoke():
     """Smoke test: run ablation on smallest codes with few shots."""
     results = run_ablation(
         codes=CODES_SMOKE,
-        shots=8, noise_p=0.01, chi=8, seed=42,
-        verbose=True, skip_naive_above=200)
+        shots=4,
+        noise_p=0.01,
+        chi=8,
+        seed=42,
+        verbose=True,
+        skip_naive_above=32,
+        skip_missing=True,
+        parallel_workers=2,
+    )
     assert len(results) > 0
     ok_count = sum(1 for r in results
                    if r.get("logical_error_rate") is not None)
@@ -691,9 +751,16 @@ if __name__ == "__main__":
     print("=" * 70)
 
     results = run_ablation(
-        codes=CODES,
-        shots=32, noise_p=0.01, chi=32, seed=2026,
-        verbose=True, skip_naive_above=200)
+        codes=CODES_DEFAULT,
+        shots=32,
+        noise_p=0.01,
+        chi=32,
+        seed=2026,
+        verbose=True,
+        skip_naive_above=200,
+        skip_missing=False,
+        parallel_workers=None,
+    )
 
     print_comparison_table(results)
 

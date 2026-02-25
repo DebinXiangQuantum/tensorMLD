@@ -3,29 +3,41 @@
 
 from __future__ import annotations
 
+import importlib.util
 import sys
 from pathlib import Path
 
-# Add workspace source to path.
+# Load mps_decoder_core directly via importlib to avoid cudaq_qec.__init__
+# which requires the C extension.
 WORKSPACE = Path(__file__).resolve().parents[2]
-QEC_PY = WORKSPACE / "cudaqx" / "libs" / "qec" / "python"
-sys.path.insert(0, str(QEC_PY))
+_UTILS = WORKSPACE / "cudaqx" / "libs" / "qec" / "python" / "cudaq_qec" / "plugins" / "decoders" / "tensor_network_utils"
+
+def _load_module(name: str, path: Path):
+    spec = importlib.util.spec_from_file_location(name, path)
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[name] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+# Load npsvd first (dependency of mps_node_np).
+_load_module("npsvd", _UTILS / "npsvd.py")
+_load_module("mps_node_np", _UTILS / "mps_node_np.py")
 
 import numpy as np
 from quimb.tensor import Tensor, TensorNetwork
 
-from cudaq_qec.plugins.decoders.tensor_network_utils.mps_decoder_core import (
-    OUT_PREFIX,
-    _build_internal_adjacency,
-    _path_order_from_adjacency,
-    build_pairwise_graph_from_tn,
-    build_mps_nodes,
-    compile_to_1d_chain,
-    compress_until_preserved,
-    count_internal_edges,
-    extract_1d_chain,
-    merge_preserved_to_path,
-)
+mps_core = _load_module("mps_decoder_core", _UTILS / "mps_decoder_core.py")
+
+OUT_PREFIX = mps_core.OUT_PREFIX
+_build_internal_adjacency = mps_core._build_internal_adjacency
+_path_order_from_adjacency = mps_core._path_order_from_adjacency
+build_pairwise_graph_from_tn = mps_core.build_pairwise_graph_from_tn
+build_mps_nodes = mps_core.build_mps_nodes
+compile_to_1d_chain = mps_core.compile_to_1d_chain
+compress_until_preserved = mps_core.compress_until_preserved
+count_internal_edges = mps_core.count_internal_edges
+extract_1d_chain = mps_core.extract_1d_chain
+merge_preserved_to_path = mps_core.merge_preserved_to_path
 
 
 def _make_small_tn_with_dense_preserved():

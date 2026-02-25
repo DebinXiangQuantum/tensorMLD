@@ -10,11 +10,11 @@ Usage:
 """
 from __future__ import annotations
 
+import concurrent.futures as cf
 import importlib.util
 import json
 import sys
 import time
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Optional
 
@@ -66,7 +66,10 @@ def _load_module(name: str, path: Path):
 core = _load_module("mps_decoder_core", _TNU / "mps_decoder_core.py")
 factory = _load_module("tensor_network_factory", _TNU / "tensor_network_factory.py")
 
-from experiments.codes.codes import gen_BB_code, gen_HP_ring_code, get_benchmark_code
+from experiments.tests._isca_code_registry import (
+    load_isca_code_cases,
+    resolve_parallel_workers,
+)
 from quimb import oset
 from quimb.tensor import Tensor, TensorNetwork
 
@@ -200,16 +203,105 @@ def _sample(H, noise_p, shots, seed):
     return errors, syndromes.astype(np.float64)
 
 
-# ---------------------------------------------------------------------------
-# Chi sweep
-# ---------------------------------------------------------------------------
 CHI_VALUES = [2, 4, 8, 16, 32, 64]
 
-CODES = [
-    ("BB_72", lambda: gen_BB_code(72)),
-    ("BB_144", lambda: gen_BB_code(144)),
-    ("HP_162", lambda: gen_HP_ring_code(9, 9)),
-]
+
+def _run_one_code_chi_sweep(
+    code_name: str,
+    code: Any,
+    *,
+    chi_values: list[int],
+    shots: int,
+    noise_p: float,
+    seed: int,
+    verbose: bool,
+    use_gpu: bool,
+) -> list[dict]:
+    H = code.hz.astype(np.float64)
+    logical_row = code.lz[0].astype(np.float64)
+    num_checks, _num_errors = H.shape
+
+    errors, syndromes = _sample(H, noise_p, shots, seed)
+    true_logicals = (errors @ logical_row.reshape(-1).astype(np.int8)) % 2
+
+    if verbose:
+        print(f"\n{'='*60}")
+        print(f"Code: {code_name}  N={code.N} K={code.K}")
+        print(f"  Backend: {'GPU' if use_gpu else 'CPU'}")
+
+    # Build TN once for CPU path (reuse across chi values)
+    full_tn = None
+    syn_param_inds = None
+    logical_obs_inds = None
+    if not use_gpu:
+        full_tn, syn_param_inds, logical_obs_inds = _build_parameterised_tn(
+            H, logical_row, noise_p)
+
+    code_results: list[dict] = []
+    for chi in chi_values:
+        record: dict[str, Any] = {
+            "code": code_name,
+            "N": int(code.N),
+            "K": int(code.K),
+            "chi": chi,
+            "noise_p": noise_p,
+            "shots": shots,
+            "backend": "gpu" if use_gpu else "cpu",
+        }
+
+        try:
+            if use_gpu:
+                probs, init_ms, decode_ms, stats = _decode_shots_gpu(
+                    H, logical_row, noise_p, chi, syndromes, verbose=verbose)
+                record["init_ms"] = round(init_ms, 2)
+                record["total_decode_ms"] = round(decode_ms, 2)
+                record["per_shot_ms"] = round(decode_ms / shots, 3)
+                if stats is not None:
+                    record["truncation_error"] = float(stats.truncation_error)
+                    record["max_bond_dim"] = int(stats.max_bond_dim)
+                    record["offline_steps"] = int(stats.steps)
+            else:
+                t0 = time.perf_counter()
+                chain, compressed_tn, stats = _compile_chain_cpu(
+                    full_tn, syn_param_inds, logical_obs_inds, chi)
+                compile_ms = (time.perf_counter() - t0) * 1e3
+                record["compile_ms"] = round(compile_ms, 2)
+
+                record["truncation_error"] = float(stats.truncation_error)
+                record["max_bond_dim"] = int(stats.max_bond_dim)
+                record["offline_steps"] = int(stats.steps)
+
+                if chain is not None:
+                    probs, decode_ms = _decode_shots_cpu(chain, syndromes, num_checks)
+                    record["decode_method"] = "mps_chain"
+                elif compressed_tn is not None:
+                    probs, decode_ms = _decode_shots_compressed_tn(
+                        compressed_tn, syndromes, num_checks)
+                    record["decode_method"] = "compressed_tn"
+
+                record["total_decode_ms"] = round(decode_ms, 2)
+                record["per_shot_ms"] = round(decode_ms / shots, 3)
+
+            predictions = (probs >= 0.5).astype(np.int8)
+            ler = float(np.mean(true_logicals != predictions))
+            record["logical_error_rate"] = round(ler, 6)
+            record["status"] = "ok"
+
+            if verbose:
+                trunc = record.get("truncation_error", "N/A")
+                print(f"  chi={chi:4d}: LER={ler:.4f}, "
+                      f"decode={record['total_decode_ms']:.1f}ms, "
+                      f"trunc_err={trunc}")
+
+        except Exception as e:
+            record["status"] = "error"
+            record["error"] = str(e)
+            record["logical_error_rate"] = None
+            if verbose:
+                print(f"  chi={chi:4d}: ERROR {e}")
+
+        code_results.append(record)
+    return code_results
 
 
 def run_chi_sweep(
@@ -217,101 +309,71 @@ def run_chi_sweep(
     shots: int = 64,
     noise_p: float = 0.01,
     seed: int = 2026,
+    code_names: list[str] | None = None,
+    skip_missing: bool = False,
+    parallel_workers: int | None = None,
     verbose: bool = False,
 ) -> list[dict]:
     if chi_values is None:
         chi_values = CHI_VALUES
 
-    all_results: list[dict] = []
     use_gpu = HAS_GPU and HAS_CUDAQ
+    loaded_codes, skipped = load_isca_code_cases(
+        code_names=code_names,
+        skip_missing=skip_missing,
+    )
+    if verbose and skipped:
+        print(f"[codes] skipped {len(skipped)} code(s):")
+        for line in skipped:
+            print(f"  - {line}")
+    if not loaded_codes:
+        raise RuntimeError("No codes were loaded for chi sweep.")
 
-    for code_name, code_factory in CODES:
-        code = code_factory()
-        H = code.hz.astype(np.float64)
-        logical_row = code.lz[0].astype(np.float64)
-        num_checks, num_errors = H.shape
+    workers = resolve_parallel_workers(
+        use_gpu=use_gpu,
+        parallel_workers=parallel_workers,
+    )
+    if verbose:
+        print(f"[chi_sweep] codes={len(loaded_codes)}, workers={workers}, use_gpu={use_gpu}")
 
-        errors, syndromes = _sample(H, noise_p, shots, seed)
-        true_logicals = (errors @ logical_row.reshape(-1).astype(np.int8)) % 2
+    if workers == 1 or len(loaded_codes) == 1:
+        results: list[dict] = []
+        for code_name, code in loaded_codes:
+            results.extend(_run_one_code_chi_sweep(
+                code_name,
+                code,
+                chi_values=chi_values,
+                shots=shots,
+                noise_p=noise_p,
+                seed=seed,
+                verbose=verbose,
+                use_gpu=use_gpu,
+            ))
+        return results
 
-        if verbose:
-            print(f"\n{'='*60}")
-            print(f"Code: {code_name}  N={code.N} K={code.K}")
-            print(f"  Backend: {'GPU' if use_gpu else 'CPU'}")
+    ordered: list[Optional[list[dict]]] = [None] * len(loaded_codes)
+    with cf.ThreadPoolExecutor(max_workers=workers) as executor:
+        future_map = {
+            executor.submit(
+                _run_one_code_chi_sweep,
+                code_name,
+                code,
+                chi_values=chi_values,
+                shots=shots,
+                noise_p=noise_p,
+                seed=seed,
+                verbose=verbose,
+                use_gpu=use_gpu,
+            ): idx for idx, (code_name, code) in enumerate(loaded_codes)
+        }
+        for future in cf.as_completed(future_map):
+            ordered[future_map[future]] = future.result()
 
-        # Build TN once for CPU path (reuse across chi values)
-        full_tn = None
-        syn_param_inds = None
-        logical_obs_inds = None
-        if not use_gpu:
-            full_tn, syn_param_inds, logical_obs_inds = _build_parameterised_tn(
-                H, logical_row, noise_p)
-
-        for chi in chi_values:
-            record: dict[str, Any] = {
-                "code": code_name,
-                "N": int(code.N),
-                "K": int(code.K),
-                "chi": chi,
-                "noise_p": noise_p,
-                "shots": shots,
-                "backend": "gpu" if use_gpu else "cpu",
-            }
-
-            try:
-                if use_gpu:
-                    probs, init_ms, decode_ms, stats = _decode_shots_gpu(
-                        H, logical_row, noise_p, chi, syndromes, verbose=verbose)
-                    record["init_ms"] = round(init_ms, 2)
-                    record["total_decode_ms"] = round(decode_ms, 2)
-                    record["per_shot_ms"] = round(decode_ms / shots, 3)
-                    if stats is not None:
-                        record["truncation_error"] = float(stats.truncation_error)
-                        record["max_bond_dim"] = int(stats.max_bond_dim)
-                        record["offline_steps"] = int(stats.steps)
-                else:
-                    t0 = time.perf_counter()
-                    chain, compressed_tn, stats = _compile_chain_cpu(
-                        full_tn, syn_param_inds, logical_obs_inds, chi)
-                    compile_ms = (time.perf_counter() - t0) * 1e3
-                    record["compile_ms"] = round(compile_ms, 2)
-
-                    record["truncation_error"] = float(stats.truncation_error)
-                    record["max_bond_dim"] = int(stats.max_bond_dim)
-                    record["offline_steps"] = int(stats.steps)
-
-                    if chain is not None:
-                        probs, decode_ms = _decode_shots_cpu(chain, syndromes, num_checks)
-                        record["decode_method"] = "mps_chain"
-                    elif compressed_tn is not None:
-                        probs, decode_ms = _decode_shots_compressed_tn(
-                            compressed_tn, syndromes, num_checks)
-                        record["decode_method"] = "compressed_tn"
-
-                    record["total_decode_ms"] = round(decode_ms, 2)
-                    record["per_shot_ms"] = round(decode_ms / shots, 3)
-
-                predictions = (probs >= 0.5).astype(np.int8)
-                ler = float(np.mean(true_logicals != predictions))
-                record["logical_error_rate"] = round(ler, 6)
-                record["status"] = "ok"
-
-                if verbose:
-                    trunc = record.get("truncation_error", "N/A")
-                    print(f"  chi={chi:4d}: LER={ler:.4f}, "
-                          f"decode={record['total_decode_ms']:.1f}ms, "
-                          f"trunc_err={trunc}")
-
-            except Exception as e:
-                record["status"] = "error"
-                record["error"] = str(e)
-                record["logical_error_rate"] = None
-                if verbose:
-                    print(f"  chi={chi:4d}: ERROR {e}")
-
-            all_results.append(record)
-
-    return all_results
+    results: list[dict] = []
+    for part in ordered:
+        if part:
+            results.extend(part)
+    return results
 
 
 # ---------------------------------------------------------------------------
@@ -320,7 +382,15 @@ def run_chi_sweep(
 def test_chi_sweep_smoke():
     """Smoke test: sweep 2 chi values on smallest code."""
     results = run_chi_sweep(
-        chi_values=[4, 8], shots=8, noise_p=0.01, seed=42, verbose=True)
+        chi_values=[4, 8],
+        shots=8,
+        noise_p=0.01,
+        seed=42,
+        code_names=["BB_90"],
+        skip_missing=True,
+        parallel_workers=2,
+        verbose=True,
+    )
     assert len(results) > 0
     ok_count = sum(1 for r in results if r.get("status") == "ok")
     assert ok_count > 0, f"No chi sweep succeeded: {results}"
@@ -337,7 +407,14 @@ if __name__ == "__main__":
 
     results = run_chi_sweep(
         chi_values=[2, 4, 8, 16, 32, 64],
-        shots=10000, noise_p=0.01, seed=2026, verbose=True)
+        shots=10000,
+        noise_p=0.01,
+        seed=2026,
+        code_names=None,
+        skip_missing=False,
+        parallel_workers=None,
+        verbose=True,
+    )
 
     out_dir = WORKSPACE / "experiments" / "results"
     out_dir.mkdir(parents=True, exist_ok=True)

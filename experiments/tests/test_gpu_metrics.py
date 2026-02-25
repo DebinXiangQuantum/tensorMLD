@@ -13,6 +13,7 @@ Usage:
 """
 from __future__ import annotations
 
+import concurrent.futures as cf
 import importlib.util
 import json
 import sys
@@ -78,7 +79,10 @@ def _load_module(name: str, path: Path):
 core = _load_module("mps_decoder_core", _TNU / "mps_decoder_core.py")
 factory = _load_module("tensor_network_factory", _TNU / "tensor_network_factory.py")
 
-from experiments.codes.codes import gen_BB_code
+from experiments.tests._isca_code_registry import (
+    load_isca_code_cases,
+    resolve_parallel_workers,
+)
 from quimb import oset
 from quimb.tensor import Tensor, TensorNetwork
 
@@ -272,6 +276,196 @@ def _measure_latency_gpu(dec, syndromes, warmup=10, repeats=50):
 # ---------------------------------------------------------------------------
 # Main profiling routine
 # ---------------------------------------------------------------------------
+def _profile_single_code(
+    code_name: str,
+    code: Any,
+    *,
+    chi: int = 16,
+    shots: int,
+    noise_p: float,
+    seed: int,
+    warmup: int,
+    repeats: int,
+    verbose: bool,
+    use_gpu: bool,
+) -> dict[str, Any]:
+    H = code.hz.astype(np.float64)
+    logical_row = code.lz[0].astype(np.float64)
+    num_checks, num_errors = H.shape
+
+    errors, syndromes = _sample(H, noise_p, shots, seed)
+    true_logicals = (errors @ logical_row.reshape(-1).astype(np.int8)) % 2
+
+    record: dict[str, Any] = {
+        "code": code_name,
+        "N": int(code.N),
+        "K": int(code.K),
+        "chi": chi,
+        "noise_p": noise_p,
+        "shots": shots,
+        "backend": "gpu" if use_gpu else "cpu",
+        "gpu_available": HAS_GPU,
+        "pynvml_available": HAS_PYNVML,
+    }
+
+    if verbose:
+        print(f"\n{'='*60}")
+        print(f"Code: {code_name}  N={code.N}  backend={'GPU' if use_gpu else 'CPU'}")
+
+    # --- Offline compilation + profiling ---
+    profiler = GPUProfiler()
+    profiler.start()
+    t0 = time.perf_counter()
+
+    if use_gpu:
+        dec = qec.get_decoder(
+            "tensor_network_mps_decoder", H,
+            logical_obs=logical_row.reshape(1, -1),
+            noise_model=[noise_p] * num_errors,
+            dtype="float32", device="cuda",
+            bond_dim=chi, verbose=verbose)
+        chain = getattr(dec, "_compressed_chain", None)
+        offline_stats = getattr(dec, "offline_stats", None)
+        compressed_tn_decoder = None
+    else:
+        chain, compressed_tn_decoder, offline_stats = _build_and_compile_cpu(
+            H, logical_row, noise_p, chi)
+        dec = None
+
+    compile_ms = (time.perf_counter() - t0) * 1e3
+    compile_profile = profiler.stop()
+
+    record["compile_ms"] = round(compile_ms, 2)
+    record["compile_gpu_profile"] = compile_profile
+    if offline_stats is not None:
+        record["offline_stats"] = {
+            "truncation_error": float(offline_stats.truncation_error),
+            "max_bond_dim": int(offline_stats.max_bond_dim),
+            "steps": int(offline_stats.steps),
+            "initial_nodes": int(offline_stats.initial_nodes),
+            "initial_edges": int(offline_stats.initial_edges),
+        }
+    if verbose:
+        print(f"  Compile: {compile_ms:.1f}ms")
+        print(f"  Compile GPU profile: {compile_profile}")
+
+    # --- Online decode profiling ---
+    has_chain = chain is not None
+    has_compressed_tn = ((not use_gpu) and (not has_chain) and
+                         (compressed_tn_decoder is not None))
+    profiler2 = GPUProfiler()
+    profiler2.start()
+
+    if use_gpu:
+        probs = np.empty(shots)
+        t1 = time.perf_counter()
+        for i in range(shots):
+            res = dec.decode([float(x) for x in syndromes[i]])
+            probs[i] = float(res.result[0])
+        total_decode_ms = (time.perf_counter() - t1) * 1e3
+        record["decode_method"] = "gpu"
+    elif has_chain:
+        probs = np.empty(shots)
+        t1 = time.perf_counter()
+        for i in range(shots):
+            syn_vals = {f"syn_param_{j}": float(syndromes[i, j])
+                        for j in range(num_checks)}
+            _, marginals = chain.decode_logicals(syndrome_values=syn_vals)
+            probs[i] = float(marginals.get("obs", 0.5))
+        total_decode_ms = (time.perf_counter() - t1) * 1e3
+        record["decode_method"] = "mps_chain"
+    elif has_compressed_tn:
+        # Use CompressedTNDecoder when chain extraction fails
+        probs = np.empty(shots)
+        t1 = time.perf_counter()
+        for i in range(shots):
+            syn_vals = {f"syn_param_{j}": float(syndromes[i, j])
+                        for j in range(num_checks)}
+            _, marginals = compressed_tn_decoder.decode_logicals(syndrome_values=syn_vals)
+            probs[i] = float(marginals.get("obs", 0.5))
+        total_decode_ms = (time.perf_counter() - t1) * 1e3
+        record["decode_method"] = "compressed_tn"
+        if verbose:
+            print("  Chain extraction failed, using CompressedTNDecoder")
+    else:
+        raise RuntimeError("Neither 1D chain nor compressed_tn decoder is available.")
+
+    decode_profile = profiler2.stop()
+
+    predictions = (probs >= 0.5).astype(np.int8)
+    ler = float(np.mean(true_logicals != predictions))
+
+    record["total_decode_ms"] = round(total_decode_ms, 2)
+    record["per_shot_ms"] = round(total_decode_ms / shots, 3)
+    record["logical_error_rate"] = round(ler, 6)
+    record["decode_gpu_profile"] = decode_profile
+
+    if verbose:
+        print(f"  Decode: {total_decode_ms:.1f}ms total, {total_decode_ms/shots:.3f}ms/shot")
+        print(f"  Decode GPU profile: {decode_profile}")
+        print(f"  LER: {ler:.4f}")
+
+    # --- Single-shot latency benchmark (requires chain or GPU decoder) ---
+    if use_gpu:
+        latency = _measure_latency_gpu(dec, syndromes, warmup=warmup, repeats=repeats)
+        record["single_shot_latency"] = latency
+    elif has_chain:
+        latency = _measure_latency_cpu(chain, syndromes, num_checks,
+                                       warmup=warmup, repeats=repeats)
+        record["single_shot_latency"] = latency
+    else:
+        record["single_shot_latency"] = {"method": "skipped", "reason": "no_chain"}
+    if verbose:
+        print(f"  Single-shot latency: {record['single_shot_latency']}")
+
+    # --- Chain save/load + re-decode test (requires chain) ---
+    if has_chain:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            save_path = Path(tmpdir) / "chain"
+            t_save = time.perf_counter()
+            chain.save(save_path)
+            save_ms = (time.perf_counter() - t_save) * 1e3
+
+            t_load = time.perf_counter()
+            loaded_chain = core.OneDChainMPS.load(save_path)
+            load_ms = (time.perf_counter() - t_load) * 1e3
+
+            # Re-decode one shot to verify correctness
+            syn_vals = {f"syn_param_{j}": float(syndromes[0, j])
+                        for j in range(num_checks)}
+            _, marginals_orig = chain.decode_logicals(syndrome_values=syn_vals)
+            _, marginals_loaded = loaded_chain.decode_logicals(syndrome_values=syn_vals)
+            match = all(
+                abs(marginals_orig.get(k, 0) - marginals_loaded.get(k, 0)) < 1e-10
+                for k in marginals_orig)
+
+            record["chain_io"] = {
+                "save_ms": round(save_ms, 2),
+                "load_ms": round(load_ms, 2),
+                "reload_decode_match": match,
+                "num_sites": len(chain.sites),
+            }
+        if verbose:
+            print(f"  Chain I/O: save={save_ms:.1f}ms, load={load_ms:.1f}ms, match={match}")
+    else:
+        record["chain_io"] = {"status": "skipped", "reason": "no_chain"}
+
+    # --- Truncation error JSON export ---
+    if offline_stats is not None and hasattr(offline_stats, 'to_json'):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            json_path = Path(tmpdir) / "stats.json"
+            offline_stats.to_json(json_path)
+            with open(json_path) as f:
+                stats_data = json.load(f)
+            record["truncation_json_exported"] = True
+            record["truncation_step_count"] = len(stats_data.get("step_errors", []))
+    else:
+        record["truncation_json_exported"] = False
+
+    record["status"] = "ok"
+    return record
+
+
 def run_gpu_metrics(
     chi: int = 16,
     shots: int = 32,
@@ -279,189 +473,66 @@ def run_gpu_metrics(
     seed: int = 2026,
     warmup: int = 5,
     repeats: int = 20,
+    code_names: Optional[list[str]] = None,
+    skip_missing: bool = False,
+    parallel_workers: Optional[int] = None,
     verbose: bool = False,
 ) -> list[dict]:
-    results = []
     use_gpu = HAS_GPU and HAS_CUDAQ
-    code_specs = [
-        ("BB_72", lambda: gen_BB_code(72)),
-        ("BB_144", lambda: gen_BB_code(144)),
-    ]
+    loaded_codes, skipped = load_isca_code_cases(
+        code_names=code_names,
+        skip_missing=skip_missing,
+    )
+    if verbose and skipped:
+        print(f"[codes] skipped {len(skipped)} code(s):")
+        for line in skipped:
+            print(f"  - {line}")
+    if not loaded_codes:
+        raise RuntimeError("No codes were loaded for GPU metrics.")
 
-    for code_name, code_factory in code_specs:
-        code = code_factory()
-        H = code.hz.astype(np.float64)
-        logical_row = code.lz[0].astype(np.float64)
-        num_checks, num_errors = H.shape
+    workers = resolve_parallel_workers(
+        use_gpu=use_gpu,
+        parallel_workers=parallel_workers,
+    )
+    if verbose:
+        print(f"[gpu_metrics] codes={len(loaded_codes)}, workers={workers}, use_gpu={use_gpu}")
 
-        errors, syndromes = _sample(H, noise_p, shots, seed)
-        true_logicals = (errors @ logical_row.reshape(-1).astype(np.int8)) % 2
+    if workers == 1 or len(loaded_codes) == 1:
+        return [
+            _profile_single_code(
+                code_name,
+                code,
+                chi=chi,
+                shots=shots,
+                noise_p=noise_p,
+                seed=seed,
+                warmup=warmup,
+                repeats=repeats,
+                verbose=verbose,
+                use_gpu=use_gpu,
+            ) for code_name, code in loaded_codes
+        ]
 
-        record: dict[str, Any] = {
-            "code": code_name,
-            "N": int(code.N),
-            "K": int(code.K),
-            "chi": chi,
-            "noise_p": noise_p,
-            "shots": shots,
-            "backend": "gpu" if use_gpu else "cpu",
-            "gpu_available": HAS_GPU,
-            "pynvml_available": HAS_PYNVML,
+    ordered: list[Optional[dict[str, Any]]] = [None] * len(loaded_codes)
+    with cf.ThreadPoolExecutor(max_workers=workers) as executor:
+        future_map = {
+            executor.submit(
+                _profile_single_code,
+                code_name,
+                code,
+                chi=chi,
+                shots=shots,
+                noise_p=noise_p,
+                seed=seed,
+                warmup=warmup,
+                repeats=repeats,
+                verbose=verbose,
+                use_gpu=use_gpu,
+            ): idx for idx, (code_name, code) in enumerate(loaded_codes)
         }
-
-        if verbose:
-            print(f"\n{'='*60}")
-            print(f"Code: {code_name}  N={code.N}  backend={'GPU' if use_gpu else 'CPU'}")
-
-        # --- Offline compilation + profiling ---
-        profiler = GPUProfiler()
-        profiler.start()
-        t0 = time.perf_counter()
-
-        if use_gpu:
-            dec = qec.get_decoder(
-                "tensor_network_mps_decoder", H,
-                logical_obs=logical_row.reshape(1, -1),
-                noise_model=[noise_p] * num_errors,
-                dtype="float32", device="cuda",
-                bond_dim=chi, verbose=verbose)
-            chain = getattr(dec, "_compressed_chain", None)
-            offline_stats = getattr(dec, "offline_stats", None)
-        else:
-            chain, compressed_tn_decoder, offline_stats = _build_and_compile_cpu(H, logical_row, noise_p, chi)
-            dec = None
-
-        compile_ms = (time.perf_counter() - t0) * 1e3
-        compile_profile = profiler.stop()
-
-        record["compile_ms"] = round(compile_ms, 2)
-        record["compile_gpu_profile"] = compile_profile
-        if offline_stats is not None:
-            record["offline_stats"] = {
-                "truncation_error": float(offline_stats.truncation_error),
-                "max_bond_dim": int(offline_stats.max_bond_dim),
-                "steps": int(offline_stats.steps),
-                "initial_nodes": int(offline_stats.initial_nodes),
-                "initial_edges": int(offline_stats.initial_edges),
-            }
-        if verbose:
-            print(f"  Compile: {compile_ms:.1f}ms")
-            print(f"  Compile GPU profile: {compile_profile}")
-
-        # --- Online decode profiling ---
-        has_chain = chain is not None
-        has_compressed_tn = (not use_gpu) and (not has_chain) and (compressed_tn_decoder is not None)
-        profiler2 = GPUProfiler()
-        profiler2.start()
-
-        if use_gpu:
-            probs = np.empty(shots)
-            t1 = time.perf_counter()
-            for i in range(shots):
-                res = dec.decode([float(x) for x in syndromes[i]])
-                probs[i] = float(res.result[0])
-            total_decode_ms = (time.perf_counter() - t1) * 1e3
-            record["decode_method"] = "gpu"
-        elif has_chain:
-            probs = np.empty(shots)
-            t1 = time.perf_counter()
-            for i in range(shots):
-                syn_vals = {f"syn_param_{j}": float(syndromes[i, j])
-                            for j in range(num_checks)}
-                _, marginals = chain.decode_logicals(syndrome_values=syn_vals)
-                probs[i] = float(marginals.get("obs", 0.5))
-            total_decode_ms = (time.perf_counter() - t1) * 1e3
-            record["decode_method"] = "mps_chain"
-        elif has_compressed_tn:
-            # Use CompressedTNDecoder when chain extraction fails
-            probs = np.empty(shots)
-            t1 = time.perf_counter()
-            for i in range(shots):
-                syn_vals = {f"syn_param_{j}": float(syndromes[i, j])
-                            for j in range(num_checks)}
-                _, marginals = compressed_tn_decoder.decode_logicals(syndrome_values=syn_vals)
-                probs[i] = float(marginals.get("obs", 0.5))
-            total_decode_ms = (time.perf_counter() - t1) * 1e3
-            record["decode_method"] = "compressed_tn"
-            if verbose:
-                print("  Chain extraction failed, using CompressedTNDecoder")
-
-        decode_profile = profiler2.stop()
-
-        predictions = (probs >= 0.5).astype(np.int8)
-        ler = float(np.mean(true_logicals != predictions))
-
-        record["total_decode_ms"] = round(total_decode_ms, 2)
-        record["per_shot_ms"] = round(total_decode_ms / shots, 3)
-        record["logical_error_rate"] = round(ler, 6)
-        record["decode_gpu_profile"] = decode_profile
-
-        if verbose:
-            print(f"  Decode: {total_decode_ms:.1f}ms total, {total_decode_ms/shots:.3f}ms/shot")
-            print(f"  Decode GPU profile: {decode_profile}")
-            print(f"  LER: {ler:.4f}")
-
-        # --- Single-shot latency benchmark (requires chain or GPU decoder) ---
-        if use_gpu:
-            latency = _measure_latency_gpu(dec, syndromes, warmup=warmup, repeats=repeats)
-            record["single_shot_latency"] = latency
-        elif has_chain:
-            latency = _measure_latency_cpu(chain, syndromes, num_checks,
-                                           warmup=warmup, repeats=repeats)
-            record["single_shot_latency"] = latency
-        else:
-            record["single_shot_latency"] = {"method": "skipped", "reason": "no_chain"}
-        if verbose:
-            print(f"  Single-shot latency: {record['single_shot_latency']}")
-
-        # --- Chain save/load + re-decode test (requires chain) ---
-        if has_chain:
-            with tempfile.TemporaryDirectory() as tmpdir:
-                save_path = Path(tmpdir) / "chain"
-                t_save = time.perf_counter()
-                chain.save(save_path)
-                save_ms = (time.perf_counter() - t_save) * 1e3
-
-                t_load = time.perf_counter()
-                loaded_chain = core.OneDChainMPS.load(save_path)
-                load_ms = (time.perf_counter() - t_load) * 1e3
-
-                # Re-decode one shot to verify correctness
-                syn_vals = {f"syn_param_{j}": float(syndromes[0, j])
-                            for j in range(num_checks)}
-                _, marginals_orig = chain.decode_logicals(syndrome_values=syn_vals)
-                _, marginals_loaded = loaded_chain.decode_logicals(syndrome_values=syn_vals)
-                match = all(
-                    abs(marginals_orig.get(k, 0) - marginals_loaded.get(k, 0)) < 1e-10
-                    for k in marginals_orig)
-
-                record["chain_io"] = {
-                    "save_ms": round(save_ms, 2),
-                    "load_ms": round(load_ms, 2),
-                    "reload_decode_match": match,
-                    "num_sites": len(chain.sites),
-                }
-            if verbose:
-                print(f"  Chain I/O: save={save_ms:.1f}ms, load={load_ms:.1f}ms, match={match}")
-        else:
-            record["chain_io"] = {"status": "skipped", "reason": "no_chain"}
-
-        # --- Truncation error JSON export ---
-        if offline_stats is not None and hasattr(offline_stats, 'to_json'):
-            with tempfile.TemporaryDirectory() as tmpdir:
-                json_path = Path(tmpdir) / "stats.json"
-                offline_stats.to_json(json_path)
-                with open(json_path) as f:
-                    stats_data = json.load(f)
-                record["truncation_json_exported"] = True
-                record["truncation_step_count"] = len(stats_data.get("step_errors", []))
-        else:
-            record["truncation_json_exported"] = False
-
-        record["status"] = "ok"
-        results.append(record)
-
-    return results
+        for future in cf.as_completed(future_map):
+            ordered[future_map[future]] = future.result()
+    return [r for r in ordered if r is not None]
 
 
 # ---------------------------------------------------------------------------
@@ -470,8 +541,17 @@ def run_gpu_metrics(
 def test_gpu_metrics_smoke():
     """Smoke test: profile with small shots."""
     results = run_gpu_metrics(
-        chi=8, shots=8, noise_p=0.01, seed=42,
-        warmup=2, repeats=5, verbose=True)
+        chi=8,
+        shots=8,
+        noise_p=0.01,
+        seed=42,
+        warmup=2,
+        repeats=5,
+        code_names=["BB_90"],
+        skip_missing=True,
+        parallel_workers=2,
+        verbose=True,
+    )
     assert len(results) > 0
     ok_count = 0
     for r in results:
@@ -495,8 +575,17 @@ if __name__ == "__main__":
     print()
 
     results = run_gpu_metrics(
-        chi=16, shots=32, noise_p=0.01, seed=2026,
-        warmup=5, repeats=20, verbose=True)
+        chi=16,
+        shots=32,
+        noise_p=0.01,
+        seed=2026,
+        warmup=5,
+        repeats=20,
+        code_names=None,
+        skip_missing=False,
+        parallel_workers=None,
+        verbose=True,
+    )
 
     out_dir = WORKSPACE / "experiments" / "results"
     out_dir.mkdir(parents=True, exist_ok=True)
