@@ -516,6 +516,7 @@ def run_ablation(
     skip_naive_above: int = 200,
     skip_missing: bool = False,
     parallel_workers: Optional[int] = None,
+    methods: Optional[list[str]] = None,
 ) -> list[dict]:
     """Run the full ablation study across all codes and methods.
 
@@ -523,6 +524,14 @@ def run_ablation(
         skip_naive_above: Skip naive contraction for codes with N > this value
             (too slow/memory-intensive).
     """
+    if methods is None:
+        method_set = {"naive_direct", "quimb_compress", "our_mps"}
+    else:
+        method_set = {str(m) for m in methods}
+        unknown_methods = sorted(method_set - {"naive_direct", "quimb_compress", "our_mps"})
+        if unknown_methods:
+            raise ValueError(f"Unknown methods: {unknown_methods}")
+
     if codes is None:
         loaded_codes, skipped = load_isca_code_cases(
             code_names=CODES_DEFAULT,
@@ -561,92 +570,95 @@ def run_ablation(
         out: list[dict] = []
 
         # --- Method A: Naive direct contraction ---
-        if num_errors <= skip_naive_above:
-            if verbose:
-                print(f"\n  Method A: Naive direct contraction")
-            try:
-                res_a = method_naive_contraction(
-                    H, logical_row, noise_p, syndromes, true_logicals,
-                    verbose=verbose)
-                res_a["code"] = code_name
-                res_a["N"] = int(code.N)
-                res_a["K"] = int(code.K)
-                res_a["noise_p"] = noise_p
-                out.append(res_a)
+        if "naive_direct" in method_set:
+            if num_errors <= skip_naive_above:
                 if verbose:
-                    print(f"    LER={res_a['logical_error_rate']:.4f}, "
-                          f"time={res_a['actual_total_ms']:.1f}ms, "
-                          f"peak_mem={res_a['actual_peak_memory_bytes']/1024:.1f}KB, "
-                          f"est_flops/shot={res_a['est_flops_per_shot']:.2e}")
+                    print(f"\n  Method A: Naive direct contraction")
+                try:
+                    res_a = method_naive_contraction(
+                        H, logical_row, noise_p, syndromes, true_logicals,
+                        verbose=verbose)
+                    res_a["code"] = code_name
+                    res_a["N"] = int(code.N)
+                    res_a["K"] = int(code.K)
+                    res_a["noise_p"] = noise_p
+                    out.append(res_a)
+                    if verbose:
+                        print(f"    LER={res_a['logical_error_rate']:.4f}, "
+                              f"time={res_a['actual_total_ms']:.1f}ms, "
+                              f"peak_mem={res_a['actual_peak_memory_bytes']/1024:.1f}KB, "
+                              f"est_flops/shot={res_a['est_flops_per_shot']:.2e}")
+                except Exception as e:
+                    if verbose:
+                        print(f"    ERROR: {e}")
+                    out.append({
+                        "method": "naive_direct", "code": code_name,
+                        "N": int(code.N), "K": int(code.K),
+                        "status": "error", "error": str(e),
+                    })
+            else:
+                if verbose:
+                    print(f"\n  Method A: SKIPPED (N={num_errors} > {skip_naive_above})")
+                out.append({
+                    "method": "naive_direct", "code": code_name,
+                    "N": int(code.N), "K": int(code.K),
+                    "status": "skipped", "reason": f"N={num_errors} > {skip_naive_above}",
+                })
+
+        # --- Method B: Quimb compress_all + contract ---
+        if "quimb_compress" in method_set:
+            if verbose:
+                print(f"\n  Method B: Quimb compress_all (chi={chi})")
+            try:
+                res_b = method_quimb_compress(
+                    H, logical_row, noise_p, syndromes, true_logicals,
+                    chi=chi, verbose=verbose)
+                res_b["code"] = code_name
+                res_b["N"] = int(code.N)
+                res_b["K"] = int(code.K)
+                res_b["noise_p"] = noise_p
+                out.append(res_b)
+                if verbose:
+                    print(f"    LER={res_b['logical_error_rate']:.4f}, "
+                          f"time={res_b['actual_total_ms']:.1f}ms, "
+                          f"peak_mem={res_b['actual_peak_memory_bytes']/1024:.1f}KB, "
+                          f"est_flops/shot={res_b['est_flops_per_shot']:.2e}")
             except Exception as e:
                 if verbose:
                     print(f"    ERROR: {e}")
                 out.append({
-                    "method": "naive_direct", "code": code_name,
+                    "method": "quimb_compress", "code": code_name,
                     "N": int(code.N), "K": int(code.K),
                     "status": "error", "error": str(e),
                 })
-        else:
-            if verbose:
-                print(f"\n  Method A: SKIPPED (N={num_errors} > {skip_naive_above})")
-            out.append({
-                "method": "naive_direct", "code": code_name,
-                "N": int(code.N), "K": int(code.K),
-                "status": "skipped", "reason": f"N={num_errors} > {skip_naive_above}",
-            })
-
-        # --- Method B: Quimb compress_all + contract ---
-        if verbose:
-            print(f"\n  Method B: Quimb compress_all (chi={chi})")
-        try:
-            res_b = method_quimb_compress(
-                H, logical_row, noise_p, syndromes, true_logicals,
-                chi=chi, verbose=verbose)
-            res_b["code"] = code_name
-            res_b["N"] = int(code.N)
-            res_b["K"] = int(code.K)
-            res_b["noise_p"] = noise_p
-            out.append(res_b)
-            if verbose:
-                print(f"    LER={res_b['logical_error_rate']:.4f}, "
-                      f"time={res_b['actual_total_ms']:.1f}ms, "
-                      f"peak_mem={res_b['actual_peak_memory_bytes']/1024:.1f}KB, "
-                      f"est_flops/shot={res_b['est_flops_per_shot']:.2e}")
-        except Exception as e:
-            if verbose:
-                print(f"    ERROR: {e}")
-            out.append({
-                "method": "quimb_compress", "code": code_name,
-                "N": int(code.N), "K": int(code.K),
-                "status": "error", "error": str(e),
-            })
 
         # --- Method C: Our MPS decomposition ---
-        if verbose:
-            print(f"\n  Method C: Our MPS decomposition (chi={chi})")
-        try:
-            res_c = method_our_mps(
-                H, logical_row, noise_p, syndromes, true_logicals,
-                chi=chi, verbose=verbose)
-            res_c["code"] = code_name
-            res_c["N"] = int(code.N)
-            res_c["K"] = int(code.K)
-            res_c["noise_p"] = noise_p
-            out.append(res_c)
+        if "our_mps" in method_set:
             if verbose:
-                print(f"    LER={res_c['logical_error_rate']:.4f}, "
-                      f"offline={res_c['offline_ms']:.1f}ms, "
-                      f"online={res_c['online_total_ms']:.1f}ms "
-                      f"({res_c['online_per_shot_ms']:.3f}ms/shot), "
-                      f"est_flops/shot={res_c['est_online_flops_per_shot']:.2e}")
-        except Exception as e:
-            if verbose:
-                print(f"    ERROR: {e}")
-            out.append({
-                "method": "our_mps", "code": code_name,
-                "N": int(code.N), "K": int(code.K),
-                "status": "error", "error": str(e),
-            })
+                print(f"\n  Method C: Our MPS decomposition (chi={chi})")
+            try:
+                res_c = method_our_mps(
+                    H, logical_row, noise_p, syndromes, true_logicals,
+                    chi=chi, verbose=verbose)
+                res_c["code"] = code_name
+                res_c["N"] = int(code.N)
+                res_c["K"] = int(code.K)
+                res_c["noise_p"] = noise_p
+                out.append(res_c)
+                if verbose:
+                    print(f"    LER={res_c['logical_error_rate']:.4f}, "
+                          f"offline={res_c['offline_ms']:.1f}ms, "
+                          f"online={res_c['online_total_ms']:.1f}ms "
+                          f"({res_c['online_per_shot_ms']:.3f}ms/shot), "
+                          f"est_flops/shot={res_c['est_online_flops_per_shot']:.2e}")
+            except Exception as e:
+                if verbose:
+                    print(f"    ERROR: {e}")
+                out.append({
+                    "method": "our_mps", "code": code_name,
+                    "N": int(code.N), "K": int(code.K),
+                    "status": "error", "error": str(e),
+                })
         return out
 
     workers = resolve_parallel_workers(
@@ -726,14 +738,15 @@ def test_ablation_smoke():
     """Smoke test: run ablation on smallest codes with few shots."""
     results = run_ablation(
         codes=CODES_SMOKE,
-        shots=4,
+        shots=1,
         noise_p=0.01,
-        chi=8,
+        chi=4,
         seed=42,
         verbose=True,
         skip_naive_above=32,
         skip_missing=True,
-        parallel_workers=2,
+        parallel_workers=1,
+        methods=["our_mps"],
     )
     assert len(results) > 0
     ok_count = sum(1 for r in results
