@@ -45,6 +45,13 @@ def test_resolve_ldpc_path() -> None:
     assert str(path).endswith("GND/code/ldpc_n25_d4_k3_seed0")
 
 
+def test_resolve_ldpc_path_prefers_local_data_dir() -> None:
+    path = _resolve_ldpc_file_path(
+        n=25, d=4, k=3, seed=0, c_type="ldpc")
+    normalized = str(path).replace("\\", "/")
+    assert normalized.endswith("experiments/codes/gnd_data/ldpc_n25_d4_k3_seed0")
+
+
 def test_load_ldpc_css_code_missing_file() -> None:
     with pytest.raises(FileNotFoundError):
         load_ldpc_css_code(

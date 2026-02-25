@@ -64,7 +64,8 @@ bash scripts/linux/init_qldpc_case_dirs.sh experiments/data/cases
 - BB 三个码（`bb_18_4_4`、`bb_60_8_4`、`bb_72_12_6`）由
   `experiments/codes/codes.py` 自动构造，无需手工矩阵文件。
 - TB 中 `tb_25_3_4`、`tb_30_6_4` 由
-  `experiments/codes/gnd_ldpc_codes.py` 从 `GND/code/ldpc_*` 自动加载。
+  `experiments/codes/gnd_ldpc_codes.py` 从
+  `experiments/codes/gnd_data/ldpc_*`（兼容回退 `GND/code/ldpc_*`）自动加载。
 - `tb_48_4_8` 默认仍从 matrix 文件读取；缺文件时会自动跳过该 case。
 
 再执行：

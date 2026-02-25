@@ -8,7 +8,8 @@ import numpy as np
 from .codes import css_code
 
 
-_DEFAULT_GND_CODE_DIR = Path(__file__).resolve().parents[2] / "GND" / "code"
+_DEFAULT_GND_CODE_DIR = Path(__file__).resolve().parent / "gnd_data"
+_LEGACY_GND_CODE_DIR = Path(__file__).resolve().parents[2] / "GND" / "code"
 
 
 def _to_numpy_int64(x: Any) -> np.ndarray:
@@ -26,7 +27,7 @@ def _load_torch_payload(path: Path) -> tuple[np.ndarray, np.ndarray, np.ndarray]
         import torch
     except Exception as exc:  # pragma: no cover
         raise ImportError(
-            "Loading GND ldpc_* code files requires torch. "
+            "Loading GND ldpc_*/qcc_* code files requires torch. "
             "Install torch in your experiment environment."
         ) from exc
 
@@ -81,8 +82,21 @@ def _resolve_ldpc_file_path(
     code_dir: str | Path | None = None,
     c_type: str = "ldpc",
 ) -> Path:
-    base = _DEFAULT_GND_CODE_DIR if code_dir is None else Path(code_dir)
-    return base / f"{c_type}_n{int(n)}_d{int(d)}_k{int(k)}_seed{int(seed)}"
+    filename = f"{c_type}_n{int(n)}_d{int(d)}_k{int(k)}_seed{int(seed)}"
+
+    if code_dir is not None:
+        base = Path(code_dir)
+        return base / filename
+
+    candidates = [_DEFAULT_GND_CODE_DIR]
+    if _LEGACY_GND_CODE_DIR != _DEFAULT_GND_CODE_DIR:
+        candidates.append(_LEGACY_GND_CODE_DIR)
+
+    for base in candidates:
+        path = base / filename
+        if path.exists():
+            return path
+    return candidates[0] / filename
 
 
 def load_ldpc_css_code(
@@ -167,5 +181,53 @@ def tb_48_4_8(seed: int = 0,
         d=8,
         seed=seed,
         code_dir=code_dir,
+        strict_params=strict_params,
+    )
+
+
+def bb_18_4_4(seed: int = 0,
+              code_dir: str | Path | None = None,
+              strict_params: bool = True) -> css_code:
+    """Load BB [[18,4,4]] from GND qcc file."""
+    return load_ldpc_css_code(
+        n=18,
+        k=4,
+        d=4,
+        seed=seed,
+        code_dir=code_dir,
+        c_type="qcc",
+        name="BB_18_4_4",
+        strict_params=strict_params,
+    )
+
+
+def bb_60_8_4(seed: int = 0,
+              code_dir: str | Path | None = None,
+              strict_params: bool = True) -> css_code:
+    """Load BB [[60,8,4]] from GND qcc file."""
+    return load_ldpc_css_code(
+        n=60,
+        k=8,
+        d=4,
+        seed=seed,
+        code_dir=code_dir,
+        c_type="qcc",
+        name="BB_60_8_4",
+        strict_params=strict_params,
+    )
+
+
+def bb_72_12_6(seed: int = 0,
+               code_dir: str | Path | None = None,
+               strict_params: bool = True) -> css_code:
+    """Load BB [[72,12,6]] from GND qcc file."""
+    return load_ldpc_css_code(
+        n=72,
+        k=12,
+        d=6,
+        seed=seed,
+        code_dir=code_dir,
+        c_type="qcc",
+        name="BB_72_12_6",
         strict_params=strict_params,
     )

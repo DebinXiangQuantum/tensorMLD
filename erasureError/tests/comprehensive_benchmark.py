@@ -184,8 +184,9 @@ CODE_LOADER_REGISTRY: Dict[str, Any] = {
     'BB_72_12_6': lambda: bb_72_12_6(),
     'TB_25_3_4': lambda: tb_25_3_4(),
     'TB_30_6_4': lambda: tb_30_6_4(),
-    'HP_50': lambda: gen_HP_ring_code(5, 5),
-    'HP_98': lambda: gen_HP_ring_code(7, 7),
+    "BB_90":lambda: gen_BB_code(90),
+    "BB_108":lambda: gen_BB_code(108),
+    "BB_144":lambda: gen_BB_code(144)
 }
 
 

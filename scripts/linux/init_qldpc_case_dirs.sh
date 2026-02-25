@@ -3,8 +3,8 @@ set -euo pipefail
 
 # Initialize folder layout for qLDPC benchmark matrix cases.
 # BB codes are generated from experiments/codes/codes.py and do not need files.
-# TB code tb_25_3_4 and tb_30_6_4 are loaded from GND/code/ldpc_* and do not
-# need matrix files.
+# TB code tb_25_3_4 and tb_30_6_4 are loaded from
+# experiments/codes/gnd_data/ldpc_* and do not need matrix files.
 # tb_48_4_8 currently uses matrix files.
 # Usage:
 #   bash scripts/linux/init_qldpc_case_dirs.sh [base_dir]

@@ -757,6 +757,124 @@ def compress_until_preserved(
     )
 
 
+def merge_preserved_to_path(
+        nodes: dict[int, Any],
+        active_nodes: set[int],
+        chi: int = 0,
+        max_steps: int = 100000,
+        verbose: bool = False) -> float:
+    """Merge preserved nodes until the internal adjacency graph is a 1D path.
+
+    After ``compress_until_preserved`` the residual graph may still have nodes
+    with degree > 2 (i.e. not a simple path).  This function iteratively
+    contracts edges between preserved nodes, choosing edges that maximally
+    reduce the *maximum* degree, until every node has degree <= 2.
+
+    Returns the cumulative truncation error introduced by the merging.
+    """
+    truncation_error = 0.0
+    steps = 0
+
+    while steps < max_steps:
+        # Build current adjacency and check if already a path.
+        adjacency = _build_internal_adjacency(active_nodes, nodes)
+        if _path_order_from_adjacency(adjacency) is not None:
+            if verbose:
+                print(f"[merge_preserved] path achieved after {steps} merging steps")
+            break
+
+        # Find edges where at least one endpoint has degree > 2.
+        edges = _collect_internal_edges(active_nodes, nodes)
+        if not edges:
+            break
+
+        # Heuristic: pick the edge (i, j) that results in the lowest max
+        # degree after merging. When i eats j, the merged node's degree is:
+        #   deg(i) + deg(j) - 2 - 2*|common_neighbors(i,j)|
+        # (−2 for the contracted edge, −2 per shared neighbor that gets merged).
+        # We want to minimize the *resulting* degree of the merged node, then
+        # break ties by contraction cost.
+        def _merge_priority(edge):
+            a, b = edge
+            neigh_a = adjacency.get(a, set())
+            neigh_b = adjacency.get(b, set())
+            common = len(neigh_a & neigh_b)
+            result_deg = len(neigh_a) + len(neigh_b) - 2 - 2 * common
+            cost = _edge_cost(nodes, a, b)
+            return (result_deg, cost)
+
+        i, j = min(edges, key=_merge_priority)
+
+        # Ensure larger node eats the smaller one.
+        if nodes[j].order() > nodes[i].order():
+            i, j = j, i
+
+        idx_j_in_i = int(nodes[i].find_neighbor(j))
+        idx_i_in_j = int(nodes[j].find_neighbor(i))
+        if idx_j_in_i < 0 or idx_i_in_j < 0:
+            raise RuntimeError(
+                f"[merge_preserved] Broken adjacency while merging ({i}, {j}).")
+
+        # Optional: reverse MPS to put contraction edge near the boundary
+        # for cheaper swap chains.
+        if idx_j_in_i < len(nodes[i].neighbor) // 2:
+            nodes[i].reverse()
+            idx_j_in_i = int(nodes[i].find_neighbor(j))
+        if idx_i_in_j >= len(nodes[j].neighbor) // 2:
+            nodes[j].reverse()
+            idx_i_in_j = int(nodes[j].find_neighbor(i))
+
+        # --- Standard eat+merge pattern (same as compress_until_preserved) ---
+        nodes[i].delete_neighbor(j)
+        neighbors_j = list(nodes[j].neighbor)
+        duplicate_neighbors: list[int] = []
+
+        step_merge_err = 0.0
+        for pos, k in enumerate(neighbors_j):
+            if pos == idx_i_in_j:
+                continue
+            nodes[i].add_neighbor(k)
+            if isinstance(k, int) and k in active_nodes:
+                idx_i_in_k = int(nodes[k].find_neighbor(i))
+                idx_j_in_k = int(nodes[k].delete_neighbor(j))
+                nodes[k].add_neighbor(i, idx_j_in_k)
+                if idx_i_in_k > -1:
+                    duplicate_neighbors.append(k)
+                    m_err = float(
+                        nodes[k].merge(i, cross=idx_i_in_k > idx_j_in_k))
+                    step_merge_err += m_err
+                    truncation_error += m_err
+            # String tokens (open indices) are simply inherited.
+
+        _, err, _ = nodes[i].eat(nodes[j], idx_j_in_i, idx_i_in_j)
+        truncation_error += abs(float(err))
+
+        for k in duplicate_neighbors:
+            m_err = float(nodes[i].merge(k, cross=False))
+            step_merge_err += m_err
+            truncation_error += m_err
+            idx_k_in_i = int(nodes[i].find_neighbor(k))
+            if idx_k_in_i >= 0 and chi > 0:
+                cut_err = _cut_bondim_opt(nodes, i, idx_k_in_i, Dmax=chi)
+                truncation_error += cut_err
+
+        # Compress the merged node.
+        comp_err = float(nodes[i].compress_opt())
+        truncation_error += comp_err
+
+        nodes[j].clear()
+        active_nodes.discard(j)
+
+        steps += 1
+        if verbose and (steps % 10 == 0):
+            adj = _build_internal_adjacency(active_nodes, nodes)
+            max_deg = max((len(v) for v in adj.values()), default=0)
+            print(f"[merge_preserved] step={steps}, active={len(active_nodes)}, "
+                  f"max_degree={max_deg}")
+
+    return truncation_error
+
+
 @dataclass
 class ChainSite:
     label: Optional[str]
@@ -1037,7 +1155,15 @@ def extract_1d_chain(active_nodes: set[int],
                      nodes: dict[int, Any],
                      syndrome_label_set: set[str],
                      logical_label_set: set[str]) -> Optional[OneDChainMPS]:
-    """Extract a path-ordered 1D chain from active preserved nodes."""
+    """Extract a path-ordered 1D chain from active preserved nodes.
+
+    After ``merge_preserved_to_path``, each node may carry *multiple* open
+    tokens (syndrome/logical labels).  We decompose such multi-label nodes
+    into multiple ChainSite entries by rearranging the MPS so that:
+      - the left-bond position is at the MPS head,
+      - the right-bond position is at the MPS tail,
+      - all open-token positions are in between (each becoming one site).
+    """
     adjacency = _build_internal_adjacency(active_nodes, nodes)
     order = _path_order_from_adjacency(adjacency)
     if order is None:
@@ -1053,46 +1179,135 @@ def extract_1d_chain(active_nodes: set[int],
         next_node = order[idx + 1] if idx < len(order) - 1 else None
 
         node = nodes[node_id]
-        raw = mps_to_raw(node.mps)
 
-        left_pos = None
+        # Identify left-bond, right-bond, and open-token MPS positions.
+        left_mps_pos: Optional[int] = None
+        right_mps_pos: Optional[int] = None
         if prev_node is not None:
             pos = int(node.find_neighbor(prev_node))
-            left_pos = pos if pos >= 0 else None
-        right_pos = None
+            left_mps_pos = pos if pos >= 0 else None
         if next_node is not None:
             pos = int(node.find_neighbor(next_node))
-            right_pos = pos if pos >= 0 else None
+            right_mps_pos = pos if pos >= 0 else None
 
-        open_tokens = []
-        for nb in node.neighbor:
+        # Collect open tokens with their MPS positions.
+        open_entries: list[tuple[int, str, str]] = []  # (mps_pos, token, label)
+        for mps_pos_iter, nb in enumerate(node.neighbor):
             if isinstance(nb, int) and nb in active_nodes:
                 continue
-            open_tokens.append(nb)
+            if not isinstance(nb, str):
+                continue
+            label = out_token_to_index(nb)
+            if label in expected_open_labels:
+                open_entries.append((mps_pos_iter, nb, label))
 
-        label: Optional[str] = None
-        open_pos: Optional[int] = None
-        # At this stage each preserved node must carry exactly one open index.
-        if len(open_tokens) != 1:
-            return None
-        token = open_tokens[0]
-        pos = int(node.find_neighbor(token))
-        open_pos = pos if pos >= 0 else None
-        if not isinstance(token, str):
-            return None
-        label = out_token_to_index(token)
-        if label not in expected_open_labels:
+        if len(open_entries) == 0:
             return None
 
-        site_tensor = _node_to_site_tensor(raw, left_pos, open_pos, right_pos)
-        if label is not None and site_tensor.shape[1] != 2:
+        # --- Single open token: original fast path (no rearrangement) ---
+        if len(open_entries) == 1:
+            mps_pos_open, _tok, label = open_entries[0]
+            raw = mps_to_raw(node.mps)
+            site_tensor = _node_to_site_tensor(
+                raw, left_mps_pos, mps_pos_open, right_mps_pos)
+            if site_tensor.shape[1] != 2:
+                return None
+            if label in syndrome_label_set:
+                syndrome_labels.append(label)
+            if label in logical_label_set:
+                logical_labels.append(label)
+            sites.append(ChainSite(label=label, tensor=site_tensor))
+            continue
+
+        # --- Multi-label node: rearrange MPS then extract per-token sites ---
+        # Target MPS order:
+        #   [left_bond] [open_0] [open_1] ... [open_k] [right_bond]
+        # We use the node's move() method which performs swap chains correctly.
+        import copy
+        work_node = copy.deepcopy(node)
+
+        # Build desired target layout: which original positions go where.
+        desired_orig: list[int] = []
+        if left_mps_pos is not None:
+            desired_orig.append(left_mps_pos)
+        for (mp, _t, _l) in open_entries:
+            desired_orig.append(mp)
+        if right_mps_pos is not None:
+            desired_orig.append(right_mps_pos)
+
+        n_mps = len(work_node.mps)
+        # pos_map[orig] = current MPS position of the core that was originally at `orig`.
+        pos_map = list(range(n_mps))
+        # inv_map[cur] = which original position is currently at MPS slot `cur`.
+        inv_map = list(range(n_mps))
+
+        for target_slot, orig in enumerate(desired_orig):
+            cur = pos_map[orig]
+            if cur == target_slot:
+                continue
+            # Use move() which does consecutive swaps.
+            work_node.move(cur, target_slot)
+            # Update tracking for all displaced positions.
+            if cur > target_slot:
+                # Elements in [target_slot, cur-1] shifted right by 1.
+                moved_orig = inv_map[cur]
+                for s in range(cur, target_slot, -1):
+                    inv_map[s] = inv_map[s - 1]
+                    pos_map[inv_map[s]] = s
+                inv_map[target_slot] = moved_orig
+                pos_map[moved_orig] = target_slot
+            else:
+                # Elements in [cur+1, target_slot] shifted left by 1.
+                moved_orig = inv_map[cur]
+                for s in range(cur, target_slot):
+                    inv_map[s] = inv_map[s + 1]
+                    pos_map[inv_map[s]] = s
+                inv_map[target_slot] = moved_orig
+                pos_map[moved_orig] = target_slot
+
+        # Now the MPS is rearranged. Extract chain sites.
+        # Layout: [left_bond_core?] [open_0] ... [open_k] [right_bond_core?]
+        mps_cores = list(work_node.mps)
+
+        core_start = 0
+        # Absorb the left-bond core into the first open core.
+        if left_mps_pos is not None:
+            left_core = mps_cores[core_start]  # (Dl, d_bond, Dr)
+            next_core = mps_cores[core_start + 1]  # (Dr, d_open, Dr2)
+            merged = np.einsum("ijk,kab->ijab", left_core, next_core)
+            # (Dl, d_bond, d_open, Dr2) → (Dl*d_bond, d_open, Dr2)
+            merged = merged.reshape(
+                left_core.shape[0] * left_core.shape[1],
+                next_core.shape[1], next_core.shape[2])
+            mps_cores[core_start + 1] = merged
+            core_start += 1
+
+        core_end = len(mps_cores)
+        # Absorb the right-bond core into the last open core.
+        if right_mps_pos is not None:
+            right_core = mps_cores[core_end - 1]  # (Dl, d_bond, Dr)
+            prev_core = mps_cores[core_end - 2]    # (Dl2, d_open, Dr_prev)
+            merged = np.einsum("ijk,kab->ijab", prev_core, right_core)
+            # (Dl2, d_open, d_bond, Dr) → (Dl2, d_open, d_bond*Dr)
+            merged = merged.reshape(
+                prev_core.shape[0], prev_core.shape[1],
+                right_core.shape[1] * right_core.shape[2])
+            mps_cores[core_end - 2] = merged
+            core_end -= 1
+
+        open_cores = mps_cores[core_start:core_end]
+        if len(open_cores) != len(open_entries):
             return None
 
-        if label in syndrome_label_set:
-            syndrome_labels.append(label)
-        if label in logical_label_set:
-            logical_labels.append(label)
-        sites.append(ChainSite(label=label, tensor=site_tensor))
+        for ci, (_, _tok, label) in enumerate(open_entries):
+            core = open_cores[ci]  # shape (Dl, d_phys, Dr)
+            if core.shape[1] != 2:
+                return None
+            if label in syndrome_label_set:
+                syndrome_labels.append(label)
+            if label in logical_label_set:
+                logical_labels.append(label)
+            sites.append(ChainSite(label=label, tensor=core))
 
     return OneDChainMPS(
         sites=sites,
@@ -1191,30 +1406,23 @@ class CompressedTNDecoder:
         logical_value: int,
         syndrome_values: dict[str, float],
     ) -> float:
-        """Substitute syndrome+logical values, contract residual graph.
+        """Substitute syndrome+logical values, contract residual graph in MPS form.
 
         Steps:
         1. Deep-copy the stored node graph.
-        2. For each syndrome site, contract phys index with [1-s, s] → scalar.
-        3. For the target logical, select phys index = logical_value.
-        4. For other logicals, sum over phys index (marginalise).
-        5. Reconstruct each node as a raw tensor (from its MPS chain).
-        6. Contract the residual graph using direct tensor operations.
+        2. For each syndrome site, contract phys index with [1-s, s] → 2D core.
+        3. For the target logical, select phys index = logical_value → 2D core.
+        4. For other logicals, sum over phys index (marginalise) → 2D core.
+        5. Collapse all 2D cores by absorbing into adjacent 3D cores.
+        6. Contract the residual graph using MPS eat operations.
         7. Return log|value| of the final scalar.
-
-        NOTE: After substituting syndrome/logical values, the MPS cores at
-        those positions become 2D matrices (left, right) instead of the
-        normal 3D (left, phys, right).  We do NOT try to reshape them back
-        to 3D and use eat/merge/compress (those operations assume meaningful
-        physical dimensions).  Instead, we reconstruct each node as a raw
-        tensor and contract the residual graph directly.
         """
         import copy
         nodes = {nid: copy.deepcopy(n) for nid, n in self._node_snapshots.items()}
         remaining = set(self._active_ids)
 
         # Step 1-4: Substitute concrete values into MPS cores.
-        # Track which MPS positions have been contracted (became 2D).
+        _COLLAPSED = "__COLLAPSED__"
         for nid in list(remaining):
             node = nodes[nid]
             for pos in range(len(node.neighbor)):
@@ -1225,190 +1433,133 @@ class CompressedTNDecoder:
                 if label in self._syndrome_label_set:
                     p = float(syndrome_values.get(label, 0.0))
                     vec = np.array([1.0 - p, p], dtype=node.mps[pos].dtype)
-                    # Contract phys dim: (left, 2, right) @ [1-p, p] → (left, right)
                     node.mps[pos] = np.tensordot(
                         node.mps[pos], vec, axes=(1, 0))
-                    node.neighbor[pos] = f"{OUT_PREFIX}_contracted_syn"
+                    node.neighbor[pos] = _COLLAPSED
                 elif label == logical_label:
                     node.mps[pos] = node.mps[pos][:, logical_value, :]
-                    node.neighbor[pos] = f"{OUT_PREFIX}_fixed_log"
+                    node.neighbor[pos] = _COLLAPSED
                 elif label in self._logical_label_set:
                     node.mps[pos] = node.mps[pos].sum(axis=1)
-                    node.neighbor[pos] = f"{OUT_PREFIX}_summed_log"
+                    node.neighbor[pos] = _COLLAPSED
 
-        # Step 5-6: Reconstruct each node as a raw tensor from its MPS chain,
-        # then contract the residual graph using direct numpy operations.
-        # After substitution, each node's MPS contains a mix of:
-        #   - 3D cores (left, phys_dim, right) for internal (inter-node) bonds
-        #   - 2D matrices (left, right) for substituted (contracted) positions
-        # We contract the MPS chain within each node into a single tensor
-        # that has one axis per remaining internal neighbor.
-
-        # Build raw tensor for each remaining node.
-        # The raw tensor has one axis per MPS position that corresponds to
-        # an internal edge (neighbor is an int in remaining).
-        node_raw: dict[int, np.ndarray] = {}
-        # Map: node_id -> list of (axis_in_raw, neighbor_id) for internal edges
-        node_axes: dict[int, list[tuple[int, int]]] = {}
-
-        for nid in remaining:
+        # Step 5: Collapse 2D cores by absorbing into adjacent cores.
+        # This avoids exponential blowup from reconstructing raw tensors.
+        log_scale = 0.0
+        for nid in list(remaining):
             node = nodes[nid]
-            # Contract the MPS chain into a single tensor.
-            # Positions with 2D cores have been substituted (no physical dim).
-            # Positions with 3D cores still have a physical dim = bond to neighbor.
-            # We keep track of which axes in the raw tensor correspond to
-            # internal neighbors.
-            internal_axes: list[tuple[int, int]] = []  # (axis_idx, neighbor_id)
-            raw_axis = 0
-
-            # Contract MPS chain: multiply all cores sequentially.
-            # For 3D core: shape (l, d, r) - keep the d dimension
-            # For 2D core: shape (l, r) - no physical dimension to keep
-            acc = None
-            physical_dims: list[int] = []  # track which positions have phys dim
-
-            for pos in range(len(node.mps)):
-                core = node.mps[pos]
-                nb = node.neighbor[pos]
-                has_phys = (core.ndim == 3)
-
-                if acc is None:
-                    if has_phys:
-                        # First core with phys dim: (1, d, r) -> keep shape
-                        acc = core
-                    else:
-                        # First core is 2D: (1, r) -> reshape for chaining
-                        acc = core
-                else:
-                    if has_phys:
-                        # acc has shape (accumulated..., bond)
-                        # core has shape (bond, d, r)
-                        # Result: (accumulated..., d, r)
-                        if acc.ndim == 2:
-                            # acc shape: (X, bond), core: (bond, d, r)
-                            acc = np.einsum('ij,jkl->ikl', acc, core)
+            # Process from right to left: absorb each 2D core into its left neighbor.
+            i = len(node.mps) - 1
+            while i >= 0:
+                if node.mps[i].ndim == 2:
+                    if i > 0:
+                        left = node.mps[i - 1]
+                        right = node.mps[i]
+                        if left.ndim == 3:
+                            node.mps[i - 1] = np.einsum(
+                                'ijk,kl->ijl', left, right)
                         else:
-                            # acc shape: (..., bond), core: (bond, d, r)
-                            shape_pre = acc.shape[:-1]
-                            bond = acc.shape[-1]
-                            acc_flat = acc.reshape(-1, bond)
-                            merged = np.einsum('ij,jkl->ikl', acc_flat, core)
-                            acc = merged.reshape(*shape_pre, core.shape[1], core.shape[2])
-                    else:
-                        # core is 2D: (bond, r)
-                        if acc.ndim == 2:
-                            acc = acc @ core
+                            node.mps[i - 1] = left @ right
+                        node.mps.pop(i)
+                        node.neighbor = np.delete(node.neighbor, i)
+                    elif len(node.mps) > 1:
+                        left = node.mps[i]
+                        right_core = node.mps[i + 1]
+                        if right_core.ndim == 3:
+                            node.mps[i + 1] = np.einsum(
+                                'ij,jkl->ikl', left, right_core)
                         else:
-                            shape_pre = acc.shape[:-1]
-                            bond = acc.shape[-1]
-                            acc = acc.reshape(-1, bond) @ core
-                            acc = acc.reshape(*shape_pre, core.shape[-1])
+                            node.mps[i + 1] = left @ right_core
+                        node.mps.pop(i)
+                        node.neighbor = np.delete(node.neighbor, i)
+                        continue  # re-check position i (now different core)
+                    else:
+                        # Single 2D core: (1, 1) — scalar node
+                        val = float(np.abs(node.mps[0].ravel()[0]))
+                        if val > 0:
+                            log_scale += math.log(val)
+                        else:
+                            return -math.inf
+                        node.mps = []
+                        node.neighbor = np.array([], dtype=node.neighbor.dtype)
+                        break
+                i -= 1
 
-                if has_phys:
-                    physical_dims.append(pos)
-
-            if acc is None:
-                node_raw[nid] = np.array(1.0, dtype=np.float64)
-                node_axes[nid] = []
+            # If node has no MPS cores, it's been fully contracted to a scalar.
+            if len(node.mps) == 0:
+                remaining.discard(nid)
                 continue
 
-            # Now acc has shape: (1, d1, d2, ..., dk, 1) or similar
-            # where d_i are the physical dimensions of unsubstituted positions.
-            # We need to:
-            # 1. Remove the leading "1" (left boundary) and trailing "1" (right boundary)
-            # 2. Identify which dimensions correspond to internal neighbors
+            # Normalize to prevent numerical overflow/underflow.
+            node.cano = min(node.cano, len(node.mps) - 1)
+            node.cano = max(node.cano, 0)
+            node.left_canonical()
+            norm = np.linalg.norm(node.mps[node.cano])
+            if norm > 0:
+                log_scale += math.log(norm)
+                node.mps[node.cano] = node.mps[node.cano] / norm
+            else:
+                return -math.inf
 
-            # Determine the shape: the leading dim is left-boundary (=1 for first),
-            # trailing dim is right-boundary (=1 for last).
-            # In between are the physical dimensions in order of `physical_dims`.
+        if len(remaining) == 0:
+            return log_scale
 
-            # Squeeze boundary dimensions
-            shape = list(acc.shape)
-            # The first axis is the left bond of the first core (should be 1)
-            # The last axis is the right bond of the last core (should be 1)
-            if shape[0] == 1:
-                acc = acc.reshape(shape[1:])
-                shape = list(acc.shape)
-            if len(shape) > 0 and shape[-1] == 1:
-                acc = acc.reshape(shape[:-1])
-                shape = list(acc.shape)
-
-            if acc.ndim == 0:
-                node_raw[nid] = acc
-                node_axes[nid] = []
-                continue
-
-            # Map physical dimensions to internal neighbors
-            axis_idx = 0
-            for pos in physical_dims:
-                nb = node.neighbor[pos]
-                if isinstance(nb, int) and nb in remaining:
-                    internal_axes.append((axis_idx, nb))
-                axis_idx += 1
-
-            node_raw[nid] = acc
-            node_axes[nid] = internal_axes
-
-        # Step 6: Contract all internal edges by pairwise tensor contraction.
-        # Greedily contract pairs of nodes that share an edge.
+        # Step 6: Contract the residual graph using MPS eat operations.
+        # Same pattern as compress_until_preserved but for the residual graph.
         while len(remaining) > 1:
-            # Find a pair with a shared internal edge
+            # Find an edge: a pair of nodes that share an internal neighbor.
             pair_found = False
             for nid_i in list(remaining):
-                for (ax_i, nb_i) in node_axes.get(nid_i, []):
-                    if nb_i in remaining and nb_i != nid_i:
-                        nid_j = nb_i
-                        # Find the matching axis in node j
-                        ax_j = None
-                        for (ax_jj, nb_jj) in node_axes.get(nid_j, []):
-                            if nb_jj == nid_i:
-                                ax_j = ax_jj
-                                break
-                        if ax_j is None:
+                node_i = nodes[nid_i]
+                for pos_i, nb in enumerate(node_i.neighbor):
+                    if isinstance(nb, (int, np.integer)) and int(nb) in remaining and int(nb) != nid_i:
+                        nid_j = int(nb)
+                        node_j = nodes[nid_j]
+                        pos_j = int(node_j.find_neighbor(nid_i))
+                        if pos_j < 0:
                             continue
 
-                        # Contract: sum over ax_i in nid_i and ax_j in nid_j
-                        raw_i = node_raw[nid_i]
-                        raw_j = node_raw[nid_j]
+                        # Update neighbor bookkeeping (mirrors compress_until_preserved)
+                        node_i.delete_neighbor(nid_j)
+                        neighbors_j = list(node_j.neighbor)
+                        duplicate_neighbors: list[int] = []
 
-                        contracted = np.tensordot(raw_i, raw_j, axes=([ax_i], [ax_j]))
-                        # After contraction, axes from i come first (minus ax_i),
-                        # then axes from j (minus ax_j).
-                        # Update axis mappings.
-                        new_axes: list[tuple[int, int]] = []
-                        offset = 0
-                        for (a, nb) in node_axes[nid_i]:
-                            if a == ax_i:
+                        for p, k in enumerate(neighbors_j):
+                            if p == pos_j:
                                 continue
-                            new_a = a if a < ax_i else a - 1
-                            new_axes.append((new_a, nb))
-                            offset = max(offset, new_a + 1)
+                            node_i.add_neighbor(k)
+                            if isinstance(k, (int, np.integer)) and int(k) in remaining:
+                                k = int(k)
+                                idx_i_in_k = int(nodes[k].find_neighbor(nid_i))
+                                idx_j_in_k = int(nodes[k].delete_neighbor(nid_j))
+                                nodes[k].add_neighbor(nid_i, idx_j_in_k)
+                                if idx_i_in_k > -1:
+                                    duplicate_neighbors.append(k)
+                                    node_err = float(
+                                        nodes[k].merge(nid_i,
+                                                       cross=idx_i_in_k > idx_j_in_k))
 
-                        # Axes from j start after i's axes
-                        ndim_i_after = raw_i.ndim - 1  # i lost one axis
-                        for (a, nb) in node_axes[nid_j]:
-                            if a == ax_j:
-                                continue
-                            new_a = ndim_i_after + (a if a < ax_j else a - 1)
-                            new_axes.append((new_a, nb))
+                        # Use ORIGINAL MPS positions saved before neighbor
+                        # modifications.  delete_neighbor / add_neighbor only
+                        # touch the neighbor array, not the MPS cores, so the
+                        # original positions still index the correct cores.
+                        lognorm, err, sign = node_i.eat(
+                            node_j, pos_i, pos_j)
+                        log_scale += lognorm
 
-                        # Also update references: any node that pointed to nid_j
-                        # should now point to nid_i (since we merge into nid_i)
-                        for other_nid in remaining:
-                            if other_nid == nid_i or other_nid == nid_j:
-                                continue
-                            updated = []
-                            for (a, nb) in node_axes.get(other_nid, []):
-                                if nb == nid_j:
-                                    updated.append((a, nid_i))
-                                else:
-                                    updated.append((a, nb))
-                            node_axes[other_nid] = updated
+                        for k in duplicate_neighbors:
+                            node_i.merge(k, cross=False)
 
-                        node_raw[nid_i] = contracted
-                        node_axes[nid_i] = new_axes
-                        del node_raw[nid_j]
-                        del node_axes[nid_j]
+                        node_i.compress_opt()
+                        # Re-normalize after contraction.
+                        if len(node_i.mps) > 0:
+                            node_i.left_canonical()
+                            norm = np.linalg.norm(node_i.mps[node_i.cano])
+                            if norm > 0:
+                                log_scale += math.log(norm)
+                                node_i.mps[node_i.cano] = node_i.mps[node_i.cano] / norm
+
+                        node_j.clear()
                         remaining.remove(nid_j)
                         pair_found = True
                         break
@@ -1419,12 +1570,11 @@ class CompressedTNDecoder:
 
         # Step 7: Compute log|value| of the final scalar.
         final_id = next(iter(remaining))
-        result = node_raw[final_id]
-
-        # The result should be a scalar (all indices contracted).
-        # If not, sum over remaining dimensions.
-        val = float(np.abs(np.sum(result)))
-        return math.log(val) if val > 0.0 else -math.inf
+        final_node = nodes[final_id]
+        if len(final_node.mps) == 0:
+            return log_scale
+        lognorm, sign = final_node.lognorm()
+        return log_scale + lognorm
 
 
 @dataclass
@@ -1458,6 +1608,8 @@ def compile_to_1d_chain(
         chi=chi,
     )
 
+    # Phase 1.5: try direct extraction first; if the residual graph is
+    # already a path (degree <= 2 everywhere) we skip the merging step.
     chain = extract_1d_chain(
         active_nodes=offline.active_nodes,
         nodes=offline.nodes,
@@ -1465,9 +1617,37 @@ def compile_to_1d_chain(
         logical_label_set=logical_inds,
     )
 
+    if chain is None:
+        # Phase 2: merge preserved nodes until the graph becomes a 1D path.
+        if verbose:
+            adj = _build_internal_adjacency(offline.active_nodes, offline.nodes)
+            max_deg = max((len(v) for v in adj.values()), default=0)
+            print(f"[compile] chain extraction failed (max_degree={max_deg}), "
+                  f"starting preserved-node merging ...")
+
+        merge_err = merge_preserved_to_path(
+            nodes=offline.nodes,
+            active_nodes=offline.active_nodes,
+            chi=chi,
+            max_steps=max_steps,
+            verbose=verbose,
+        )
+        offline.stats.truncation_error += merge_err
+
+        # Try extraction again after merging.
+        chain = extract_1d_chain(
+            active_nodes=offline.active_nodes,
+            nodes=offline.nodes,
+            syndrome_label_set=syndrome_inds,
+            logical_label_set=logical_inds,
+        )
+
     # Build compressed TN decoder as fallback when 1D chain isn't available
     compressed_tn: Optional[CompressedTNDecoder] = None
     if chain is None:
+        if verbose:
+            print("[compile] chain extraction still failed after merging, "
+                  "falling back to CompressedTNDecoder")
         compressed_tn = CompressedTNDecoder(
             active_nodes=offline.active_nodes,
             nodes=offline.nodes,

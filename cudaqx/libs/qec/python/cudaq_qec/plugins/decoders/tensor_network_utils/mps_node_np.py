@@ -417,9 +417,11 @@ class MPSNode:
 #            print("dot of two vectors:",result,np.linalg.norm(result),np.linalg.norm(result)**2)
 #            print("dot of two vectors:",result,np.abs(result),np.abs(result)**2)
 
-            lognorm = math.log(np.abs(result))
+            abs_result = float(np.abs(result).ravel()[0])
+            lognorm = math.log(abs_result) if abs_result > 0 else -math.inf
             self.mps = []
-            return lognorm,0,result/np.abs(result)
+            sign = float((result / abs_result).ravel()[0]) if abs_result > 0 else 1.0
+            return lognorm, 0, sign
 
 
 #        idx_i_in_j=np.argwhere(nodej.neighbor == self.index)[0][0]
