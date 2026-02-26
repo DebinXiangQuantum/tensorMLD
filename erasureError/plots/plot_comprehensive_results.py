@@ -6,10 +6,40 @@
 import glob
 import json
 import os
+import sys
+from pathlib import Path
 from typing import Any, Dict, List
 
 import matplotlib.pyplot as plt
 import numpy as np
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+WORKSPACE = SCRIPT_DIR.parent.parent
+if str(WORKSPACE) not in sys.path:
+    sys.path.insert(0, str(WORKSPACE))
+
+from experiments.plots.paper_style import (
+    DOUBLE_COLUMN_PT,
+    SINGLE_COLUMN_PT,
+    apply_paper_style,
+    save_figure,
+)
+
+
+def _prepare_style(*, width_pt: float, ncols: int = 1, nrows: int = 1) -> tuple[float, float]:
+    return apply_paper_style(
+        width_pt=width_pt,
+        ncols=ncols,
+        nrows=nrows,
+        panel_aspect=4.0 / 3.0,
+        font_size=8.0,
+    )
+
+
+def _save_plot(fig: plt.Figure, output_dir: str, filename: str) -> None:
+    stem = Path(filename).stem
+    save_figure(fig, Path(output_dir), stem)
+    print(f"Saved: {Path(output_dir) / f'{stem}.pdf'}")
 
 
 def load_latest_results(results_dir: str) -> Dict[str, Any]:
@@ -86,7 +116,12 @@ def plot_all_codes_comparison(
             continue
 
         ncols = len(codes)
-        fig, axes = plt.subplots(3, ncols, figsize=(4.5 * ncols, 10), squeeze=False)
+        figsize = _prepare_style(
+            width_pt=max(DOUBLE_COLUMN_PT, SINGLE_COLUMN_PT * ncols),
+            ncols=ncols,
+            nrows=3,
+        )
+        fig, axes = plt.subplots(3, ncols, figsize=figsize, squeeze=False)
         fig.suptitle(f'{code_type} Codes: LER vs Physical Error Rate', fontsize=14, fontweight='bold')
 
         for col, code_name in enumerate(codes):
@@ -123,9 +158,7 @@ def plot_all_codes_comparison(
                 ax.set_ylim([1e-4, 1])
 
         plt.tight_layout()
-        out_path = os.path.join(output_dir, f'{code_type.lower()}_codes_comparison.png')
-        plt.savefig(out_path, dpi=160, bbox_inches='tight')
-        print(f"Saved: {out_path}")
+        _save_plot(fig, output_dir, f'{code_type.lower()}_codes_comparison.png')
         if show:
             plt.show()
         else:
@@ -153,7 +186,8 @@ def plot_decoder_performance_summary(
                     decoder_stats[decoder_name]['below'] += 1
 
     # Plot bar chart
-    fig, ax = plt.subplots(figsize=(8, 5))
+    figsize = _prepare_style(width_pt=SINGLE_COLUMN_PT)
+    fig, ax = plt.subplots(figsize=figsize)
 
     decoders = list(decoder_stats.keys())
     ratios = [decoder_stats[d]['below'] / decoder_stats[d]['total'] for d in decoders]
@@ -172,9 +206,7 @@ def plot_decoder_performance_summary(
     ax.grid(axis='y', alpha=0.3)
 
     plt.tight_layout()
-    out_path = os.path.join(output_dir, 'decoder_performance_summary.png')
-    plt.savefig(out_path, dpi=160, bbox_inches='tight')
-    print(f"Saved: {out_path}")
+    _save_plot(fig, output_dir, 'decoder_performance_summary.png')
     if show:
         plt.show()
     else:
@@ -194,7 +226,12 @@ def plot_erasure_impact(
 
     ncols = min(4, len(code_names))
     nrows = (len(code_names) + ncols - 1) // ncols
-    fig, axes = plt.subplots(nrows, ncols, figsize=(4.5 * ncols, 4 * nrows), squeeze=False)
+    figsize = _prepare_style(
+        width_pt=max(DOUBLE_COLUMN_PT, SINGLE_COLUMN_PT * ncols),
+        ncols=ncols,
+        nrows=nrows,
+    )
+    fig, axes = plt.subplots(nrows, ncols, figsize=figsize, squeeze=False)
     fig.suptitle(f'Impact of Erasure Rate on LER (p={fixed_error_rate})', fontsize=14, fontweight='bold')
 
     colors = {
@@ -247,9 +284,7 @@ def plot_erasure_impact(
         axes[row, col].set_visible(False)
 
     plt.tight_layout()
-    out_path = os.path.join(output_dir, 'erasure_impact_analysis.png')
-    plt.savefig(out_path, dpi=160, bbox_inches='tight')
-    print(f"Saved: {out_path}")
+    _save_plot(fig, output_dir, 'erasure_impact_analysis.png')
     if show:
         plt.show()
     else:
@@ -284,7 +319,8 @@ def plot_code_comparison_at_fixed_params(
                     data[decoder_name]['lers'].append(
                         float(decoder_result.get('logical_error_rate', float('nan'))))
 
-    fig, ax = plt.subplots(figsize=(12, 5))
+    figsize = _prepare_style(width_pt=DOUBLE_COLUMN_PT)
+    fig, ax = plt.subplots(figsize=figsize)
 
     x = np.arange(len(code_names))
     width = 0.25
@@ -304,9 +340,7 @@ def plot_code_comparison_at_fixed_params(
     ax.grid(axis='y', alpha=0.3)
 
     plt.tight_layout()
-    out_path = os.path.join(output_dir, 'code_comparison_fixed_params.png')
-    plt.savefig(out_path, dpi=160, bbox_inches='tight')
-    print(f"Saved: {out_path}")
+    _save_plot(fig, output_dir, 'code_comparison_fixed_params.png')
     if show:
         plt.show()
     else:

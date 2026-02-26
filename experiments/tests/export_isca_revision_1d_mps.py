@@ -41,35 +41,41 @@ factory = _load_module("isca_revision_mps_factory", _TNU / "tensor_network_facto
 from experiments.codes.isca_revision_codes import load_isca_revision_codes
 
 
-def _build_parameterized_tn(
+def _build_single_logical_tn(
     H: np.ndarray,
-    logical_obs: np.ndarray,
+    logical_row: np.ndarray,
     noise_p: float,
 ) -> tuple[TensorNetwork, list[str], list[str]]:
+    """Build parameterised TN for a SINGLE logical operator.
+
+    Building K separate single-logical TNs avoids:
+    1. quimb's broken multi-logical hyperedge contraction
+    2. SVD OOM from high-degree nodes in multi-logical TNs
+    """
     num_checks, num_errors = H.shape
     check_inds = [f"s_{i}" for i in range(num_checks)]
     error_inds = [f"e_{i}" for i in range(num_errors)]
     syndrome_param_inds = [f"syn_param_{i}" for i in range(num_checks)]
-
-    num_logicals = int(logical_obs.shape[0])
-    logical_inds = [f"l_{i}" for i in range(num_logicals)]
-    logical_tags = [f"LOG_{i}" for i in range(num_logicals)]
-    logical_obs_inds = ["obs"] if num_logicals == 1 else [f"obs_{i}" for i in range(num_logicals)]
+    logical_obs_inds = ["obs"]
 
     code_tn = factory.tensor_network_from_parity_check(
         H.astype(np.float64),
         col_inds=error_inds,
         row_inds=check_inds,
     )
+
+    logical_2d = logical_row.reshape(1, -1).astype(np.float64)
+    logical_inds = ["l_0"]
+    logical_tags = ["LOG_0"]
     logical_tn = factory.tensor_network_from_parity_check(
-        logical_obs.astype(np.float64),
+        logical_2d,
         col_inds=error_inds,
         row_inds=logical_inds,
         tags=logical_tags,
     )
     logical_tn = logical_tn.combine(
         factory.tensor_network_from_logical_observable(
-            logical_obs.astype(np.float64),
+            logical_2d,
             logical_inds,
             logical_obs_inds,
             logical_tags,
@@ -154,69 +160,106 @@ def export_isca_revision_1d_mps(args: argparse.Namespace) -> dict[str, Any]:
         if logical.ndim != 2 or logical.shape[1] != H.shape[1]:
             raise ValueError(
                 f"{name}: logical shape {logical.shape} incompatible with H {H.shape}.")
-        if logical.shape[0] <= 0:
+        K = logical.shape[0]
+        if K <= 0:
             raise ValueError(f"{name}: no logical observables found.")
 
         if args.verbose:
-            print(f"[compile] {name}: H={H.shape}, logical={logical.shape}")
+            print(f"[compile] {name}: H={H.shape}, K={K}, logical={logical.shape}")
 
-        full_tn, syndrome_param_inds, logical_obs_inds = _build_parameterized_tn(
-            H=H,
-            logical_obs=logical,
-            noise_p=args.noise_p,
-        )
-
-        t0 = time.perf_counter()
-        compile_result = core.compile_to_1d_chain(
-            tn=full_tn.copy(),
-            preserve_inds=set(syndrome_param_inds + logical_obs_inds),
-            syndrome_inds=set(syndrome_param_inds),
-            logical_inds=set(logical_obs_inds),
-            chi=int(args.bond_dim),
-            cutoff=float(args.cutoff),
-            max_steps=int(args.max_steps),
-            verbose=bool(args.verbose),
-        )
-        compile_ms = (time.perf_counter() - t0) * 1e3
-
-        if compile_result.chain is None:
-            msg = f"{name}: failed to extract 1D chain (non-path preserved graph)."
-            if args.skip_nonchain:
-                manifest["skipped"].append(msg)
-                if args.verbose:
-                    print(f"[skip] {msg}")
-                continue
-            raise RuntimeError(msg)
-
-        chain = compile_result.chain
-        _assert_chain_only_has_syndrome_and_logical_inds(chain)
-
+        # Build K separate single-logical chains to avoid:
+        # 1) quimb multi-logical contraction bug
+        # 2) SVD OOM from high-degree nodes in multi-logical TN
         code_out = output_dir / name
-        _save_chain_numpy_bundle(chain, code_out)
-        stats_data = json.loads(compile_result.offline_stats.to_json())
+        code_out.mkdir(parents=True, exist_ok=True)
+        chain_records = []
+        total_compile_ms = 0.0
+        all_ok = True
+
+        for k in range(K):
+            if args.verbose:
+                print(f"  Compiling chain for logical {k}/{K}...", end=" ", flush=True)
+
+            full_tn, syndrome_param_inds, logical_obs_inds = _build_single_logical_tn(
+                H=H,
+                logical_row=logical[k],
+                noise_p=args.noise_p,
+            )
+
+            t0 = time.perf_counter()
+            compile_result = core.compile_to_1d_chain(
+                tn=full_tn.copy(),
+                preserve_inds=set(syndrome_param_inds + logical_obs_inds),
+                syndrome_inds=set(syndrome_param_inds),
+                logical_inds=set(logical_obs_inds),
+                chi=int(args.bond_dim),
+                cutoff=float(args.cutoff),
+                max_steps=int(args.max_steps),
+                verbose=False,
+            )
+            k_compile_ms = (time.perf_counter() - t0) * 1e3
+            total_compile_ms += k_compile_ms
+
+            if compile_result.chain is None:
+                msg = f"{name}/logical_{k}: failed to extract 1D chain."
+                if args.skip_nonchain:
+                    manifest["skipped"].append(msg)
+                    if args.verbose:
+                        print(f"SKIP ({msg})")
+                    chain_records.append({"logical_idx": k, "status": "skipped"})
+                    all_ok = False
+                    continue
+                raise RuntimeError(msg)
+
+            chain = compile_result.chain
+            _assert_chain_only_has_syndrome_and_logical_inds(chain)
+
+            chain_out = code_out / f"logical_{k}"
+            _save_chain_numpy_bundle(chain, chain_out)
+            stats_data = json.loads(compile_result.offline_stats.to_json())
+
+            chain_records.append({
+                "logical_idx": k,
+                "status": "ok",
+                "num_sites": len(chain.sites),
+                "num_syndrome_indices": len(chain.syndrome_labels),
+                "num_logical_indices": len(chain.logical_labels),
+                "compile_ms": float(round(k_compile_ms, 3)),
+                "trunc_error": stats_data.get("truncation_error", 0.0),
+                "offline_stats": stats_data,
+            })
+            if args.verbose:
+                trunc = stats_data.get("truncation_error", 0.0)
+                print(f"chain, trunc_err={trunc:.2e}, {k_compile_ms:.0f}ms")
+
+        # Save per-code manifest
+        code_manifest = {
+            "name": name,
+            "K": K,
+            "chains": chain_records,
+        }
+        with open(code_out / "manifest.json", "w") as f:
+            json.dump(code_manifest, f, indent=2)
 
         record = {
             "name": name,
             "N": int(code.N),
-            "K": int(code.K),
+            "K": K,
             "D": float(code.D),
             "source_path": getattr(code, "source_path", ""),
             "source_format": getattr(code, "source_format", ""),
             "source_family": getattr(code, "source_family", ""),
-            "compile_ms": float(round(compile_ms, 3)),
+            "compile_ms": float(round(total_compile_ms, 3)),
             "output_dir": str(code_out),
-            "num_sites": len(chain.sites),
-            "num_syndrome_indices": len(chain.syndrome_labels),
-            "num_logical_indices": len(chain.logical_labels),
-            "offline_stats": stats_data,
+            "num_chains": sum(1 for c in chain_records if c.get("status") == "ok"),
+            "chain_details": chain_records,
         }
         manifest["codes"].append(record)
         if args.verbose:
+            ok_count = record["num_chains"]
             print(
-                f"[saved] {name}: sites={record['num_sites']}, "
-                f"syn={record['num_syndrome_indices']}, "
-                f"log={record['num_logical_indices']}, "
-                f"compile_ms={record['compile_ms']}")
+                f"[saved] {name}: {ok_count}/{K} chains, "
+                f"total_compile_ms={record['compile_ms']}")
 
     manifest_path = output_dir / "manifest.json"
     with open(manifest_path, "w") as f:
