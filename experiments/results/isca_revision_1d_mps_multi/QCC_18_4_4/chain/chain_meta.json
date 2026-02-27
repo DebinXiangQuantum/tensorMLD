@@ -1,0 +1,31 @@
+{
+  "syndrome_labels": [
+    "syn_param_4",
+    "syn_param_3",
+    "syn_param_5",
+    "syn_param_0",
+    "syn_param_6",
+    "syn_param_1",
+    "syn_param_2"
+  ],
+  "logical_labels": [
+    "obs_3",
+    "obs_0",
+    "obs_1",
+    "obs_2"
+  ],
+  "num_sites": 11,
+  "site_labels": [
+    "obs_3",
+    "syn_param_4",
+    "syn_param_3",
+    "syn_param_5",
+    "syn_param_0",
+    "syn_param_6",
+    "syn_param_1",
+    "obs_0",
+    "obs_1",
+    "syn_param_2",
+    "obs_2"
+  ]
+}

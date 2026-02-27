@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Task 2: Multi-decoder benchmark on BB and HP codes.
+"""Multi-decoder benchmark on GND QLDPC codes.
 
 Compares decoders:
   - MPS compressed TN decoder (CPU / GPU)
@@ -8,15 +8,20 @@ Compares decoders:
   - BP-LSD  (ldpc package, CPU)
   - BP      (ldpc package, CPU)
 
-Codes:
-  - ISCA revision 9-code suite:
-    TB_25_3_4, TB_30_6_4, TB_48_4_8,
-    BB_18_4_4, BB_60_8_4, BB_72_12_6,
-    BB_90, BB_108, BB_144
+All 9 codes loaded from experiments/codes/gnd_data/:
+  LDPC_25_3_4, LDPC_30_6_4, TOR_50_2_5,
+  QCC_18_4_4, QCC_60_8_4, QCC_72_12_6,
+  QCC_90_8_10, QCC_108_8_10, QCC_144_12_12
+
+Decoding paradigm (following GND/decoding/forward_decoding.py):
+  - Noise: independent X-error channel on Hz (binary symmetric channel)
+  - Syndrome: errors @ Hz.T mod 2
+  - Logical check: ALL K logical Z operators checked (block error rate)
+  - A shot fails if ANY logical operator gives wrong prediction
 
 Usage:
-  .venv-mps/bin/python experiments/tests/test_multi_decoder_benchmark.py
-  .venv-mps/bin/python -m pytest experiments/tests/test_multi_decoder_benchmark.py -v -s
+  python experiments/tests/test_multi_decoder_benchmark.py
+  python -m pytest experiments/tests/test_multi_decoder_benchmark.py -v -s
 """
 from __future__ import annotations
 
@@ -39,9 +44,6 @@ import pytest
 SCRIPT_DIR = Path(__file__).resolve().parent
 WORKSPACE = SCRIPT_DIR.parent.parent
 QEC_PY = WORKSPACE / "cudaqx" / "libs" / "qec" / "python"
-# NOTE: Add WORKSPACE first (for experiments.codes etc), but defer QEC_PY
-# until AFTER cudaq_qec import so the installed package (with compiled C
-# extensions) takes precedence over the local source tree.
 if str(WORKSPACE) not in sys.path:
     sys.path.insert(0, str(WORKSPACE))
 
@@ -105,16 +107,27 @@ from quimb import oset
 from quimb.tensor import Tensor, TensorNetwork
 
 
-def _build_tn_and_compile(
+def _build_tn_and_compile_single_logical(
     H: np.ndarray,
     logical_row: np.ndarray,
     noise_p: float,
     chi: int = 32,
     verbose: bool = False,
 ) -> tuple[Any, Any, Any]:
-    """Build parameterised TN and compile to 1D chain.
+    """Build parameterised TN for ONE logical and compile to 1D chain.
 
-    Returns (chain, compressed_tn, offline_stats).
+    The TN formulation only supports one logical at a time because multiple
+    logicals sharing error indices produce degenerate (uniform) distributions
+    in the Hadamard tensor network representation.
+
+    Args:
+        H: parity check matrix (num_checks, num_errors)
+        logical_row: single logical Z operator (num_errors,)
+        noise_p: per-qubit X-error probability
+        chi: virtual bond dimension for MPS compression
+
+    Returns:
+        (chain, compressed_tn, offline_stats)
     """
     num_checks, num_errors = H.shape
     check_inds = [f"s_{i}" for i in range(num_checks)]
@@ -124,6 +137,7 @@ def _build_tn_and_compile(
 
     code_tn = factory.tensor_network_from_parity_check(
         H.astype(np.float64), col_inds=error_inds, row_inds=check_inds)
+
     logical_2d = logical_row.reshape(1, -1).astype(np.float64)
     logical_inds = ["l_0"]
     logical_tn = factory.tensor_network_from_parity_check(
@@ -135,7 +149,7 @@ def _build_tn_and_compile(
 
     param_syn_tn = core.make_parametrized_syndrome_network(check_inds, syn_param_inds)
 
-    # Noise model: independent depolarising
+    # Noise model: independent X-error channel
     noise_tensors = []
     for i, eind in enumerate(error_inds):
         noise_tensors.append(Tensor(
@@ -161,13 +175,20 @@ def _build_tn_and_compile(
     return result.chain, result.compressed_tn, result.offline_stats
 
 
-def _decode_mps_cpu(
-    chain, syndrome: np.ndarray, num_checks: int
+def _decode_mps_single(
+    chain, compressed_tn, syndrome: np.ndarray, num_checks: int,
+    use_gpu: bool = False,
 ) -> float:
-    """Online decode single syndrome via MPS chain (CPU)."""
+    """Online decode single syndrome for one logical. GPU via cupy if available."""
     syn_vals = {f"syn_param_{i}": float(syndrome[i]) for i in range(num_checks)}
-    assignments, marginals = chain.decode_logicals(syndrome_values=syn_vals)
-    return float(marginals.get("obs", 0.5))
+    if chain is not None:
+        _, marginals = chain.decode_logicals(
+            syndrome_values=syn_vals, use_gpu=use_gpu)
+        return float(marginals.get("obs", 0.5))
+    elif compressed_tn is not None:
+        _, marginals = compressed_tn.decode_logicals(syndrome_values=syn_vals)
+        return float(marginals.get("obs", 0.5))
+    return 0.5
 
 
 # ---------------------------------------------------------------------------
@@ -176,6 +197,10 @@ def _decode_mps_cpu(
 def _sample_errors_and_syndromes(
     H: np.ndarray, noise_p: float, shots: int, seed: int
 ) -> tuple[np.ndarray, np.ndarray]:
+    """Sample independent X errors and compute syndromes.
+
+    Following GND paradigm: errors @ Hz.T mod 2.
+    """
     rng = np.random.default_rng(seed)
     n = H.shape[1]
     errors = (rng.random((shots, n)) < noise_p).astype(np.int8)
@@ -183,12 +208,28 @@ def _sample_errors_and_syndromes(
     return errors, syndromes
 
 
-def _logical_error_rate(
-    errors: np.ndarray, logical_row: np.ndarray, predictions: np.ndarray
+def _block_logical_error_rate(
+    errors: np.ndarray,
+    lz: np.ndarray,
+    predictions: np.ndarray,
 ) -> float:
-    """Compute logical error rate from hard decisions."""
-    true_logicals = (errors @ logical_row.reshape(-1).astype(np.int8)) % 2
-    return float(np.mean(true_logicals != predictions))
+    """Compute block logical error rate over ALL K logicals.
+
+    A shot counts as failure if ANY logical qubit has wrong prediction.
+
+    Args:
+        errors: (shots, n) binary error patterns
+        lz: (K, n) logical Z operators
+        predictions: (shots, K) predicted logical values
+
+    Returns:
+        Block logical error rate.
+    """
+    # true_logicals[i, k] = errors[i] @ lz[k] mod 2
+    true_logicals = (errors @ lz.T.astype(np.int8)) % 2  # (shots, K)
+    # A shot fails if any logical is wrong
+    any_wrong = np.any(true_logicals != predictions, axis=1)  # (shots,)
+    return float(np.mean(any_wrong))
 
 
 # ---------------------------------------------------------------------------
@@ -201,7 +242,9 @@ class CodeCase:
     skip_exact: bool = False  # skip exact TN for large codes
 
 
-_EXACT_MAX_N = 72
+# Exact TN via quimb is very slow (CPU-only, ~1s per shot per logical).
+# Only run on the smallest codes as a ground-truth reference.
+_EXACT_MAX_N = 25
 
 
 def _get_codes(
@@ -237,13 +280,13 @@ def _run_single_code_case(
 ) -> dict[str, Any]:
     H = np.ascontiguousarray(cc.code.hz.astype(np.float64))
     lz = np.ascontiguousarray(cc.code.lz.astype(np.float64))
-    logical_row = np.ascontiguousarray(lz[0])  # first logical
+    K = int(lz.shape[0])
     num_checks, num_errors = H.shape
 
     if verbose:
         print(f"\n{'='*60}")
-        print(f"Code: {cc.name}  N={cc.code.N} K={cc.code.K} D={cc.code.D}")
-        print(f"  H shape: {H.shape}, logical rows: {lz.shape[0]}")
+        print(f"Code: {cc.name}  [[{cc.code.N},{cc.code.K},{cc.code.D}]]")
+        print(f"  H shape: {H.shape}, K={K} logical Z rows")
         print(f"  noise_p={noise_p}, shots={shots}, chi={chi}")
 
     errors, syndromes = _sample_errors_and_syndromes(H, noise_p, shots, seed)
@@ -251,7 +294,7 @@ def _run_single_code_case(
     record: dict[str, Any] = {
         "code": cc.name,
         "N": int(cc.code.N),
-        "K": int(cc.code.K),
+        "K": K,
         "D": float(cc.code.D),
         "noise_p": noise_p,
         "shots": shots,
@@ -259,50 +302,35 @@ def _run_single_code_case(
         "decoders": {},
     }
 
-    # --- MPS decoder (CPU or GPU) ---
+    # --- MPS decoder ---
+    # Decode each logical independently: the Hadamard TN formulation only
+    # supports one logical per network. Build K separate MPS chains.
+    # Offline compression always on CPU (quimb); online decode on GPU (cupy) if available.
     try:
         t0 = time.perf_counter()
-        if use_gpu:
-            # GPU path via cudaq_qec
-            dec = qec.get_decoder(
-                "tensor_network_mps_decoder", H,
-                logical_obs=logical_row.reshape(1, -1),
-                noise_model=[noise_p] * num_errors,
-                dtype="float32", device="cuda",
-                bond_dim=chi, verbose=verbose)
-            init_ms = (time.perf_counter() - t0) * 1e3
-            probs = []
-            t1 = time.perf_counter()
-            for i in range(shots):
-                res = dec.decode([float(x) for x in syndromes[i]])
-                probs.append(float(res.result[0]))
-            decode_ms = (time.perf_counter() - t1) * 1e3
-            backend = "gpu"
-        else:
-            # CPU path via core module
-            chain, compressed_tn, _stats = _build_tn_and_compile(
-                H, logical_row, noise_p, chi=chi)
-            init_ms = (time.perf_counter() - t0) * 1e3
-            if chain is not None:
-                probs = []
-                t1 = time.perf_counter()
-                for i in range(shots):
-                    probs.append(_decode_mps_cpu(chain, syndromes[i], num_checks))
-                decode_ms = (time.perf_counter() - t1) * 1e3
-            elif compressed_tn is not None:
-                # Use CompressedTNDecoder when chain extraction fails
-                probs = []
-                t1 = time.perf_counter()
-                for i in range(shots):
-                    syn_vals = {f"syn_param_{j}": float(syndromes[i, j])
-                                for j in range(num_checks)}
-                    _, marginals = compressed_tn.decode_logicals(syndrome_values=syn_vals)
-                    probs.append(float(marginals.get("obs", 0.5)))
-                decode_ms = (time.perf_counter() - t1) * 1e3
-            backend = "cpu"
+        chains_and_tns = []
+        for k in range(K):
+            ch, ctn, _st = _build_tn_and_compile_single_logical(
+                H, lz[k], noise_p, chi=chi,
+                verbose=(verbose and k == 0))
+            chains_and_tns.append((ch, ctn))
+        init_ms = (time.perf_counter() - t0) * 1e3
 
-        predictions = (np.array(probs) >= 0.5).astype(np.int8)
-        ler = _logical_error_rate(errors, logical_row, predictions)
+        all_probs = []
+        t1 = time.perf_counter()
+        for i in range(shots):
+            probs_k = []
+            for k in range(K):
+                ch, ctn = chains_and_tns[k]
+                p1 = _decode_mps_single(
+                    ch, ctn, syndromes[i], num_checks, use_gpu=use_gpu)
+                probs_k.append(p1)
+            all_probs.append(probs_k)
+        decode_ms = (time.perf_counter() - t1) * 1e3
+        backend = "gpu" if use_gpu else "cpu"
+
+        predictions = (np.array(all_probs) >= 0.5).astype(np.int8)  # (shots, K)
+        ler = _block_logical_error_rate(errors, lz, predictions)
         record["decoders"]["mps_tn"] = {
             "status": "ok", "backend": backend,
             "init_ms": round(init_ms, 2),
@@ -311,57 +339,51 @@ def _run_single_code_case(
             "logical_error_rate": round(ler, 6),
         }
         if verbose:
-            print(f"  MPS-TN ({backend}): LER={ler:.4f}, {decode_ms:.1f}ms total")
+            print(f"  MPS-TN ({backend}): block_LER={ler:.4f}, {decode_ms:.1f}ms total")
     except Exception as e:
         record["decoders"]["mps_tn"] = {"status": "error", "error": str(e)}
         if verbose:
+            import traceback; traceback.print_exc()
             print(f"  MPS-TN: ERROR {e}")
 
     # --- Exact TN decoder (small codes only) ---
+    # Decode each logical independently via quimb contraction (CPU).
     if not cc.skip_exact:
         try:
             t0 = time.perf_counter()
-            if use_gpu:
-                dec = qec.get_decoder(
-                    "tensor_network_decoder", H,
-                    logical_obs=logical_row.reshape(1, -1),
-                    noise_model=[noise_p] * num_errors,
-                    dtype="float32", device="cuda")
-                init_ms = (time.perf_counter() - t0) * 1e3
-                probs = []
-                t1 = time.perf_counter()
-                for i in range(shots):
-                    res = dec.decode([float(x) for x in syndromes[i]])
-                    probs.append(float(res.result[0]))
-                decode_ms = (time.perf_counter() - t1) * 1e3
-                backend = "gpu"
-            else:
-                # CPU exact via quimb contraction
+            if True:
+                # Exact contraction via quimb, one logical at a time
                 check_inds = [f"s_{i}" for i in range(num_checks)]
                 error_inds = [f"e_{i}" for i in range(num_errors)]
-                logical_inds = ["l_0"]
-                logical_obs_inds = ["obs"]
 
                 code_tn = factory.tensor_network_from_parity_check(
                     H, col_inds=error_inds, row_inds=check_inds)
-                logical_2d = logical_row.reshape(1, -1)
-                log_tn = factory.tensor_network_from_parity_check(
-                    logical_2d, col_inds=error_inds, row_inds=logical_inds,
-                    tags=["LOG_0"])
-                log_tn = log_tn.combine(
-                    factory.tensor_network_from_logical_observable(
-                        logical_2d, logical_inds, logical_obs_inds, ["LOG_0"]),
-                    virtual=True)
                 noise_ts = [Tensor(
                     data=np.array([1.0 - noise_p, noise_p]),
                     inds=(error_inds[j],), tags=oset([f"NOISE_{j}"]))
                     for j in range(num_errors)]
                 noise_tn = TensorNetwork(noise_ts)
 
+                # Pre-build K logical TNs
+                log_tns = []
+                for k in range(K):
+                    lk = lz[k:k+1]
+                    l_inds = ["l_0"]
+                    obs_inds = ["obs"]
+                    lt = factory.tensor_network_from_parity_check(
+                        lk, col_inds=error_inds, row_inds=l_inds, tags=["LOG_0"])
+                    lt = lt.combine(
+                        factory.tensor_network_from_logical_observable(
+                            lk, l_inds, obs_inds, ["LOG_0"]),
+                        virtual=True)
+                    log_tns.append(lt)
+
                 init_ms = (time.perf_counter() - t0) * 1e3
-                probs = []
+                # Exact TN is very slow on CPU; cap shots for timing reasons
+                exact_shots = min(shots, 100)
+                all_probs = []
                 t1 = time.perf_counter()
-                for i in range(shots):
+                for i in range(exact_shots):
                     syn_ts2 = []
                     for j in range(num_checks):
                         s = float(syndromes[i, j])
@@ -370,42 +392,51 @@ def _run_single_code_case(
                             inds=(check_inds[j],), tags=oset([f"SYN_{j}"])))
                     syn_tn = TensorNetwork(syn_ts2)
 
-                    full = TensorNetwork()
-                    full = full.combine(code_tn, virtual=True)
-                    full = full.combine(log_tn, virtual=True)
-                    full = full.combine(syn_tn, virtual=True)
-                    full = full.combine(noise_tn, virtual=True)
-                    val = full.contract(output_inds=("obs",))
-                    arr = val.data if hasattr(val, 'data') else np.asarray(val)
-                    arr = np.asarray(arr).ravel()
-                    if len(arr) < 2:
-                        p1 = 0.5
-                    else:
-                        total = float(arr[0] + arr[1])
-                        p1 = float(arr[1] / total) if total > 0 else 0.5
-                    probs.append(p1)
+                    probs_k = []
+                    for k in range(K):
+                        full = TensorNetwork()
+                        full = full.combine(code_tn, virtual=True)
+                        full = full.combine(log_tns[k], virtual=True)
+                        full = full.combine(syn_tn, virtual=True)
+                        full = full.combine(noise_tn, virtual=True)
+                        val = full.contract(output_inds=("obs",))
+                        arr = np.asarray(
+                            val.data if hasattr(val, 'data') else val,
+                            dtype=np.float64).ravel()
+                        if len(arr) < 2:
+                            p1 = 0.5
+                        else:
+                            total = float(arr[0] + arr[1])
+                            p1 = float(arr[1] / total) if total > 0 else 0.5
+                        probs_k.append(p1)
+                    all_probs.append(probs_k)
                 decode_ms = (time.perf_counter() - t1) * 1e3
                 backend = "cpu"
 
-            predictions = (np.array(probs) >= 0.5).astype(np.int8)
-            ler = _logical_error_rate(errors, logical_row, predictions)
+            predictions = (np.array(all_probs) >= 0.5).astype(np.int8)
+            ler = _block_logical_error_rate(
+                errors[:exact_shots], lz, predictions)
             record["decoders"]["exact_tn"] = {
                 "status": "ok", "backend": backend,
                 "init_ms": round(init_ms, 2),
                 "total_decode_ms": round(decode_ms, 2),
-                "per_shot_ms": round(decode_ms / shots, 3),
+                "per_shot_ms": round(decode_ms / exact_shots, 3),
                 "logical_error_rate": round(ler, 6),
+                "exact_shots": exact_shots,
             }
             if verbose:
-                print(f"  Exact-TN ({backend}): LER={ler:.4f}, {decode_ms:.1f}ms total")
+                print(f"  Exact-TN ({backend}): block_LER={ler:.4f}, "
+                      f"{decode_ms:.1f}ms ({exact_shots} shots)")
         except Exception as e:
             record["decoders"]["exact_tn"] = {"status": "error", "error": str(e)}
             if verbose:
+                import traceback; traceback.print_exc()
                 print(f"  Exact-TN: ERROR {e}")
     else:
         record["decoders"]["exact_tn"] = {"status": "skipped", "reason": "code too large"}
 
     # --- BP decoders (ldpc, CPU only) ---
+    # BP decodes one parity check at a time; we check ALL K logicals
     if HAS_LDPC:
         H_int = H.astype(np.uint8)
         channel_probs = np.full(num_errors, noise_p)
@@ -430,13 +461,13 @@ def _run_single_code_case(
                 t1 = time.perf_counter()
                 for i in range(shots):
                     correction = bp_dec.decode(syndromes[i].astype(np.uint8))
-                    logical_val = int(correction @ logical_row.astype(np.int8)) % 2
-                    predictions_list.append(logical_val)
+                    # Check all K logicals
+                    logical_vals = (correction @ lz.T.astype(np.int8)) % 2
+                    predictions_list.append(logical_vals.tolist())
                 decode_ms = (time.perf_counter() - t1) * 1e3
 
-                preds = np.array(predictions_list, dtype=np.int8)
-                true_logicals = (errors @ logical_row.reshape(-1).astype(np.int8)) % 2
-                ler = float(np.mean(true_logicals != preds))
+                preds = np.array(predictions_list, dtype=np.int8)  # (shots, K)
+                ler = _block_logical_error_rate(errors, lz, preds)
 
                 record["decoders"][dec_name] = {
                     "status": "ok", "backend": "cpu",
@@ -446,7 +477,7 @@ def _run_single_code_case(
                     "logical_error_rate": round(ler, 6),
                 }
                 if verbose:
-                    print(f"  {dec_name}: LER={ler:.4f}, {decode_ms:.1f}ms total")
+                    print(f"  {dec_name}: block_LER={ler:.4f}, {decode_ms:.1f}ms total")
             except Exception as e:
                 record["decoders"][dec_name] = {"status": "error", "error": str(e)}
                 if verbose:
@@ -468,7 +499,7 @@ def run_benchmark(
     parallel_workers: Optional[int] = None,
     verbose: bool = False,
 ) -> list[dict]:
-    use_gpu = HAS_GPU and HAS_CUDAQ
+    use_gpu = HAS_GPU  # cupy available → GPU online decode
     codes = _get_codes(
         code_names=code_names,
         skip_missing=skip_missing,
@@ -527,7 +558,7 @@ def test_multi_decoder_benchmark():
         noise_p=0.01,
         chi=8,
         seed=42,
-        code_names=["BB_90", "BB_108"],
+        code_names=["QCC_90_8_10", "QCC_108_8_10"],
         skip_missing=True,
         parallel_workers=2,
         verbose=True,
@@ -535,7 +566,6 @@ def test_multi_decoder_benchmark():
     assert len(results) > 0
     for r in results:
         assert r["code"] is not None
-        # At least one decoder must succeed
         ok_count = sum(1 for d in r["decoders"].values()
                        if isinstance(d, dict) and d.get("status") == "ok")
         assert ok_count > 0, f"No decoder succeeded for {r['code']}: {r['decoders']}"

@@ -39,14 +39,16 @@ def test_parity_exact_decomposition_roundtrip():
         parity = sum(idx) & 1
         data[idx] = np.exp(omega if parity == 0 else -omega)
 
-    mps = core.decompose_tensor_to_mps(data, chi=32, cutoff=1.0e-12)
+    mps, dtype = core.decompose_tensor_to_mps(data, chi=32, cutoff=1.0e-12)
+    assert dtype == "parity"
     rebuilt = core.mps_to_raw(mps)
     np.testing.assert_allclose(rebuilt, data, rtol=0.0, atol=1.0e-10)
 
 
 def test_delta_exact_decomposition_roundtrip():
     data = core.make_delta_tensor(dim=2, order=6)
-    mps = core.decompose_tensor_to_mps(data, chi=32, cutoff=1.0e-12)
+    mps, dtype = core.decompose_tensor_to_mps(data, chi=32, cutoff=1.0e-12)
+    assert dtype == "delta"
     rebuilt = core.mps_to_raw(mps)
     np.testing.assert_allclose(rebuilt, data, rtol=0.0, atol=1.0e-12)
 

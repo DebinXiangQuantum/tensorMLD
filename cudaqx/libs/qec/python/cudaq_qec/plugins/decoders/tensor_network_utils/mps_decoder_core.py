@@ -22,7 +22,7 @@ from dataclasses import dataclass, field
 import math
 from pathlib import Path
 import time
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
 import numpy as np
 from quimb import oset
@@ -35,6 +35,12 @@ except Exception:  # pragma: no cover - optional dependency
 
 OUT_PREFIX = "__OUT__::"
 DELTA_TAG = "DELTA_INDEX"
+
+# Maximum delta tensor order before switching to chain decomposition.
+# A single delta tensor of order k with dim d requires d^k elements.
+# For d=2 and k=40, that's 2^40 ≈ 1 TB — instant OOM.
+# Chain decomposition uses k-1 small nodes (d^2 or d^3 each) instead.
+DELTA_CHAIN_THRESHOLD = 16
 
 # Global defaults (can be changed via `set_global_decoder_config`).
 GLOBAL_BOND_DIM = 32
@@ -143,6 +149,40 @@ def _is_delta_tensor(data: np.ndarray, atol: float = 1e-12) -> bool:
     return np.allclose(data, expected, atol=atol, rtol=0.0)
 
 
+def _weighted_delta_values(
+        data: np.ndarray,
+        atol: float = 1e-12) -> Optional[np.ndarray]:
+    """Detect weighted-delta tensor: non-zero only on the super-diagonal.
+
+    A weighted delta has the form T[i,i,...,i] = w_i for each i,
+    with all off-diagonal entries zero.  Unlike a pure delta, the diagonal
+    values w_i may differ (e.g. [1-p, p] from noise * delta contraction).
+
+    Returns the diagonal values array if detected, else None.
+    """
+    if data.ndim <= 1:
+        return None  # order-0/1 handled elsewhere
+    if len(set(data.shape)) != 1:
+        return None
+    dim = data.shape[0]
+    order = data.ndim
+
+    diag_vals = np.array([data[(i,) * order] for i in range(dim)],
+                         dtype=np.float64)
+
+    # Efficient check: |sum(|all|) - sum(|diag|)| ≈ 0 means off-diag is zero.
+    total_abs = float(np.sum(np.abs(data)))
+    diag_abs = float(np.sum(np.abs(diag_vals)))
+    if abs(total_abs - diag_abs) > atol * max(1.0, total_abs):
+        return None
+
+    # Skip if all diag values are 1 (pure delta, already handled upstream).
+    if np.allclose(diag_vals, 1.0, atol=atol, rtol=0.0):
+        return None
+
+    return diag_vals
+
+
 def _delta_to_mps(data: np.ndarray) -> list[np.ndarray]:
     """Exact MPS decomposition for Kronecker-delta tensors."""
     if data.ndim == 0:
@@ -168,6 +208,47 @@ def _delta_to_mps(data: np.ndarray) -> list[np.ndarray]:
     last = np.zeros((dim, dim, 1), dtype=np.float64)
     for a in range(dim):
         last[a, a, 0] = 1.0
+    cores.append(last)
+    return cores
+
+
+def _weighted_delta_to_mps(
+        data: np.ndarray,
+        atol: float = 1e-12) -> Optional[list[np.ndarray]]:
+    """Exact bond-d MPS decomposition for weighted-delta tensors.
+
+    A weighted delta T[α₁,...,αk] = w[α₁] · δ[α₁,...,αk] decomposes as:
+      - First core:    (1, d, d)   identity-like δ[αᵢ, β]
+      - Middle cores:  (d, d, d)   delta-like    δ[β_in, αᵢ, β_out]
+      - Last core:     (d, d, 1)   weighted      w[α] · δ[β_in, α]
+
+    Bond dimension = d (= 2 for binary).  This is exact: no truncation.
+    """
+    weights = _weighted_delta_values(data, atol=atol)
+    if weights is None:
+        return None
+
+    dim = data.shape[0]
+    order = data.ndim
+    cores: list[np.ndarray] = []
+
+    # First core: (1, dim, dim) — identity
+    first = np.zeros((1, dim, dim), dtype=np.float64)
+    for a in range(dim):
+        first[0, a, a] = 1.0
+    cores.append(first)
+
+    # Middle cores: (dim, dim, dim) — delta
+    for _ in range(order - 2):
+        core = np.zeros((dim, dim, dim), dtype=np.float64)
+        for s in range(dim):
+            core[s, s, s] = 1.0
+        cores.append(core)
+
+    # Last core: (dim, dim, 1) — absorbs weights
+    last = np.zeros((dim, dim, 1), dtype=np.float64)
+    for a in range(dim):
+        last[a, a, 0] = weights[a]
     cores.append(last)
     return cores
 
@@ -284,24 +365,29 @@ def _svd_to_mps(data: np.ndarray,
 
 def decompose_tensor_to_mps(data: np.ndarray,
                             chi: int,
-                            cutoff: float = 1e-12) -> list[np.ndarray]:
-    """Decompose a tensor into MPS.
+                            cutoff: float = 1e-12) -> tuple[list[np.ndarray], str]:
+    """Decompose a tensor into MPS cores, returning (cores, decomp_type).
 
-    Priority:
-    1) exact Kronecker-delta decomposition,
-    2) exact parity decomposition,
-    3) generic SVD decomposition.
+    Priority (all exact decompositions tried before lossy SVD):
+    1) exact Kronecker-delta decomposition  → "delta"
+    2) exact weighted-delta decomposition   → "weighted_delta"
+    3) exact parity decomposition           → "parity"
+    4) generic SVD decomposition (may lose precision) → "svd"
     """
     arr = np.asarray(data, dtype=np.float64)
 
     if _is_delta_tensor(arr, atol=cutoff):
-        return _delta_to_mps(arr)
+        return _delta_to_mps(arr), "delta"
+
+    wd_mps = _weighted_delta_to_mps(arr, atol=cutoff)
+    if wd_mps is not None:
+        return wd_mps, "weighted_delta"
 
     parity_mps = _parity_to_mps(arr)
     if parity_mps is not None:
-        return parity_mps
+        return parity_mps, "parity"
 
-    return _svd_to_mps(arr, chi=chi, cutoff=cutoff)
+    return _svd_to_mps(arr, chi=chi, cutoff=cutoff), "svd"
 
 
 def mps_to_raw(mps: list[np.ndarray]) -> np.ndarray:
@@ -386,16 +472,71 @@ def build_pairwise_graph_from_tn(tn: TensorNetwork,
             # Repeated index on the same tensor: promote to explicit delta.
 
         dim = int(legs[0][2])
-        delta_node = next_node_id
-        next_node_id += 1
 
-        node_tensors[delta_node] = make_delta_tensor(dim=dim, order=degree)
-        node_neighbors[delta_node] = np.empty(degree, dtype=object)
-        node_tags[delta_node] = {DELTA_TAG, f"DELTA_{ind}"}
+        if degree <= DELTA_CHAIN_THRESHOLD:
+            # Small degree: create a single delta tensor (original path).
+            delta_node = next_node_id
+            next_node_id += 1
 
-        for delta_axis, (orig_node, orig_axis, _) in enumerate(legs):
-            node_neighbors[orig_node][orig_axis] = delta_node
-            node_neighbors[delta_node][delta_axis] = orig_node
+            node_tensors[delta_node] = make_delta_tensor(dim=dim, order=degree)
+            node_neighbors[delta_node] = np.empty(degree, dtype=object)
+            node_tags[delta_node] = {DELTA_TAG, f"DELTA_{ind}"}
+
+            for delta_axis, (orig_node, orig_axis, _) in enumerate(legs):
+                node_neighbors[orig_node][orig_axis] = delta_node
+                node_neighbors[delta_node][delta_axis] = orig_node
+        else:
+            # High degree: chain-decompose to avoid O(d^k) memory.
+            # Replace one order-k delta with (k-1) small nodes:
+            #
+            #   chain[0] ── chain[1] ── ... ── chain[k-2]
+            #     |            |                  |    |
+            #   leg[0]       leg[1]          leg[k-2] leg[k-1]
+            #
+            # chain[0]:        identity(d,d)   — 2 legs
+            # chain[1..k-3]:   delta(d,d,d)    — 3 legs each
+            # chain[k-2]:      delta(d,d,d)    — 3 legs (covers last 2 original legs)
+            #
+            # Mathematically equivalent: all original legs are forced equal.
+            # Memory: O(k * d^3) instead of O(d^k).
+            k = degree
+            chain_ids: list[int] = []
+            for _c in range(k - 1):
+                cid = next_node_id
+                next_node_id += 1
+                chain_ids.append(cid)
+                node_tags[cid] = {DELTA_TAG, f"DELTA_{ind}",
+                                  f"DELTA_CHAIN_{ind}_{_c}"}
+
+            # --- chain[0]: identity (d, d) ---
+            node_tensors[chain_ids[0]] = np.eye(dim, dtype=np.float64)
+            node_neighbors[chain_ids[0]] = np.empty(2, dtype=object)
+            orig_node_0, orig_axis_0, _ = legs[0]
+            node_neighbors[chain_ids[0]][0] = orig_node_0
+            node_neighbors[orig_node_0][orig_axis_0] = chain_ids[0]
+            node_neighbors[chain_ids[0]][1] = chain_ids[1]
+
+            # --- middle chain nodes: delta (d, d, d) ---
+            for c in range(1, k - 2):
+                node_tensors[chain_ids[c]] = make_delta_tensor(dim=dim, order=3)
+                node_neighbors[chain_ids[c]] = np.empty(3, dtype=object)
+                node_neighbors[chain_ids[c]][0] = chain_ids[c - 1]
+                orig_node_c, orig_axis_c, _ = legs[c]
+                node_neighbors[chain_ids[c]][1] = orig_node_c
+                node_neighbors[orig_node_c][orig_axis_c] = chain_ids[c]
+                node_neighbors[chain_ids[c]][2] = chain_ids[c + 1]
+
+            # --- chain[k-2]: delta (d, d, d), covers legs[k-2] and legs[k-1] ---
+            last_c = k - 2
+            node_tensors[chain_ids[last_c]] = make_delta_tensor(dim=dim, order=3)
+            node_neighbors[chain_ids[last_c]] = np.empty(3, dtype=object)
+            node_neighbors[chain_ids[last_c]][0] = chain_ids[last_c - 1]
+            orig_km2, axis_km2, _ = legs[k - 2]
+            node_neighbors[chain_ids[last_c]][1] = orig_km2
+            node_neighbors[orig_km2][axis_km2] = chain_ids[last_c]
+            orig_km1, axis_km1, _ = legs[k - 1]
+            node_neighbors[chain_ids[last_c]][2] = orig_km1
+            node_neighbors[orig_km1][axis_km1] = chain_ids[last_c]
 
     for node_id, neighbors in node_neighbors.items():
         if neighbors.size and np.any(neighbors == None):  # noqa: E711
@@ -430,6 +571,7 @@ def build_mps_nodes(pairwise: PairwiseGraphData, chi: int,
                     cutoff: float) -> dict[int, Any]:
     """Instantiate catn-style MPS nodes with exact-structure decomposition."""
     nodes: dict[int, Any] = {}
+    decomp_counts: dict[str, int] = {}
     for node_id, raw_tensor in pairwise.node_tensors.items():
         neighbors = np.array(pairwise.node_neighbors[node_id], dtype=object)
         node = MPSNode(
@@ -444,9 +586,16 @@ def build_mps_nodes(pairwise: PairwiseGraphData, chi: int,
             verbose=0,
         )
         node.neighbor = neighbors
-        node.mps = decompose_tensor_to_mps(raw_tensor, chi=chi, cutoff=cutoff)
+        node.mps, _decomp_type = decompose_tensor_to_mps(
+            raw_tensor, chi=chi, cutoff=cutoff)
+        node._decomp_type = _decomp_type
+        node._tags = pairwise.node_tags.get(node_id, set())
         node.cano = len(node.mps) - 1 if node.mps else 0
         nodes[node_id] = node
+        decomp_counts[_decomp_type] = decomp_counts.get(_decomp_type, 0) + 1
+    # Log decomposition statistics
+    print(f"  [build_mps_nodes] {len(nodes)} nodes decomposed: "
+          + ", ".join(f"{k}={v}" for k, v in sorted(decomp_counts.items())))
     return nodes
 
 
@@ -479,6 +628,8 @@ class StepTruncationRecord:
     compress_error: float
     total_error: float
     active_nodes_after: int
+    is_exact: bool = True  # True if total_error ≈ 0 (no precision loss)
+    max_mps_core_order: int = 3  # max ndim of any MPS core across active nodes
 
     def to_dict(self) -> dict:
         return {
@@ -489,6 +640,8 @@ class StepTruncationRecord:
             "compress_error": self.compress_error,
             "total_error": self.total_error,
             "active_nodes_after": self.active_nodes_after,
+            "is_exact": self.is_exact,
+            "max_mps_core_order": self.max_mps_core_order,
         }
 
 
@@ -621,8 +774,15 @@ def compress_until_preserved(
         reverse: bool = True,
         compress_each_step: bool = True,
         verbose: bool = False,
-        chi: int = 0) -> OfflineCompressionResult:
-    """Run contraction-swap-merge until only preserved nodes remain active."""
+        chi: int = 0,
+        snapshot_callback: Optional[Callable] = None) -> OfflineCompressionResult:
+    """Run contraction-swap-merge until only preserved nodes remain active.
+
+    Args:
+        snapshot_callback: Optional callable invoked after each contraction step.
+            Signature: (step, active_nodes, nodes, contracted_edge, step_record)
+            where step_record is the StepTruncationRecord for the current step.
+    """
     active_nodes = set(nodes.keys())
     target_preserved = len(preserved_nodes)
     initial_edges = count_internal_edges(active_nodes,
@@ -631,6 +791,9 @@ def compress_until_preserved(
     truncation_error = 0.0
     steps = 0
     step_errors: list[StepTruncationRecord] = []
+
+    if snapshot_callback is not None:
+        snapshot_callback(0, active_nodes, nodes, None, None)
 
     while any(node_id not in preserved_nodes for node_id in active_nodes):
         edges = _collect_internal_edges(active_nodes, nodes)
@@ -709,7 +872,16 @@ def compress_until_preserved(
 
         steps += 1
         step_total = step_eat_err + step_merge_err + step_compress_err
-        step_errors.append(StepTruncationRecord(
+
+        # Validate: all MPS cores in active nodes must be rank ≤ 3.
+        max_core_order = 0
+        for nid in active_nodes:
+            for core in nodes[nid].mps:
+                max_core_order = max(max_core_order, core.ndim)
+        if max_core_order > 3:
+            print(f"  WARNING step {steps}: max MPS core order = {max_core_order} > 3")
+
+        step_record = StepTruncationRecord(
             step=steps,
             edge=(i, j),
             eat_error=step_eat_err,
@@ -717,7 +889,13 @@ def compress_until_preserved(
             compress_error=step_compress_err,
             total_error=step_total,
             active_nodes_after=len(active_nodes),
-        ))
+            is_exact=(step_total < 1e-14),
+            max_mps_core_order=max_core_order,
+        )
+        step_errors.append(step_record)
+
+        if snapshot_callback is not None:
+            snapshot_callback(steps, active_nodes, nodes, (i, j), step_record)
 
         if verbose and (steps % 100 == 0):
             edges_left = count_internal_edges(
@@ -762,7 +940,8 @@ def merge_preserved_to_path(
         active_nodes: set[int],
         chi: int = 0,
         max_steps: int = 100000,
-        verbose: bool = False) -> float:
+        verbose: bool = False,
+        snapshot_callback: Optional[Callable] = None) -> float:
     """Merge preserved nodes until the internal adjacency graph is a 1D path.
 
     After ``compress_until_preserved`` the residual graph may still have nodes
@@ -770,10 +949,17 @@ def merge_preserved_to_path(
     contracts edges between preserved nodes, choosing edges that maximally
     reduce the *maximum* degree, until every node has degree <= 2.
 
+    Args:
+        snapshot_callback: Optional callable invoked after each merge step.
+            Signature: (step, active_nodes, nodes, contracted_edge, truncation_error)
+
     Returns the cumulative truncation error introduced by the merging.
     """
     truncation_error = 0.0
     steps = 0
+
+    if snapshot_callback is not None:
+        snapshot_callback(0, active_nodes, nodes, None, truncation_error)
 
     while steps < max_steps:
         # Build current adjacency and check if already a path.
@@ -866,6 +1052,10 @@ def merge_preserved_to_path(
         active_nodes.discard(j)
 
         steps += 1
+
+        if snapshot_callback is not None:
+            snapshot_callback(steps, active_nodes, nodes, (i, j), truncation_error)
+
         if verbose and (steps % 10 == 0):
             adj = _build_internal_adjacency(active_nodes, nodes)
             max_deg = max((len(v) for v in adj.values()), default=0)
@@ -1151,6 +1341,86 @@ def _node_to_site_tensor(raw: np.ndarray,
     return arr.reshape(dl, dp, dr)
 
 
+def _contract_mps_to_site(
+        mps: list[np.ndarray],
+        left_pos: Optional[int],
+        open_pos: int,
+        right_pos: Optional[int]) -> np.ndarray:
+    """Contract an MPS to a 3D site tensor (D_left, d_phys, D_right).
+
+    Unlike ``mps_to_raw()`` which materialises the full raw tensor (O(d^k)),
+    this function absorbs non-essential cores by summing over their physical
+    indices, keeping memory bounded by O(chi^2 * max_phys_dim).
+
+    For the common case of ≤3 MPS sites (left-bond, open-label, right-bond)
+    this simply calls ``mps_to_raw`` + ``_node_to_site_tensor``.
+    """
+    n = len(mps)
+    if n == 0:
+        return np.array([[[1.0]]], dtype=np.float64)
+
+    essential = set()
+    if left_pos is not None:
+        essential.add(left_pos)
+    essential.add(open_pos)
+    if right_pos is not None:
+        essential.add(right_pos)
+
+    # Fast path: all sites are essential (typical after compression).
+    if len(essential) == n:
+        raw = mps_to_raw(mps)
+        return _node_to_site_tensor(raw, left_pos, open_pos, right_pos)
+
+    # Slow-but-safe path: absorb non-essential cores by summing their
+    # physical indices, avoiding exponential blowup from mps_to_raw().
+    work = [c.copy() for c in mps]
+
+    # Absorb from left: non-essential cores before the first essential one.
+    for i in range(n):
+        if i in essential:
+            break
+        # core shape (D_l, d_phys, D_r) → sum over phys → (D_l, D_r)
+        mat = work[i].sum(axis=1)
+        work[i + 1] = np.einsum('ij,jkl->ikl', mat, work[i + 1])
+        work[i] = None  # type: ignore[assignment]
+
+    # Absorb from right: non-essential cores after the last essential one.
+    for i in range(n - 1, -1, -1):
+        if i in essential:
+            break
+        mat = work[i].sum(axis=1)  # (D_l, D_r)
+        work[i - 1] = np.einsum('ijk,kl->ijl', work[i - 1], mat)
+        work[i] = None  # type: ignore[assignment]
+
+    # Absorb any remaining non-essential cores between essential ones.
+    for i in range(n):
+        if work[i] is None or i in essential:
+            continue
+        mat = work[i].sum(axis=1)  # (D_l, D_r)
+        # Find next non-None core and absorb into it.
+        for j in range(i + 1, n):
+            if work[j] is not None:
+                work[j] = np.einsum('ij,jkl->ikl', mat, work[j])
+                break
+        work[i] = None  # type: ignore[assignment]
+
+    active = [c for c in work if c is not None]
+    raw = mps_to_raw(active)
+
+    # Map original positions to reduced positions.
+    orig_to_reduced = {}
+    reduced_idx = 0
+    for i in range(n):
+        if work[i] is not None:
+            orig_to_reduced[i] = reduced_idx
+            reduced_idx += 1
+
+    r_left = orig_to_reduced.get(left_pos) if left_pos is not None else None
+    r_open = orig_to_reduced[open_pos]
+    r_right = orig_to_reduced.get(right_pos) if right_pos is not None else None
+    return _node_to_site_tensor(raw, r_left, r_open, r_right)
+
+
 def extract_1d_chain(active_nodes: set[int],
                      nodes: dict[int, Any],
                      syndrome_label_set: set[str],
@@ -1204,12 +1474,11 @@ def extract_1d_chain(active_nodes: set[int],
         if len(open_entries) == 0:
             return None
 
-        # --- Single open token: original fast path (no rearrangement) ---
+        # --- Single open token: contract MPS directly to (Dl, d, Dr) ---
         if len(open_entries) == 1:
             mps_pos_open, _tok, label = open_entries[0]
-            raw = mps_to_raw(node.mps)
-            site_tensor = _node_to_site_tensor(
-                raw, left_mps_pos, mps_pos_open, right_mps_pos)
+            site_tensor = _contract_mps_to_site(
+                node.mps, left_mps_pos, mps_pos_open, right_mps_pos)
             if site_tensor.shape[1] != 2:
                 return None
             if label in syndrome_label_set:

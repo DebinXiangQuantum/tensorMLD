@@ -1,0 +1,47 @@
+{
+  "syndrome_labels": [
+    "syn_param_11",
+    "syn_param_0",
+    "syn_param_4",
+    "syn_param_7",
+    "syn_param_12",
+    "syn_param_5",
+    "syn_param_9",
+    "syn_param_6",
+    "syn_param_1",
+    "syn_param_10",
+    "syn_param_8",
+    "syn_param_2",
+    "syn_param_3"
+  ],
+  "logical_labels": [
+    "obs_5",
+    "obs_2",
+    "obs_1",
+    "obs_0",
+    "obs_4",
+    "obs_3"
+  ],
+  "num_sites": 19,
+  "site_labels": [
+    "syn_param_11",
+    "syn_param_0",
+    "syn_param_4",
+    "syn_param_7",
+    "syn_param_12",
+    "syn_param_5",
+    "syn_param_9",
+    "syn_param_6",
+    "syn_param_1",
+    "syn_param_10",
+    "syn_param_8",
+    "syn_param_2",
+    "syn_param_3",
+    "obs_5",
+    "obs_2",
+    "obs_1",
+    "obs_0",
+    "obs_4",
+    "obs_3"
+  ]
+}

@@ -11,16 +11,16 @@ from experiments.codes.isca_revision_codes import (
 
 def test_isca_revision_code_order() -> None:
     assert len(ISCA_REVISION_CODE_ORDER) == 9
-    assert ISCA_REVISION_CODE_ORDER[0] == "TB_25_3_4"
-    assert ISCA_REVISION_CODE_ORDER[-1] == "BB_144"
+    assert ISCA_REVISION_CODE_ORDER[0] == "LDPC_25_3_4"
+    assert ISCA_REVISION_CODE_ORDER[-1] == "QCC_144_12_12"
 
 
 def test_load_isca_revision_codes_skip_missing() -> None:
     loaded, skipped = load_isca_revision_codes(skip_missing=True)
     loaded_names = [name for name, _ in loaded]
-    assert "BB_90" in loaded_names
-    assert "BB_108" in loaded_names
-    assert "BB_144" in loaded_names
+    assert "QCC_90_8_10" in loaded_names
+    assert "QCC_108_8_10" in loaded_names
+    assert "QCC_144_12_12" in loaded_names
     assert len(skipped) >= 0
 
 

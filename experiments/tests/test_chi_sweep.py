@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
-"""Task 4: Sweep chi (virtual bond dimension) for MPS decoder.
+"""Chi sweep benchmark: sweep chi (virtual bond dimension) across noise rates.
 
-Measures logical error rate and decode latency across chi values
-for multiple QLDPC codes.
+Measures logical error rate and decode latency across chi values and noise
+rates for multiple QLDPC codes.  Also runs BP-OSD as a baseline comparison
+and records per-step truncation errors from the MPS compression pipeline.
 
 Usage:
-  .venv-mps/bin/python experiments/tests/test_chi_sweep.py
-  .venv-mps/bin/python -m pytest experiments/tests/test_chi_sweep.py -v -s
+  python experiments/tests/test_chi_sweep.py
+  python experiments/tests/test_chi_sweep.py --small   # small codes only
+  python -m pytest experiments/tests/test_chi_sweep.py -v -s
 """
 from __future__ import annotations
 
+import argparse
 import concurrent.futures as cf
 import importlib.util
 import json
@@ -50,6 +53,16 @@ except Exception:
     qec = None  # type: ignore
 
 # ---------------------------------------------------------------------------
+# BP decoders (ldpc package)
+# ---------------------------------------------------------------------------
+HAS_LDPC = False
+try:
+    from ldpc import BpOsdDecoder
+    HAS_LDPC = True
+except ImportError:
+    BpOsdDecoder = None  # type: ignore
+
+# ---------------------------------------------------------------------------
 # Core module import
 # ---------------------------------------------------------------------------
 _TNU = QEC_PY / "cudaq_qec" / "plugins" / "decoders" / "tensor_network_utils"
@@ -72,6 +85,16 @@ from experiments.tests._isca_code_registry import (
 )
 from quimb import oset
 from quimb.tensor import Tensor, TensorNetwork
+
+# ---------------------------------------------------------------------------
+# Default sweep parameters
+# ---------------------------------------------------------------------------
+CHI_VALUES = [2, 4, 8, 16, 32, 64, 128, 256, 512]
+NOISE_P_VALUES = [0.001, 0.005, 0.01]
+
+# Small codes for quick validation runs
+SMALL_CODES = ["QCC_18_4_4", "LDPC_25_3_4", "LDPC_30_6_4", "TOR_50_2_5"]
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -195,6 +218,48 @@ def _decode_shots_gpu(
     return probs, init_ms, decode_ms, stats
 
 
+def _decode_shots_bposd(
+    H: np.ndarray, logical_row: np.ndarray, noise_p: float,
+    syndromes_int: np.ndarray, true_logicals: np.ndarray,
+) -> dict[str, Any]:
+    """Run BP-OSD decoder and return result dict."""
+    num_checks, num_errors = H.shape
+    H_int = H.astype(np.uint8)
+    channel_probs = np.full(num_errors, noise_p)
+
+    t0 = time.perf_counter()
+    bp_dec = BpOsdDecoder(
+        H_int, error_rate=noise_p,
+        channel_probs=channel_probs,
+        max_iter=50, bp_method="ms",
+        osd_method="osd_cs", osd_order=10)
+    init_ms = (time.perf_counter() - t0) * 1e3
+
+    shots = syndromes_int.shape[0]
+    predictions = np.empty(shots, dtype=np.int8)
+    t1 = time.perf_counter()
+    for i in range(shots):
+        correction = bp_dec.decode(syndromes_int[i])
+        predictions[i] = int(correction @ logical_row.reshape(-1).astype(np.int8)) % 2
+    decode_ms = (time.perf_counter() - t1) * 1e3
+
+    ler = float(np.mean(true_logicals != predictions))
+    return {
+        "status": "ok",
+        "init_ms": round(init_ms, 2),
+        "total_decode_ms": round(decode_ms, 2),
+        "per_shot_ms": round(decode_ms / shots, 3),
+        "logical_error_rate": round(ler, 6),
+    }
+
+
+def _extract_step_errors(stats) -> list[dict]:
+    """Extract per-step truncation errors from OfflineCompressionStats."""
+    if not hasattr(stats, "step_errors") or not stats.step_errors:
+        return []
+    return [rec.to_dict() for rec in stats.step_errors]
+
+
 def _sample(H, noise_p, shots, seed):
     rng = np.random.default_rng(seed)
     n = H.shape[1]
@@ -203,10 +268,10 @@ def _sample(H, noise_p, shots, seed):
     return errors, syndromes.astype(np.float64)
 
 
-CHI_VALUES = [2, 4, 8, 16, 32, 64]
-
-
-def _run_one_code_chi_sweep(
+# ---------------------------------------------------------------------------
+# Core sweep: one code, one noise_p, all chi values + BP-OSD
+# ---------------------------------------------------------------------------
+def _run_one_code_one_p(
     code_name: str,
     code: Any,
     *,
@@ -216,20 +281,37 @@ def _run_one_code_chi_sweep(
     seed: int,
     verbose: bool,
     use_gpu: bool,
+    run_bposd: bool = True,
 ) -> list[dict]:
+    """Sweep chi values for one code at one noise rate. Also runs BP-OSD."""
     H = code.hz.astype(np.float64)
     logical_row = code.lz[0].astype(np.float64)
     num_checks, _num_errors = H.shape
 
     errors, syndromes = _sample(H, noise_p, shots, seed)
+    syndromes_int = syndromes.astype(np.uint8)
     true_logicals = (errors @ logical_row.reshape(-1).astype(np.int8)) % 2
 
     if verbose:
         print(f"\n{'='*60}")
-        print(f"Code: {code_name}  N={code.N} K={code.K}")
-        print(f"  Backend: {'GPU' if use_gpu else 'CPU'}")
+        print(f"Code: {code_name}  N={code.N} K={code.K}  p={noise_p}")
+        print(f"  Backend: {'GPU' if use_gpu else 'CPU'}, BP-OSD: {run_bposd and HAS_LDPC}")
 
-    # Build TN once for CPU path (reuse across chi values)
+    # --- BP-OSD baseline (once per code/p, independent of chi) ---
+    bposd_result: dict[str, Any] | None = None
+    if run_bposd and HAS_LDPC:
+        try:
+            bposd_result = _decode_shots_bposd(
+                H, logical_row, noise_p, syndromes_int, true_logicals)
+            if verbose:
+                print(f"  BP-OSD: LER={bposd_result['logical_error_rate']:.4f}, "
+                      f"decode={bposd_result['total_decode_ms']:.1f}ms")
+        except Exception as e:
+            bposd_result = {"status": "error", "error": str(e)}
+            if verbose:
+                print(f"  BP-OSD: ERROR {e}")
+
+    # Build TN once per (code, noise_p) for CPU path
     full_tn = None
     syn_param_inds = None
     logical_obs_inds = None
@@ -248,6 +330,9 @@ def _run_one_code_chi_sweep(
             "shots": shots,
             "backend": "gpu" if use_gpu else "cpu",
         }
+        # Attach BP-OSD result to each chi record for easy comparison
+        if bposd_result is not None:
+            record["bposd"] = bposd_result
 
         try:
             if use_gpu:
@@ -260,6 +345,7 @@ def _run_one_code_chi_sweep(
                     record["truncation_error"] = float(stats.truncation_error)
                     record["max_bond_dim"] = int(stats.max_bond_dim)
                     record["offline_steps"] = int(stats.steps)
+                    record["step_errors"] = _extract_step_errors(stats)
             else:
                 t0 = time.perf_counter()
                 chain, compressed_tn, stats = _compile_chain_cpu(
@@ -270,6 +356,9 @@ def _run_one_code_chi_sweep(
                 record["truncation_error"] = float(stats.truncation_error)
                 record["max_bond_dim"] = int(stats.max_bond_dim)
                 record["offline_steps"] = int(stats.steps)
+                record["chi_requested"] = chi
+                # Step-by-step truncation errors for analysis
+                record["step_errors"] = _extract_step_errors(stats)
 
                 if chain is not None:
                     probs, decode_ms = _decode_shots_cpu(chain, syndromes, num_checks)
@@ -289,9 +378,10 @@ def _run_one_code_chi_sweep(
 
             if verbose:
                 trunc = record.get("truncation_error", "N/A")
+                n_steps = len(record.get("step_errors", []))
                 print(f"  chi={chi:4d}: LER={ler:.4f}, "
                       f"decode={record['total_decode_ms']:.1f}ms, "
-                      f"trunc_err={trunc}")
+                      f"trunc_err={trunc}, steps={n_steps}")
 
         except Exception as e:
             record["status"] = "error"
@@ -304,18 +394,24 @@ def _run_one_code_chi_sweep(
     return code_results
 
 
+# ---------------------------------------------------------------------------
+# Top-level sweep: iterate over codes × noise rates
+# ---------------------------------------------------------------------------
 def run_chi_sweep(
     chi_values: list[int] | None = None,
-    shots: int = 64,
-    noise_p: float = 0.01,
+    noise_p_values: list[float] | None = None,
+    shots: int = 10000,
     seed: int = 2026,
     code_names: list[str] | None = None,
     skip_missing: bool = False,
     parallel_workers: int | None = None,
+    run_bposd: bool = True,
     verbose: bool = False,
 ) -> list[dict]:
     if chi_values is None:
         chi_values = CHI_VALUES
+    if noise_p_values is None:
+        noise_p_values = NOISE_P_VALUES
 
     use_gpu = HAS_GPU and HAS_CUDAQ
     loaded_codes, skipped = load_isca_code_cases(
@@ -334,46 +430,67 @@ def run_chi_sweep(
         parallel_workers=parallel_workers,
     )
     if verbose:
-        print(f"[chi_sweep] codes={len(loaded_codes)}, workers={workers}, use_gpu={use_gpu}")
+        print(f"[chi_sweep] codes={len(loaded_codes)}, noise_p={noise_p_values}, "
+              f"chi={chi_values}")
+        print(f"  workers={workers}, use_gpu={use_gpu}, bposd={run_bposd and HAS_LDPC}")
 
-    if workers == 1 or len(loaded_codes) == 1:
+    # Build task list: (code_name, code, noise_p) triples
+    tasks = [
+        (code_name, code, p)
+        for code_name, code in loaded_codes
+        for p in noise_p_values
+    ]
+
+    if workers == 1 or len(tasks) == 1:
         results: list[dict] = []
-        for code_name, code in loaded_codes:
-            results.extend(_run_one_code_chi_sweep(
-                code_name,
-                code,
-                chi_values=chi_values,
-                shots=shots,
-                noise_p=noise_p,
-                seed=seed,
-                verbose=verbose,
-                use_gpu=use_gpu,
+        for code_name, code, p in tasks:
+            results.extend(_run_one_code_one_p(
+                code_name, code,
+                chi_values=chi_values, shots=shots, noise_p=p,
+                seed=seed, verbose=verbose, use_gpu=use_gpu,
+                run_bposd=run_bposd,
             ))
         return results
 
-    ordered: list[Optional[list[dict]]] = [None] * len(loaded_codes)
+    ordered: list[Optional[list[dict]]] = [None] * len(tasks)
     with cf.ThreadPoolExecutor(max_workers=workers) as executor:
         future_map = {
             executor.submit(
-                _run_one_code_chi_sweep,
-                code_name,
-                code,
-                chi_values=chi_values,
-                shots=shots,
-                noise_p=noise_p,
-                seed=seed,
-                verbose=verbose,
-                use_gpu=use_gpu,
-            ): idx for idx, (code_name, code) in enumerate(loaded_codes)
+                _run_one_code_one_p,
+                code_name, code,
+                chi_values=chi_values, shots=shots, noise_p=p,
+                seed=seed, verbose=verbose, use_gpu=use_gpu,
+                run_bposd=run_bposd,
+            ): idx for idx, (code_name, code, p) in enumerate(tasks)
         }
         for future in cf.as_completed(future_map):
             ordered[future_map[future]] = future.result()
 
-    results: list[dict] = []
+    results = []
     for part in ordered:
         if part:
             results.extend(part)
     return results
+
+
+def _print_summary(results: list[dict]) -> None:
+    """Print summary table grouped by noise_p."""
+    noise_ps = sorted(set(r["noise_p"] for r in results))
+    for p in noise_ps:
+        subset = [r for r in results if r["noise_p"] == p]
+        print(f"\n--- noise_p = {p} ---")
+        print(f"{'Code':<16} {'chi':>5} {'MPS_LER':>8} {'BP-OSD':>8} "
+              f"{'decode_ms':>10} {'trunc_err':>12} {'steps':>6} {'status'}")
+        print("-" * 80)
+        for r in subset:
+            ler_str = f"{r['logical_error_rate']:.4f}" if r.get('logical_error_rate') is not None else "N/A"
+            bposd_ler = r.get("bposd", {}).get("logical_error_rate")
+            bp_str = f"{bposd_ler:.4f}" if bposd_ler is not None else "N/A"
+            dec_str = f"{r.get('total_decode_ms', 0):.1f}" if r.get('total_decode_ms') else "N/A"
+            trunc_str = f"{r.get('truncation_error', 0):.2e}" if r.get('truncation_error') is not None else "N/A"
+            n_steps = len(r.get("step_errors", []))
+            print(f"{r['code']:<16} {r['chi']:>5} {ler_str:>8} {bp_str:>8} "
+                  f"{dec_str:>10} {trunc_str:>12} {n_steps:>6} {r.get('status', '?')}")
 
 
 # ---------------------------------------------------------------------------
@@ -383,17 +500,26 @@ def test_chi_sweep_smoke():
     """Smoke test: sweep 2 chi values on smallest code."""
     results = run_chi_sweep(
         chi_values=[4, 8],
+        noise_p_values=[0.01],
         shots=8,
-        noise_p=0.01,
         seed=42,
-        code_names=["BB_90"],
+        code_names=["QCC_18_4_4"],
         skip_missing=True,
-        parallel_workers=2,
+        parallel_workers=1,
+        run_bposd=True,
         verbose=True,
     )
     assert len(results) > 0
     ok_count = sum(1 for r in results if r.get("status") == "ok")
     assert ok_count > 0, f"No chi sweep succeeded: {results}"
+    # Check step_errors are recorded
+    for r in results:
+        if r.get("status") == "ok":
+            assert "step_errors" in r, "step_errors not recorded"
+    # Check BP-OSD result is attached
+    if HAS_LDPC:
+        for r in results:
+            assert "bposd" in r, "BP-OSD result not attached"
     print(f"\nChi sweep smoke test: {ok_count}/{len(results)} ok")
 
 
@@ -401,33 +527,102 @@ def test_chi_sweep_smoke():
 # Standalone entry
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Chi sweep benchmark")
+    parser.add_argument("--small", action="store_true",
+                        help="Run only small codes for quick validation")
+    parser.add_argument("--shots", type=int, default=10000)
+    parser.add_argument("--seed", type=int, default=2026)
+    parser.add_argument("--no-bposd", action="store_true",
+                        help="Skip BP-OSD baseline")
+    parser.add_argument("--chi", type=int, nargs="+", default=None,
+                        help="Override chi values")
+    parser.add_argument("--noise-p", type=float, nargs="+", default=None,
+                        help="Override noise_p values")
+    parser.add_argument("--codes", type=str, nargs="+", default=None,
+                        help="Override code names")
+    parser.add_argument("--workers", type=int, default=None,
+                        help="Override parallel workers (default: auto)")
+    args = parser.parse_args()
+
     print(f"GPU available: {HAS_GPU}")
     print(f"cudaq_qec available: {HAS_CUDAQ}")
+    print(f"ldpc (BP-OSD) available: {HAS_LDPC}")
     print()
 
-    results = run_chi_sweep(
-        chi_values=[2, 4, 8, 16, 32, 64],
-        shots=10000,
-        noise_p=0.01,
-        seed=2026,
-        code_names=None,
-        skip_missing=False,
-        parallel_workers=None,
-        verbose=True,
-    )
+    code_names = args.codes
+    if args.small and code_names is None:
+        code_names = SMALL_CODES
+
+    chi_values = args.chi if args.chi else CHI_VALUES
+    noise_p_values = args.noise_p if args.noise_p else NOISE_P_VALUES
 
     out_dir = WORKSPACE / "experiments" / "results"
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / "chi_sweep_results.json"
-    with open(out_path, "w") as f:
-        json.dump(results, f, indent=2)
-    print(f"\nResults saved to {out_path}")
+    step_path = out_dir / "chi_sweep_step_errors.json"
 
-    # Print summary table
-    print(f"\n{'Code':<12} {'chi':>5} {'LER':>8} {'decode_ms':>10} {'trunc_err':>12} {'status'}")
-    print("-" * 60)
-    for r in results:
-        ler_str = f"{r['logical_error_rate']:.4f}" if r.get('logical_error_rate') is not None else "N/A"
-        dec_str = f"{r.get('total_decode_ms', 0):.1f}" if r.get('total_decode_ms') else "N/A"
-        trunc_str = f"{r.get('truncation_error', 0):.2e}" if r.get('truncation_error') is not None else "N/A"
-        print(f"{r['code']:<12} {r['chi']:>5} {ler_str:>8} {dec_str:>10} {trunc_str:>12} {r.get('status','?')}")
+    # Incremental save: save after EACH chi value to survive OOM crashes.
+    all_results: list[dict] = []
+    all_step_errors: list[dict] = []
+
+    def _save_incremental():
+        with open(out_path, "w") as f:
+            json.dump(all_results, f, indent=2)
+        if all_step_errors:
+            with open(step_path, "w") as f:
+                json.dump(all_step_errors, f, indent=2)
+
+    use_gpu = HAS_GPU and HAS_CUDAQ
+    loaded_codes, skipped = load_isca_code_cases(
+        code_names=code_names, skip_missing=False)
+    if skipped:
+        print(f"[codes] skipped: {skipped}")
+
+    print(f"[chi_sweep] codes={len(loaded_codes)}, noise_p={noise_p_values}, "
+          f"chi={chi_values}, workers={args.workers or 'auto'}")
+
+    for code_name, code in loaded_codes:
+        for p in noise_p_values:
+            print(f"\n>>> Running {code_name} p={p} ...")
+            # Run ONE chi at a time so incremental save survives OOM
+            batch_ok = 0
+            batch_total = 0
+            for chi in chi_values:
+                batch = _run_one_code_one_p(
+                    code_name, code,
+                    chi_values=[chi], shots=args.shots, noise_p=p,
+                    seed=args.seed, verbose=True, use_gpu=use_gpu,
+                    run_bposd=(not args.no_bposd and chi == chi_values[0]),
+                )
+                for r in batch:
+                    # Carry BP-OSD result to all chi records
+                    if "bposd" not in r and all_results:
+                        prev = [x for x in all_results
+                                if x["code"] == code_name
+                                and x["noise_p"] == p
+                                and "bposd" in x]
+                        if prev:
+                            r["bposd"] = prev[0]["bposd"]
+                    all_results.append(r)
+                    if r.get("step_errors"):
+                        all_step_errors.append({
+                            "code": r["code"], "N": r["N"], "K": r["K"],
+                            "chi": r["chi"], "noise_p": r["noise_p"],
+                            "truncation_error": r.get("truncation_error"),
+                            "max_bond_dim": r.get("max_bond_dim"),
+                            "offline_steps": r.get("offline_steps"),
+                            "step_errors": r["step_errors"],
+                        })
+                    batch_total += 1
+                    if r.get("status") == "ok":
+                        batch_ok += 1
+                    # Save after EVERY chi value — survives OOM on next chi
+                    _save_incremental()
+
+            print(f"  >>> {code_name} p={p}: {batch_ok}/{batch_total} ok, "
+                  f"{len(all_results)} total saved")
+
+    print(f"\nFinal results saved to {out_path}")
+    if all_step_errors:
+        print(f"Step errors saved to {step_path}")
+    _print_summary(all_results)

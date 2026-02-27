@@ -1,0 +1,2126 @@
+[
+  {
+    "code": "LDPC_25_3_4",
+    "N": 25,
+    "K": 3,
+    "D": 4.0,
+    "noise_p": 0.005,
+    "shots": 256,
+    "decoders": {
+      "qubo_sa": {
+        "status": "ok",
+        "alpha_actual": 3.29,
+        "init_ms": 0.48,
+        "total_decode_ms": 118872.58,
+        "per_shot_ms": 464.346,
+        "logical_error_rate": 0.003906,
+        "avg_parity_violations": 0.04
+      },
+      "bp": {
+        "status": "ok",
+        "init_ms": 0.35,
+        "total_decode_ms": 2.14,
+        "per_shot_ms": 0.008,
+        "logical_error_rate": 0.035156
+      },
+      "bp_osd": {
+        "status": "ok",
+        "init_ms": 0.27,
+        "total_decode_ms": 2.49,
+        "per_shot_ms": 0.01,
+        "logical_error_rate": 0.0
+      },
+      "bp_lsd": {
+        "status": "ok",
+        "init_ms": 0.21,
+        "total_decode_ms": 2.88,
+        "per_shot_ms": 0.011,
+        "logical_error_rate": 0.03125
+      }
+    },
+    "ising_machine": {
+      "num_spins": 25,
+      "num_checks": 12,
+      "num_couplers_modified_qubo": 161,
+      "nnz_H": 161,
+      "max_row_weight": 17,
+      "max_col_weight": 11,
+      "avg_row_weight": 13.42,
+      "xnor_tree_depth": 5,
+      "annealing_time_ns": 320.0,
+      "estimated_throughput_gbps": 0.0781,
+      "parity_units": 12,
+      "total_spins_standard_unary": 101,
+      "total_spins_standard_binary": 63,
+      "aux_vars_unary": 76,
+      "aux_vars_binary": 38,
+      "spin_overhead_unary_pct": 304.0,
+      "spin_overhead_binary_pct": 152.0
+    }
+  },
+  {
+    "code": "LDPC_25_3_4",
+    "N": 25,
+    "K": 3,
+    "D": 4.0,
+    "noise_p": 0.01,
+    "shots": 256,
+    "decoders": {
+      "qubo_sa": {
+        "status": "ok",
+        "alpha_actual": 2.85,
+        "init_ms": 0.38,
+        "total_decode_ms": 123008.52,
+        "per_shot_ms": 480.502,
+        "logical_error_rate": 0.023438,
+        "avg_parity_violations": 0.12
+      },
+      "bp": {
+        "status": "ok",
+        "init_ms": 0.36,
+        "total_decode_ms": 2.96,
+        "per_shot_ms": 0.012,
+        "logical_error_rate": 0.050781
+      },
+      "bp_osd": {
+        "status": "ok",
+        "init_ms": 0.24,
+        "total_decode_ms": 3.69,
+        "per_shot_ms": 0.014,
+        "logical_error_rate": 0.0
+      },
+      "bp_lsd": {
+        "status": "ok",
+        "init_ms": 0.22,
+        "total_decode_ms": 3.92,
+        "per_shot_ms": 0.015,
+        "logical_error_rate": 0.03125
+      }
+    },
+    "ising_machine": {
+      "num_spins": 25,
+      "num_checks": 12,
+      "num_couplers_modified_qubo": 161,
+      "nnz_H": 161,
+      "max_row_weight": 17,
+      "max_col_weight": 11,
+      "avg_row_weight": 13.42,
+      "xnor_tree_depth": 5,
+      "annealing_time_ns": 320.0,
+      "estimated_throughput_gbps": 0.0781,
+      "parity_units": 12,
+      "total_spins_standard_unary": 101,
+      "total_spins_standard_binary": 63,
+      "aux_vars_unary": 76,
+      "aux_vars_binary": 38,
+      "spin_overhead_unary_pct": 304.0,
+      "spin_overhead_binary_pct": 152.0
+    }
+  },
+  {
+    "code": "LDPC_25_3_4",
+    "N": 25,
+    "K": 3,
+    "D": 4.0,
+    "noise_p": 0.02,
+    "shots": 256,
+    "decoders": {
+      "qubo_sa": {
+        "status": "ok",
+        "alpha_actual": 2.42,
+        "init_ms": 0.37,
+        "total_decode_ms": 126597.43,
+        "per_shot_ms": 494.521,
+        "logical_error_rate": 0.0625,
+        "avg_parity_violations": 0.29
+      },
+      "bp": {
+        "status": "ok",
+        "init_ms": 0.44,
+        "total_decode_ms": 5.41,
+        "per_shot_ms": 0.021,
+        "logical_error_rate": 0.109375
+      },
+      "bp_osd": {
+        "status": "ok",
+        "init_ms": 0.42,
+        "total_decode_ms": 8.07,
+        "per_shot_ms": 0.032,
+        "logical_error_rate": 0.0
+      },
+      "bp_lsd": {
+        "status": "ok",
+        "init_ms": 0.41,
+        "total_decode_ms": 8.34,
+        "per_shot_ms": 0.033,
+        "logical_error_rate": 0.078125
+      }
+    },
+    "ising_machine": {
+      "num_spins": 25,
+      "num_checks": 12,
+      "num_couplers_modified_qubo": 161,
+      "nnz_H": 161,
+      "max_row_weight": 17,
+      "max_col_weight": 11,
+      "avg_row_weight": 13.42,
+      "xnor_tree_depth": 5,
+      "annealing_time_ns": 320.0,
+      "estimated_throughput_gbps": 0.0781,
+      "parity_units": 12,
+      "total_spins_standard_unary": 101,
+      "total_spins_standard_binary": 63,
+      "aux_vars_unary": 76,
+      "aux_vars_binary": 38,
+      "spin_overhead_unary_pct": 304.0,
+      "spin_overhead_binary_pct": 152.0
+    }
+  },
+  {
+    "code": "LDPC_25_3_4",
+    "N": 25,
+    "K": 3,
+    "D": 4.0,
+    "noise_p": 0.05,
+    "shots": 256,
+    "decoders": {
+      "qubo_sa": {
+        "status": "ok",
+        "alpha_actual": 2.0,
+        "init_ms": 0.56,
+        "total_decode_ms": 127335.98,
+        "per_shot_ms": 497.406,
+        "logical_error_rate": 0.160156,
+        "avg_parity_violations": 0.71
+      },
+      "bp": {
+        "status": "ok",
+        "init_ms": 0.46,
+        "total_decode_ms": 10.66,
+        "per_shot_ms": 0.042,
+        "logical_error_rate": 0.371094
+      },
+      "bp_osd": {
+        "status": "ok",
+        "init_ms": 0.46,
+        "total_decode_ms": 18.2,
+        "per_shot_ms": 0.071,
+        "logical_error_rate": 0.058594
+      },
+      "bp_lsd": {
+        "status": "ok",
+        "init_ms": 0.46,
+        "total_decode_ms": 17.35,
+        "per_shot_ms": 0.068,
+        "logical_error_rate": 0.308594
+      }
+    },
+    "ising_machine": {
+      "num_spins": 25,
+      "num_checks": 12,
+      "num_couplers_modified_qubo": 161,
+      "nnz_H": 161,
+      "max_row_weight": 17,
+      "max_col_weight": 11,
+      "avg_row_weight": 13.42,
+      "xnor_tree_depth": 5,
+      "annealing_time_ns": 320.0,
+      "estimated_throughput_gbps": 0.0781,
+      "parity_units": 12,
+      "total_spins_standard_unary": 101,
+      "total_spins_standard_binary": 63,
+      "aux_vars_unary": 76,
+      "aux_vars_binary": 38,
+      "spin_overhead_unary_pct": 304.0,
+      "spin_overhead_binary_pct": 152.0
+    }
+  },
+  {
+    "code": "LDPC_30_6_4",
+    "N": 30,
+    "K": 6,
+    "D": 4.0,
+    "noise_p": 0.005,
+    "shots": 256,
+    "decoders": {
+      "qubo_sa": {
+        "status": "ok",
+        "alpha_actual": 3.26,
+        "init_ms": 0.7,
+        "total_decode_ms": 162547.26,
+        "per_shot_ms": 634.95,
+        "logical_error_rate": 0.015625,
+        "avg_parity_violations": 0.06
+      },
+      "bp": {
+        "status": "ok",
+        "init_ms": 0.37,
+        "total_decode_ms": 2.56,
+        "per_shot_ms": 0.01,
+        "logical_error_rate": 0.050781
+      },
+      "bp_osd": {
+        "status": "ok",
+        "init_ms": 0.28,
+        "total_decode_ms": 3.26,
+        "per_shot_ms": 0.013,
+        "logical_error_rate": 0.0
+      },
+      "bp_lsd": {
+        "status": "ok",
+        "init_ms": 0.24,
+        "total_decode_ms": 3.77,
+        "per_shot_ms": 0.015,
+        "logical_error_rate": 0.03125
+      }
+    },
+    "ising_machine": {
+      "num_spins": 30,
+      "num_checks": 13,
+      "num_couplers_modified_qubo": 195,
+      "nnz_H": 195,
+      "max_row_weight": 20,
+      "max_col_weight": 10,
+      "avg_row_weight": 15.0,
+      "xnor_tree_depth": 5,
+      "annealing_time_ns": 320.0,
+      "estimated_throughput_gbps": 0.0938,
+      "parity_units": 13,
+      "total_spins_standard_unary": 124,
+      "total_spins_standard_binary": 74,
+      "aux_vars_unary": 94,
+      "aux_vars_binary": 44,
+      "spin_overhead_unary_pct": 313.3,
+      "spin_overhead_binary_pct": 146.7
+    }
+  },
+  {
+    "code": "LDPC_30_6_4",
+    "N": 30,
+    "K": 6,
+    "D": 4.0,
+    "noise_p": 0.01,
+    "shots": 256,
+    "decoders": {
+      "qubo_sa": {
+        "status": "ok",
+        "alpha_actual": 2.83,
+        "init_ms": 0.47,
+        "total_decode_ms": 156876.18,
+        "per_shot_ms": 612.798,
+        "logical_error_rate": 0.03125,
+        "avg_parity_violations": 0.14
+      },
+      "bp": {
+        "status": "ok",
+        "init_ms": 0.41,
+        "total_decode_ms": 4.32,
+        "per_shot_ms": 0.017,
+        "logical_error_rate": 0.085938
+      },
+      "bp_osd": {
+        "status": "ok",
+        "init_ms": 0.34,
+        "total_decode_ms": 6.03,
+        "per_shot_ms": 0.024,
+        "logical_error_rate": 0.0
+      },
+      "bp_lsd": {
+        "status": "ok",
+        "init_ms": 0.31,
+        "total_decode_ms": 5.94,
+        "per_shot_ms": 0.023,
+        "logical_error_rate": 0.0625
+      }
+    },
+    "ising_machine": {
+      "num_spins": 30,
+      "num_checks": 13,
+      "num_couplers_modified_qubo": 195,
+      "nnz_H": 195,
+      "max_row_weight": 20,
+      "max_col_weight": 10,
+      "avg_row_weight": 15.0,
+      "xnor_tree_depth": 5,
+      "annealing_time_ns": 320.0,
+      "estimated_throughput_gbps": 0.0938,
+      "parity_units": 13,
+      "total_spins_standard_unary": 124,
+      "total_spins_standard_binary": 74,
+      "aux_vars_unary": 94,
+      "aux_vars_binary": 44,
+      "spin_overhead_unary_pct": 313.3,
+      "spin_overhead_binary_pct": 146.7
+    }
+  },
+  {
+    "code": "LDPC_30_6_4",
+    "N": 30,
+    "K": 6,
+    "D": 4.0,
+    "noise_p": 0.02,
+    "shots": 256,
+    "decoders": {
+      "qubo_sa": {
+        "status": "ok",
+        "alpha_actual": 2.39,
+        "init_ms": 0.53,
+        "total_decode_ms": 157519.71,
+        "per_shot_ms": 615.311,
+        "logical_error_rate": 0.089844,
+        "avg_parity_violations": 0.45
+      },
+      "bp": {
+        "status": "ok",
+        "init_ms": 0.43,
+        "total_decode_ms": 6.5,
+        "per_shot_ms": 0.025,
+        "logical_error_rate": 0.183594
+      },
+      "bp_osd": {
+        "status": "ok",
+        "init_ms": 0.36,
+        "total_decode_ms": 10.19,
+        "per_shot_ms": 0.04,
+        "logical_error_rate": 0.023438
+      },
+      "bp_lsd": {
+        "status": "ok",
+        "init_ms": 0.39,
+        "total_decode_ms": 9.76,
+        "per_shot_ms": 0.038,
+        "logical_error_rate": 0.152344
+      }
+    },
+    "ising_machine": {
+      "num_spins": 30,
+      "num_checks": 13,
+      "num_couplers_modified_qubo": 195,
+      "nnz_H": 195,
+      "max_row_weight": 20,
+      "max_col_weight": 10,
+      "avg_row_weight": 15.0,
+      "xnor_tree_depth": 5,
+      "annealing_time_ns": 320.0,
+      "estimated_throughput_gbps": 0.0938,
+      "parity_units": 13,
+      "total_spins_standard_unary": 124,
+      "total_spins_standard_binary": 74,
+      "aux_vars_unary": 94,
+      "aux_vars_binary": 44,
+      "spin_overhead_unary_pct": 313.3,
+      "spin_overhead_binary_pct": 146.7
+    }
+  },
+  {
+    "code": "LDPC_30_6_4",
+    "N": 30,
+    "K": 6,
+    "D": 4.0,
+    "noise_p": 0.05,
+    "shots": 256,
+    "decoders": {
+      "qubo_sa": {
+        "status": "ok",
+        "alpha_actual": 2.0,
+        "init_ms": 0.56,
+        "total_decode_ms": 150477.92,
+        "per_shot_ms": 587.804,
+        "logical_error_rate": 0.246094,
+        "avg_parity_violations": 0.96
+      },
+      "bp": {
+        "status": "ok",
+        "init_ms": 0.37,
+        "total_decode_ms": 11.29,
+        "per_shot_ms": 0.044,
+        "logical_error_rate": 0.527344
+      },
+      "bp_osd": {
+        "status": "ok",
+        "init_ms": 0.31,
+        "total_decode_ms": 19.5,
+        "per_shot_ms": 0.076,
+        "logical_error_rate": 0.140625
+      },
+      "bp_lsd": {
+        "status": "ok",
+        "init_ms": 0.28,
+        "total_decode_ms": 17.67,
+        "per_shot_ms": 0.069,
+        "logical_error_rate": 0.457031
+      }
+    },
+    "ising_machine": {
+      "num_spins": 30,
+      "num_checks": 13,
+      "num_couplers_modified_qubo": 195,
+      "nnz_H": 195,
+      "max_row_weight": 20,
+      "max_col_weight": 10,
+      "avg_row_weight": 15.0,
+      "xnor_tree_depth": 5,
+      "annealing_time_ns": 320.0,
+      "estimated_throughput_gbps": 0.0938,
+      "parity_units": 13,
+      "total_spins_standard_unary": 124,
+      "total_spins_standard_binary": 74,
+      "aux_vars_unary": 94,
+      "aux_vars_binary": 44,
+      "spin_overhead_unary_pct": 313.3,
+      "spin_overhead_binary_pct": 146.7
+    }
+  },
+  {
+    "code": "TOR_50_2_5",
+    "N": 50,
+    "K": 2,
+    "D": 5.0,
+    "noise_p": 0.005,
+    "shots": 256,
+    "decoders": {
+      "qubo_sa": {
+        "status": "ok",
+        "alpha_actual": 11.03,
+        "init_ms": 0.8,
+        "total_decode_ms": 172900.89,
+        "per_shot_ms": 675.394,
+        "logical_error_rate": 0.0,
+        "avg_parity_violations": 0.0
+      },
+      "bp": {
+        "status": "ok",
+        "init_ms": 0.45,
+        "total_decode_ms": 2.63,
+        "per_shot_ms": 0.01,
+        "logical_error_rate": 0.007812
+      },
+      "bp_osd": {
+        "status": "ok",
+        "init_ms": 0.4,
+        "total_decode_ms": 2.75,
+        "per_shot_ms": 0.011,
+        "logical_error_rate": 0.0
+      },
+      "bp_lsd": {
+        "status": "ok",
+        "init_ms": 0.35,
+        "total_decode_ms": 3.63,
+        "per_shot_ms": 0.014,
+        "logical_error_rate": 0.0
+      }
+    },
+    "ising_machine": {
+      "num_spins": 50,
+      "num_checks": 24,
+      "num_couplers_modified_qubo": 96,
+      "nnz_H": 96,
+      "max_row_weight": 4,
+      "max_col_weight": 2,
+      "avg_row_weight": 4.0,
+      "xnor_tree_depth": 2,
+      "annealing_time_ns": 320.0,
+      "estimated_throughput_gbps": 0.1562,
+      "parity_units": 24,
+      "total_spins_standard_unary": 98,
+      "total_spins_standard_binary": 98,
+      "aux_vars_unary": 48,
+      "aux_vars_binary": 48,
+      "spin_overhead_unary_pct": 96.0,
+      "spin_overhead_binary_pct": 96.0
+    }
+  },
+  {
+    "code": "TOR_50_2_5",
+    "N": 50,
+    "K": 2,
+    "D": 5.0,
+    "noise_p": 0.01,
+    "shots": 256,
+    "decoders": {
+      "qubo_sa": {
+        "status": "ok",
+        "alpha_actual": 9.57,
+        "init_ms": 1.09,
+        "total_decode_ms": 166799.21,
+        "per_shot_ms": 651.559,
+        "logical_error_rate": 0.0,
+        "avg_parity_violations": 0.0
+      },
+      "bp": {
+        "status": "ok",
+        "init_ms": 0.32,
+        "total_decode_ms": 2.25,
+        "per_shot_ms": 0.009,
+        "logical_error_rate": 0.007812
+      },
+      "bp_osd": {
+        "status": "ok",
+        "init_ms": 0.22,
+        "total_decode_ms": 2.4,
+        "per_shot_ms": 0.009,
+        "logical_error_rate": 0.0
+      },
+      "bp_lsd": {
+        "status": "ok",
+        "init_ms": 0.21,
+        "total_decode_ms": 2.92,
+        "per_shot_ms": 0.011,
+        "logical_error_rate": 0.0
+      }
+    },
+    "ising_machine": {
+      "num_spins": 50,
+      "num_checks": 24,
+      "num_couplers_modified_qubo": 96,
+      "nnz_H": 96,
+      "max_row_weight": 4,
+      "max_col_weight": 2,
+      "avg_row_weight": 4.0,
+      "xnor_tree_depth": 2,
+      "annealing_time_ns": 320.0,
+      "estimated_throughput_gbps": 0.1562,
+      "parity_units": 24,
+      "total_spins_standard_unary": 98,
+      "total_spins_standard_binary": 98,
+      "aux_vars_unary": 48,
+      "aux_vars_binary": 48,
+      "spin_overhead_unary_pct": 96.0,
+      "spin_overhead_binary_pct": 96.0
+    }
+  },
+  {
+    "code": "TOR_50_2_5",
+    "N": 50,
+    "K": 2,
+    "D": 5.0,
+    "noise_p": 0.02,
+    "shots": 256,
+    "decoders": {
+      "qubo_sa": {
+        "status": "ok",
+        "alpha_actual": 8.11,
+        "init_ms": 0.79,
+        "total_decode_ms": 167233.72,
+        "per_shot_ms": 653.257,
+        "logical_error_rate": 0.0,
+        "avg_parity_violations": 0.01
+      },
+      "bp": {
+        "status": "ok",
+        "init_ms": 0.32,
+        "total_decode_ms": 2.73,
+        "per_shot_ms": 0.011,
+        "logical_error_rate": 0.03125
+      },
+      "bp_osd": {
+        "status": "ok",
+        "init_ms": 0.26,
+        "total_decode_ms": 3.1,
+        "per_shot_ms": 0.012,
+        "logical_error_rate": 0.0
+      },
+      "bp_lsd": {
+        "status": "ok",
+        "init_ms": 0.23,
+        "total_decode_ms": 3.18,
+        "per_shot_ms": 0.012,
+        "logical_error_rate": 0.0
+      }
+    },
+    "ising_machine": {
+      "num_spins": 50,
+      "num_checks": 24,
+      "num_couplers_modified_qubo": 96,
+      "nnz_H": 96,
+      "max_row_weight": 4,
+      "max_col_weight": 2,
+      "avg_row_weight": 4.0,
+      "xnor_tree_depth": 2,
+      "annealing_time_ns": 320.0,
+      "estimated_throughput_gbps": 0.1562,
+      "parity_units": 24,
+      "total_spins_standard_unary": 98,
+      "total_spins_standard_binary": 98,
+      "aux_vars_unary": 48,
+      "aux_vars_binary": 48,
+      "spin_overhead_unary_pct": 96.0,
+      "spin_overhead_binary_pct": 96.0
+    }
+  },
+  {
+    "code": "TOR_50_2_5",
+    "N": 50,
+    "K": 2,
+    "D": 5.0,
+    "noise_p": 0.05,
+    "shots": 256,
+    "decoders": {
+      "qubo_sa": {
+        "status": "ok",
+        "alpha_actual": 6.13,
+        "init_ms": 0.76,
+        "total_decode_ms": 174205.48,
+        "per_shot_ms": 680.49,
+        "logical_error_rate": 0.03125,
+        "avg_parity_violations": 0.06
+      },
+      "bp": {
+        "status": "ok",
+        "init_ms": 0.34,
+        "total_decode_ms": 4.79,
+        "per_shot_ms": 0.019,
+        "logical_error_rate": 0.132812
+      },
+      "bp_osd": {
+        "status": "ok",
+        "init_ms": 0.23,
+        "total_decode_ms": 7.18,
+        "per_shot_ms": 0.028,
+        "logical_error_rate": 0.019531
+      },
+      "bp_lsd": {
+        "status": "ok",
+        "init_ms": 0.21,
+        "total_decode_ms": 5.98,
+        "per_shot_ms": 0.023,
+        "logical_error_rate": 0.027344
+      }
+    },
+    "ising_machine": {
+      "num_spins": 50,
+      "num_checks": 24,
+      "num_couplers_modified_qubo": 96,
+      "nnz_H": 96,
+      "max_row_weight": 4,
+      "max_col_weight": 2,
+      "avg_row_weight": 4.0,
+      "xnor_tree_depth": 2,
+      "annealing_time_ns": 320.0,
+      "estimated_throughput_gbps": 0.1562,
+      "parity_units": 24,
+      "total_spins_standard_unary": 98,
+      "total_spins_standard_binary": 98,
+      "aux_vars_unary": 48,
+      "aux_vars_binary": 48,
+      "spin_overhead_unary_pct": 96.0,
+      "spin_overhead_binary_pct": 96.0
+    }
+  },
+  {
+    "code": "QCC_18_4_4",
+    "N": 18,
+    "K": 4,
+    "D": 4.0,
+    "noise_p": 0.005,
+    "shots": 256,
+    "decoders": {
+      "qubo_sa": {
+        "status": "ok",
+        "alpha_actual": 9.07,
+        "init_ms": 0.24,
+        "total_decode_ms": 46701.95,
+        "per_shot_ms": 182.429,
+        "logical_error_rate": 0.019531,
+        "avg_parity_violations": 0.0
+      },
+      "bp": {
+        "status": "ok",
+        "init_ms": 0.33,
+        "total_decode_ms": 1.5,
+        "per_shot_ms": 0.006,
+        "logical_error_rate": 0.03125
+      },
+      "bp_osd": {
+        "status": "ok",
+        "init_ms": 0.19,
+        "total_decode_ms": 1.56,
+        "per_shot_ms": 0.006,
+        "logical_error_rate": 0.015625
+      },
+      "bp_lsd": {
+        "status": "ok",
+        "init_ms": 0.16,
+        "total_decode_ms": 1.89,
+        "per_shot_ms": 0.007,
+        "logical_error_rate": 0.015625
+      }
+    },
+    "ising_machine": {
+      "num_spins": 18,
+      "num_checks": 7,
+      "num_couplers_modified_qubo": 42,
+      "nnz_H": 42,
+      "max_row_weight": 6,
+      "max_col_weight": 3,
+      "avg_row_weight": 6.0,
+      "xnor_tree_depth": 3,
+      "annealing_time_ns": 320.0,
+      "estimated_throughput_gbps": 0.0563,
+      "parity_units": 7,
+      "total_spins_standard_unary": 39,
+      "total_spins_standard_binary": 32,
+      "aux_vars_unary": 21,
+      "aux_vars_binary": 14,
+      "spin_overhead_unary_pct": 116.7,
+      "spin_overhead_binary_pct": 77.8
+    }
+  },
+  {
+    "code": "QCC_18_4_4",
+    "N": 18,
+    "K": 4,
+    "D": 4.0,
+    "noise_p": 0.01,
+    "shots": 256,
+    "decoders": {
+      "qubo_sa": {
+        "status": "ok",
+        "alpha_actual": 7.88,
+        "init_ms": 0.27,
+        "total_decode_ms": 44666.9,
+        "per_shot_ms": 174.48,
+        "logical_error_rate": 0.050781,
+        "avg_parity_violations": 0.03
+      },
+      "bp": {
+        "status": "ok",
+        "init_ms": 0.31,
+        "total_decode_ms": 1.6,
+        "per_shot_ms": 0.006,
+        "logical_error_rate": 0.066406
+      },
+      "bp_osd": {
+        "status": "ok",
+        "init_ms": 0.21,
+        "total_decode_ms": 1.54,
+        "per_shot_ms": 0.006,
+        "logical_error_rate": 0.050781
+      },
+      "bp_lsd": {
+        "status": "ok",
+        "init_ms": 0.17,
+        "total_decode_ms": 1.81,
+        "per_shot_ms": 0.007,
+        "logical_error_rate": 0.050781
+      }
+    },
+    "ising_machine": {
+      "num_spins": 18,
+      "num_checks": 7,
+      "num_couplers_modified_qubo": 42,
+      "nnz_H": 42,
+      "max_row_weight": 6,
+      "max_col_weight": 3,
+      "avg_row_weight": 6.0,
+      "xnor_tree_depth": 3,
+      "annealing_time_ns": 320.0,
+      "estimated_throughput_gbps": 0.0563,
+      "parity_units": 7,
+      "total_spins_standard_unary": 39,
+      "total_spins_standard_binary": 32,
+      "aux_vars_unary": 21,
+      "aux_vars_binary": 14,
+      "spin_overhead_unary_pct": 116.7,
+      "spin_overhead_binary_pct": 77.8
+    }
+  },
+  {
+    "code": "QCC_18_4_4",
+    "N": 18,
+    "K": 4,
+    "D": 4.0,
+    "noise_p": 0.02,
+    "shots": 256,
+    "decoders": {
+      "qubo_sa": {
+        "status": "ok",
+        "alpha_actual": 6.67,
+        "init_ms": 0.23,
+        "total_decode_ms": 47219.83,
+        "per_shot_ms": 184.452,
+        "logical_error_rate": 0.109375,
+        "avg_parity_violations": 0.07
+      },
+      "bp": {
+        "status": "ok",
+        "init_ms": 0.35,
+        "total_decode_ms": 1.92,
+        "per_shot_ms": 0.008,
+        "logical_error_rate": 0.144531
+      },
+      "bp_osd": {
+        "status": "ok",
+        "init_ms": 0.23,
+        "total_decode_ms": 2.13,
+        "per_shot_ms": 0.008,
+        "logical_error_rate": 0.125
+      },
+      "bp_lsd": {
+        "status": "ok",
+        "init_ms": 0.21,
+        "total_decode_ms": 2.34,
+        "per_shot_ms": 0.009,
+        "logical_error_rate": 0.125
+      }
+    },
+    "ising_machine": {
+      "num_spins": 18,
+      "num_checks": 7,
+      "num_couplers_modified_qubo": 42,
+      "nnz_H": 42,
+      "max_row_weight": 6,
+      "max_col_weight": 3,
+      "avg_row_weight": 6.0,
+      "xnor_tree_depth": 3,
+      "annealing_time_ns": 320.0,
+      "estimated_throughput_gbps": 0.0563,
+      "parity_units": 7,
+      "total_spins_standard_unary": 39,
+      "total_spins_standard_binary": 32,
+      "aux_vars_unary": 21,
+      "aux_vars_binary": 14,
+      "spin_overhead_unary_pct": 116.7,
+      "spin_overhead_binary_pct": 77.8
+    }
+  },
+  {
+    "code": "QCC_18_4_4",
+    "N": 18,
+    "K": 4,
+    "D": 4.0,
+    "noise_p": 0.05,
+    "shots": 256,
+    "decoders": {
+      "qubo_sa": {
+        "status": "ok",
+        "alpha_actual": 5.05,
+        "init_ms": 0.26,
+        "total_decode_ms": 46838.65,
+        "per_shot_ms": 182.963,
+        "logical_error_rate": 0.316406,
+        "avg_parity_violations": 0.23
+      },
+      "bp": {
+        "status": "ok",
+        "init_ms": 0.31,
+        "total_decode_ms": 2.4,
+        "per_shot_ms": 0.009,
+        "logical_error_rate": 0.390625
+      },
+      "bp_osd": {
+        "status": "ok",
+        "init_ms": 0.2,
+        "total_decode_ms": 2.92,
+        "per_shot_ms": 0.011,
+        "logical_error_rate": 0.320312
+      },
+      "bp_lsd": {
+        "status": "ok",
+        "init_ms": 0.2,
+        "total_decode_ms": 3.09,
+        "per_shot_ms": 0.012,
+        "logical_error_rate": 0.335938
+      }
+    },
+    "ising_machine": {
+      "num_spins": 18,
+      "num_checks": 7,
+      "num_couplers_modified_qubo": 42,
+      "nnz_H": 42,
+      "max_row_weight": 6,
+      "max_col_weight": 3,
+      "avg_row_weight": 6.0,
+      "xnor_tree_depth": 3,
+      "annealing_time_ns": 320.0,
+      "estimated_throughput_gbps": 0.0563,
+      "parity_units": 7,
+      "total_spins_standard_unary": 39,
+      "total_spins_standard_binary": 32,
+      "aux_vars_unary": 21,
+      "aux_vars_binary": 14,
+      "spin_overhead_unary_pct": 116.7,
+      "spin_overhead_binary_pct": 77.8
+    }
+  },
+  {
+    "code": "QCC_60_8_4",
+    "N": 60,
+    "K": 8,
+    "D": 4.0,
+    "noise_p": 0.005,
+    "shots": 256,
+    "decoders": {
+      "qubo_sa": {
+        "status": "ok",
+        "alpha_actual": 8.14,
+        "init_ms": 0.89,
+        "total_decode_ms": 248067.32,
+        "per_shot_ms": 969.013,
+        "logical_error_rate": 0.007812,
+        "avg_parity_violations": 0.02
+      },
+      "bp": {
+        "status": "ok",
+        "init_ms": 0.39,
+        "total_decode_ms": 2.53,
+        "per_shot_ms": 0.01,
+        "logical_error_rate": 0.003906
+      },
+      "bp_osd": {
+        "status": "ok",
+        "init_ms": 0.28,
+        "total_decode_ms": 2.45,
+        "per_shot_ms": 0.01,
+        "logical_error_rate": 0.003906
+      },
+      "bp_lsd": {
+        "status": "ok",
+        "init_ms": 0.21,
+        "total_decode_ms": 3.01,
+        "per_shot_ms": 0.012,
+        "logical_error_rate": 0.003906
+      }
+    },
+    "ising_machine": {
+      "num_spins": 60,
+      "num_checks": 26,
+      "num_couplers_modified_qubo": 156,
+      "nnz_H": 156,
+      "max_row_weight": 6,
+      "max_col_weight": 3,
+      "avg_row_weight": 6.0,
+      "xnor_tree_depth": 3,
+      "annealing_time_ns": 320.0,
+      "estimated_throughput_gbps": 0.1875,
+      "parity_units": 26,
+      "total_spins_standard_unary": 138,
+      "total_spins_standard_binary": 112,
+      "aux_vars_unary": 78,
+      "aux_vars_binary": 52,
+      "spin_overhead_unary_pct": 130.0,
+      "spin_overhead_binary_pct": 86.7
+    }
+  },
+  {
+    "code": "QCC_60_8_4",
+    "N": 60,
+    "K": 8,
+    "D": 4.0,
+    "noise_p": 0.01,
+    "shots": 256,
+    "decoders": {
+      "qubo_sa": {
+        "status": "ok",
+        "alpha_actual": 7.07,
+        "init_ms": 0.86,
+        "total_decode_ms": 242190.62,
+        "per_shot_ms": 946.057,
+        "logical_error_rate": 0.035156,
+        "avg_parity_violations": 0.06
+      },
+      "bp": {
+        "status": "ok",
+        "init_ms": 0.34,
+        "total_decode_ms": 2.51,
+        "per_shot_ms": 0.01,
+        "logical_error_rate": 0.011719
+      },
+      "bp_osd": {
+        "status": "ok",
+        "init_ms": 0.27,
+        "total_decode_ms": 3.05,
+        "per_shot_ms": 0.012,
+        "logical_error_rate": 0.007812
+      },
+      "bp_lsd": {
+        "status": "ok",
+        "init_ms": 0.24,
+        "total_decode_ms": 3.71,
+        "per_shot_ms": 0.014,
+        "logical_error_rate": 0.007812
+      }
+    },
+    "ising_machine": {
+      "num_spins": 60,
+      "num_checks": 26,
+      "num_couplers_modified_qubo": 156,
+      "nnz_H": 156,
+      "max_row_weight": 6,
+      "max_col_weight": 3,
+      "avg_row_weight": 6.0,
+      "xnor_tree_depth": 3,
+      "annealing_time_ns": 320.0,
+      "estimated_throughput_gbps": 0.1875,
+      "parity_units": 26,
+      "total_spins_standard_unary": 138,
+      "total_spins_standard_binary": 112,
+      "aux_vars_unary": 78,
+      "aux_vars_binary": 52,
+      "spin_overhead_unary_pct": 130.0,
+      "spin_overhead_binary_pct": 86.7
+    }
+  },
+  {
+    "code": "QCC_60_8_4",
+    "N": 60,
+    "K": 8,
+    "D": 4.0,
+    "noise_p": 0.02,
+    "shots": 256,
+    "decoders": {
+      "qubo_sa": {
+        "status": "ok",
+        "alpha_actual": 5.99,
+        "init_ms": 0.97,
+        "total_decode_ms": 234773.3,
+        "per_shot_ms": 917.083,
+        "logical_error_rate": 0.085938,
+        "avg_parity_violations": 0.11
+      },
+      "bp": {
+        "status": "ok",
+        "init_ms": 0.34,
+        "total_decode_ms": 3.36,
+        "per_shot_ms": 0.013,
+        "logical_error_rate": 0.027344
+      },
+      "bp_osd": {
+        "status": "ok",
+        "init_ms": 0.25,
+        "total_decode_ms": 3.49,
+        "per_shot_ms": 0.014,
+        "logical_error_rate": 0.015625
+      },
+      "bp_lsd": {
+        "status": "ok",
+        "init_ms": 0.21,
+        "total_decode_ms": 3.83,
+        "per_shot_ms": 0.015,
+        "logical_error_rate": 0.015625
+      }
+    },
+    "ising_machine": {
+      "num_spins": 60,
+      "num_checks": 26,
+      "num_couplers_modified_qubo": 156,
+      "nnz_H": 156,
+      "max_row_weight": 6,
+      "max_col_weight": 3,
+      "avg_row_weight": 6.0,
+      "xnor_tree_depth": 3,
+      "annealing_time_ns": 320.0,
+      "estimated_throughput_gbps": 0.1875,
+      "parity_units": 26,
+      "total_spins_standard_unary": 138,
+      "total_spins_standard_binary": 112,
+      "aux_vars_unary": 78,
+      "aux_vars_binary": 52,
+      "spin_overhead_unary_pct": 130.0,
+      "spin_overhead_binary_pct": 86.7
+    }
+  },
+  {
+    "code": "QCC_60_8_4",
+    "N": 60,
+    "K": 8,
+    "D": 4.0,
+    "noise_p": 0.05,
+    "shots": 256,
+    "decoders": {
+      "qubo_sa": {
+        "status": "ok",
+        "alpha_actual": 4.53,
+        "init_ms": 0.84,
+        "total_decode_ms": 232786.27,
+        "per_shot_ms": 909.321,
+        "logical_error_rate": 0.3125,
+        "avg_parity_violations": 0.62
+      },
+      "bp": {
+        "status": "ok",
+        "init_ms": 0.35,
+        "total_decode_ms": 8.44,
+        "per_shot_ms": 0.033,
+        "logical_error_rate": 0.238281
+      },
+      "bp_osd": {
+        "status": "ok",
+        "init_ms": 0.26,
+        "total_decode_ms": 11.8,
+        "per_shot_ms": 0.046,
+        "logical_error_rate": 0.128906
+      },
+      "bp_lsd": {
+        "status": "ok",
+        "init_ms": 0.25,
+        "total_decode_ms": 11.16,
+        "per_shot_ms": 0.044,
+        "logical_error_rate": 0.171875
+      }
+    },
+    "ising_machine": {
+      "num_spins": 60,
+      "num_checks": 26,
+      "num_couplers_modified_qubo": 156,
+      "nnz_H": 156,
+      "max_row_weight": 6,
+      "max_col_weight": 3,
+      "avg_row_weight": 6.0,
+      "xnor_tree_depth": 3,
+      "annealing_time_ns": 320.0,
+      "estimated_throughput_gbps": 0.1875,
+      "parity_units": 26,
+      "total_spins_standard_unary": 138,
+      "total_spins_standard_binary": 112,
+      "aux_vars_unary": 78,
+      "aux_vars_binary": 52,
+      "spin_overhead_unary_pct": 130.0,
+      "spin_overhead_binary_pct": 86.7
+    }
+  },
+  {
+    "code": "QCC_72_12_6",
+    "N": 72,
+    "K": 12,
+    "D": 6.0,
+    "noise_p": 0.005,
+    "shots": 256,
+    "decoders": {
+      "qubo_sa": {
+        "status": "ok",
+        "alpha_actual": 8.47,
+        "init_ms": 1.06,
+        "total_decode_ms": 388073.71,
+        "per_shot_ms": 1515.913,
+        "logical_error_rate": 0.007812,
+        "avg_parity_violations": 0.03
+      },
+      "bp": {
+        "status": "ok",
+        "init_ms": 0.35,
+        "total_decode_ms": 2.69,
+        "per_shot_ms": 0.011,
+        "logical_error_rate": 0.0
+      },
+      "bp_osd": {
+        "status": "ok",
+        "init_ms": 0.28,
+        "total_decode_ms": 2.85,
+        "per_shot_ms": 0.011,
+        "logical_error_rate": 0.0
+      },
+      "bp_lsd": {
+        "status": "ok",
+        "init_ms": 0.24,
+        "total_decode_ms": 3.93,
+        "per_shot_ms": 0.015,
+        "logical_error_rate": 0.0
+      }
+    },
+    "ising_machine": {
+      "num_spins": 72,
+      "num_checks": 30,
+      "num_couplers_modified_qubo": 180,
+      "nnz_H": 180,
+      "max_row_weight": 6,
+      "max_col_weight": 3,
+      "avg_row_weight": 6.0,
+      "xnor_tree_depth": 3,
+      "annealing_time_ns": 320.0,
+      "estimated_throughput_gbps": 0.225,
+      "parity_units": 30,
+      "total_spins_standard_unary": 162,
+      "total_spins_standard_binary": 132,
+      "aux_vars_unary": 90,
+      "aux_vars_binary": 60,
+      "spin_overhead_unary_pct": 125.0,
+      "spin_overhead_binary_pct": 83.3
+    }
+  },
+  {
+    "code": "QCC_72_12_6",
+    "N": 72,
+    "K": 12,
+    "D": 6.0,
+    "noise_p": 0.01,
+    "shots": 256,
+    "decoders": {
+      "qubo_sa": {
+        "status": "ok",
+        "alpha_actual": 7.35,
+        "init_ms": 1.16,
+        "total_decode_ms": 383772.41,
+        "per_shot_ms": 1499.111,
+        "logical_error_rate": 0.03125,
+        "avg_parity_violations": 0.07
+      },
+      "bp": {
+        "status": "ok",
+        "init_ms": 0.44,
+        "total_decode_ms": 3.85,
+        "per_shot_ms": 0.015,
+        "logical_error_rate": 0.0
+      },
+      "bp_osd": {
+        "status": "ok",
+        "init_ms": 0.46,
+        "total_decode_ms": 2.87,
+        "per_shot_ms": 0.011,
+        "logical_error_rate": 0.0
+      },
+      "bp_lsd": {
+        "status": "ok",
+        "init_ms": 0.28,
+        "total_decode_ms": 3.89,
+        "per_shot_ms": 0.015,
+        "logical_error_rate": 0.0
+      }
+    },
+    "ising_machine": {
+      "num_spins": 72,
+      "num_checks": 30,
+      "num_couplers_modified_qubo": 180,
+      "nnz_H": 180,
+      "max_row_weight": 6,
+      "max_col_weight": 3,
+      "avg_row_weight": 6.0,
+      "xnor_tree_depth": 3,
+      "annealing_time_ns": 320.0,
+      "estimated_throughput_gbps": 0.225,
+      "parity_units": 30,
+      "total_spins_standard_unary": 162,
+      "total_spins_standard_binary": 132,
+      "aux_vars_unary": 90,
+      "aux_vars_binary": 60,
+      "spin_overhead_unary_pct": 125.0,
+      "spin_overhead_binary_pct": 83.3
+    }
+  },
+  {
+    "code": "QCC_72_12_6",
+    "N": 72,
+    "K": 12,
+    "D": 6.0,
+    "noise_p": 0.02,
+    "shots": 256,
+    "decoders": {
+      "qubo_sa": {
+        "status": "ok",
+        "alpha_actual": 6.23,
+        "init_ms": 1.41,
+        "total_decode_ms": 375799.19,
+        "per_shot_ms": 1467.966,
+        "logical_error_rate": 0.089844,
+        "avg_parity_violations": 0.16
+      },
+      "bp": {
+        "status": "ok",
+        "init_ms": 0.36,
+        "total_decode_ms": 4.39,
+        "per_shot_ms": 0.017,
+        "logical_error_rate": 0.019531
+      },
+      "bp_osd": {
+        "status": "ok",
+        "init_ms": 0.3,
+        "total_decode_ms": 4.8,
+        "per_shot_ms": 0.019,
+        "logical_error_rate": 0.015625
+      },
+      "bp_lsd": {
+        "status": "ok",
+        "init_ms": 0.27,
+        "total_decode_ms": 5.28,
+        "per_shot_ms": 0.021,
+        "logical_error_rate": 0.015625
+      }
+    },
+    "ising_machine": {
+      "num_spins": 72,
+      "num_checks": 30,
+      "num_couplers_modified_qubo": 180,
+      "nnz_H": 180,
+      "max_row_weight": 6,
+      "max_col_weight": 3,
+      "avg_row_weight": 6.0,
+      "xnor_tree_depth": 3,
+      "annealing_time_ns": 320.0,
+      "estimated_throughput_gbps": 0.225,
+      "parity_units": 30,
+      "total_spins_standard_unary": 162,
+      "total_spins_standard_binary": 132,
+      "aux_vars_unary": 90,
+      "aux_vars_binary": 60,
+      "spin_overhead_unary_pct": 125.0,
+      "spin_overhead_binary_pct": 83.3
+    }
+  },
+  {
+    "code": "QCC_72_12_6",
+    "N": 72,
+    "K": 12,
+    "D": 6.0,
+    "noise_p": 0.05,
+    "shots": 256,
+    "decoders": {
+      "qubo_sa": {
+        "status": "ok",
+        "alpha_actual": 4.71,
+        "init_ms": 1.24,
+        "total_decode_ms": 382691.11,
+        "per_shot_ms": 1494.887,
+        "logical_error_rate": 0.292969,
+        "avg_parity_violations": 0.7
+      },
+      "bp": {
+        "status": "ok",
+        "init_ms": 0.36,
+        "total_decode_ms": 10.44,
+        "per_shot_ms": 0.041,
+        "logical_error_rate": 0.246094
+      },
+      "bp_osd": {
+        "status": "ok",
+        "init_ms": 0.47,
+        "total_decode_ms": 13.97,
+        "per_shot_ms": 0.055,
+        "logical_error_rate": 0.160156
+      },
+      "bp_lsd": {
+        "status": "ok",
+        "init_ms": 0.38,
+        "total_decode_ms": 14.9,
+        "per_shot_ms": 0.058,
+        "logical_error_rate": 0.230469
+      }
+    },
+    "ising_machine": {
+      "num_spins": 72,
+      "num_checks": 30,
+      "num_couplers_modified_qubo": 180,
+      "nnz_H": 180,
+      "max_row_weight": 6,
+      "max_col_weight": 3,
+      "avg_row_weight": 6.0,
+      "xnor_tree_depth": 3,
+      "annealing_time_ns": 320.0,
+      "estimated_throughput_gbps": 0.225,
+      "parity_units": 30,
+      "total_spins_standard_unary": 162,
+      "total_spins_standard_binary": 132,
+      "aux_vars_unary": 90,
+      "aux_vars_binary": 60,
+      "spin_overhead_unary_pct": 125.0,
+      "spin_overhead_binary_pct": 83.3
+    }
+  },
+  {
+    "code": "QCC_90_8_10",
+    "N": 90,
+    "K": 8,
+    "D": 10.0,
+    "noise_p": 0.005,
+    "shots": 256,
+    "decoders": {
+      "qubo_sa": {
+        "status": "ok",
+        "alpha_actual": 7.75,
+        "init_ms": 1.48,
+        "total_decode_ms": 724509.23,
+        "per_shot_ms": 2830.114,
+        "logical_error_rate": 0.0,
+        "avg_parity_violations": 0.0
+      },
+      "bp": {
+        "status": "ok",
+        "init_ms": 0.38,
+        "total_decode_ms": 3.05,
+        "per_shot_ms": 0.012,
+        "logical_error_rate": 0.0
+      },
+      "bp_osd": {
+        "status": "ok",
+        "init_ms": 0.32,
+        "total_decode_ms": 3.0,
+        "per_shot_ms": 0.012,
+        "logical_error_rate": 0.0
+      },
+      "bp_lsd": {
+        "status": "ok",
+        "init_ms": 0.23,
+        "total_decode_ms": 4.29,
+        "per_shot_ms": 0.017,
+        "logical_error_rate": 0.0
+      }
+    },
+    "ising_machine": {
+      "num_spins": 90,
+      "num_checks": 41,
+      "num_couplers_modified_qubo": 246,
+      "nnz_H": 246,
+      "max_row_weight": 6,
+      "max_col_weight": 3,
+      "avg_row_weight": 6.0,
+      "xnor_tree_depth": 3,
+      "annealing_time_ns": 320.0,
+      "estimated_throughput_gbps": 0.2812,
+      "parity_units": 41,
+      "total_spins_standard_unary": 213,
+      "total_spins_standard_binary": 172,
+      "aux_vars_unary": 123,
+      "aux_vars_binary": 82,
+      "spin_overhead_unary_pct": 136.7,
+      "spin_overhead_binary_pct": 91.1
+    }
+  },
+  {
+    "code": "QCC_90_8_10",
+    "N": 90,
+    "K": 8,
+    "D": 10.0,
+    "noise_p": 0.01,
+    "shots": 256,
+    "decoders": {
+      "qubo_sa": {
+        "status": "ok",
+        "alpha_actual": 6.72,
+        "init_ms": 1.52,
+        "total_decode_ms": 835260.55,
+        "per_shot_ms": 3262.737,
+        "logical_error_rate": 0.003906,
+        "avg_parity_violations": 0.02
+      },
+      "bp": {
+        "status": "ok",
+        "init_ms": 0.46,
+        "total_decode_ms": 4.48,
+        "per_shot_ms": 0.018,
+        "logical_error_rate": 0.0
+      },
+      "bp_osd": {
+        "status": "ok",
+        "init_ms": 0.46,
+        "total_decode_ms": 4.4,
+        "per_shot_ms": 0.017,
+        "logical_error_rate": 0.0
+      },
+      "bp_lsd": {
+        "status": "ok",
+        "init_ms": 0.37,
+        "total_decode_ms": 5.34,
+        "per_shot_ms": 0.021,
+        "logical_error_rate": 0.0
+      }
+    },
+    "ising_machine": {
+      "num_spins": 90,
+      "num_checks": 41,
+      "num_couplers_modified_qubo": 246,
+      "nnz_H": 246,
+      "max_row_weight": 6,
+      "max_col_weight": 3,
+      "avg_row_weight": 6.0,
+      "xnor_tree_depth": 3,
+      "annealing_time_ns": 320.0,
+      "estimated_throughput_gbps": 0.2812,
+      "parity_units": 41,
+      "total_spins_standard_unary": 213,
+      "total_spins_standard_binary": 172,
+      "aux_vars_unary": 123,
+      "aux_vars_binary": 82,
+      "spin_overhead_unary_pct": 136.7,
+      "spin_overhead_binary_pct": 91.1
+    }
+  },
+  {
+    "code": "QCC_90_8_10",
+    "N": 90,
+    "K": 8,
+    "D": 10.0,
+    "noise_p": 0.02,
+    "shots": 256,
+    "decoders": {
+      "qubo_sa": {
+        "status": "ok",
+        "alpha_actual": 5.7,
+        "init_ms": 2.02,
+        "total_decode_ms": 882889.33,
+        "per_shot_ms": 3448.786,
+        "logical_error_rate": 0.023438,
+        "avg_parity_violations": 0.15
+      },
+      "bp": {
+        "status": "ok",
+        "init_ms": 0.48,
+        "total_decode_ms": 6.0,
+        "per_shot_ms": 0.023,
+        "logical_error_rate": 0.011719
+      },
+      "bp_osd": {
+        "status": "ok",
+        "init_ms": 0.45,
+        "total_decode_ms": 6.5,
+        "per_shot_ms": 0.025,
+        "logical_error_rate": 0.003906
+      },
+      "bp_lsd": {
+        "status": "ok",
+        "init_ms": 0.35,
+        "total_decode_ms": 7.04,
+        "per_shot_ms": 0.028,
+        "logical_error_rate": 0.007812
+      }
+    },
+    "ising_machine": {
+      "num_spins": 90,
+      "num_checks": 41,
+      "num_couplers_modified_qubo": 246,
+      "nnz_H": 246,
+      "max_row_weight": 6,
+      "max_col_weight": 3,
+      "avg_row_weight": 6.0,
+      "xnor_tree_depth": 3,
+      "annealing_time_ns": 320.0,
+      "estimated_throughput_gbps": 0.2812,
+      "parity_units": 41,
+      "total_spins_standard_unary": 213,
+      "total_spins_standard_binary": 172,
+      "aux_vars_unary": 123,
+      "aux_vars_binary": 82,
+      "spin_overhead_unary_pct": 136.7,
+      "spin_overhead_binary_pct": 91.1
+    }
+  },
+  {
+    "code": "QCC_90_8_10",
+    "N": 90,
+    "K": 8,
+    "D": 10.0,
+    "noise_p": 0.05,
+    "shots": 256,
+    "decoders": {
+      "qubo_sa": {
+        "status": "ok",
+        "alpha_actual": 4.31,
+        "init_ms": 2.05,
+        "total_decode_ms": 984336.13,
+        "per_shot_ms": 3845.063,
+        "logical_error_rate": 0.210938,
+        "avg_parity_violations": 0.86
+      },
+      "bp": {
+        "status": "ok",
+        "init_ms": 0.4,
+        "total_decode_ms": 13.35,
+        "per_shot_ms": 0.052,
+        "logical_error_rate": 0.148438
+      },
+      "bp_osd": {
+        "status": "ok",
+        "init_ms": 0.46,
+        "total_decode_ms": 18.57,
+        "per_shot_ms": 0.073,
+        "logical_error_rate": 0.054688
+      },
+      "bp_lsd": {
+        "status": "ok",
+        "init_ms": 0.38,
+        "total_decode_ms": 19.44,
+        "per_shot_ms": 0.076,
+        "logical_error_rate": 0.105469
+      }
+    },
+    "ising_machine": {
+      "num_spins": 90,
+      "num_checks": 41,
+      "num_couplers_modified_qubo": 246,
+      "nnz_H": 246,
+      "max_row_weight": 6,
+      "max_col_weight": 3,
+      "avg_row_weight": 6.0,
+      "xnor_tree_depth": 3,
+      "annealing_time_ns": 320.0,
+      "estimated_throughput_gbps": 0.2812,
+      "parity_units": 41,
+      "total_spins_standard_unary": 213,
+      "total_spins_standard_binary": 172,
+      "aux_vars_unary": 123,
+      "aux_vars_binary": 82,
+      "spin_overhead_unary_pct": 136.7,
+      "spin_overhead_binary_pct": 91.1
+    }
+  },
+  {
+    "code": "QCC_108_8_10",
+    "N": 108,
+    "K": 8,
+    "D": 10.0,
+    "noise_p": 0.005,
+    "shots": 256,
+    "decoders": {
+      "qubo_sa": {
+        "status": "ok",
+        "alpha_actual": 7.62,
+        "init_ms": 2.11,
+        "total_decode_ms": 1243590.76,
+        "per_shot_ms": 4857.776,
+        "logical_error_rate": 0.011719,
+        "avg_parity_violations": 0.02
+      },
+      "bp": {
+        "status": "ok",
+        "init_ms": 0.45,
+        "total_decode_ms": 4.33,
+        "per_shot_ms": 0.017,
+        "logical_error_rate": 0.0
+      },
+      "bp_osd": {
+        "status": "ok",
+        "init_ms": 0.59,
+        "total_decode_ms": 4.2,
+        "per_shot_ms": 0.016,
+        "logical_error_rate": 0.0
+      },
+      "bp_lsd": {
+        "status": "ok",
+        "init_ms": 0.44,
+        "total_decode_ms": 5.89,
+        "per_shot_ms": 0.023,
+        "logical_error_rate": 0.0
+      }
+    },
+    "ising_machine": {
+      "num_spins": 108,
+      "num_checks": 50,
+      "num_couplers_modified_qubo": 300,
+      "nnz_H": 300,
+      "max_row_weight": 6,
+      "max_col_weight": 3,
+      "avg_row_weight": 6.0,
+      "xnor_tree_depth": 3,
+      "annealing_time_ns": 320.0,
+      "estimated_throughput_gbps": 0.3375,
+      "parity_units": 50,
+      "total_spins_standard_unary": 258,
+      "total_spins_standard_binary": 208,
+      "aux_vars_unary": 150,
+      "aux_vars_binary": 100,
+      "spin_overhead_unary_pct": 138.9,
+      "spin_overhead_binary_pct": 92.6
+    }
+  },
+  {
+    "code": "QCC_108_8_10",
+    "N": 108,
+    "K": 8,
+    "D": 10.0,
+    "noise_p": 0.01,
+    "shots": 256,
+    "decoders": {
+      "qubo_sa": {
+        "status": "ok",
+        "alpha_actual": 6.62,
+        "init_ms": 2.47,
+        "total_decode_ms": 1230946.91,
+        "per_shot_ms": 4808.386,
+        "logical_error_rate": 0.023438,
+        "avg_parity_violations": 0.04
+      },
+      "bp": {
+        "status": "ok",
+        "init_ms": 0.51,
+        "total_decode_ms": 5.09,
+        "per_shot_ms": 0.02,
+        "logical_error_rate": 0.0
+      },
+      "bp_osd": {
+        "status": "ok",
+        "init_ms": 0.58,
+        "total_decode_ms": 5.09,
+        "per_shot_ms": 0.02,
+        "logical_error_rate": 0.0
+      },
+      "bp_lsd": {
+        "status": "ok",
+        "init_ms": 0.44,
+        "total_decode_ms": 6.12,
+        "per_shot_ms": 0.024,
+        "logical_error_rate": 0.0
+      }
+    },
+    "ising_machine": {
+      "num_spins": 108,
+      "num_checks": 50,
+      "num_couplers_modified_qubo": 300,
+      "nnz_H": 300,
+      "max_row_weight": 6,
+      "max_col_weight": 3,
+      "avg_row_weight": 6.0,
+      "xnor_tree_depth": 3,
+      "annealing_time_ns": 320.0,
+      "estimated_throughput_gbps": 0.3375,
+      "parity_units": 50,
+      "total_spins_standard_unary": 258,
+      "total_spins_standard_binary": 208,
+      "aux_vars_unary": 150,
+      "aux_vars_binary": 100,
+      "spin_overhead_unary_pct": 138.9,
+      "spin_overhead_binary_pct": 92.6
+    }
+  },
+  {
+    "code": "QCC_108_8_10",
+    "N": 108,
+    "K": 8,
+    "D": 10.0,
+    "noise_p": 0.02,
+    "shots": 256,
+    "decoders": {
+      "qubo_sa": {
+        "status": "ok",
+        "alpha_actual": 5.6,
+        "init_ms": 2.46,
+        "total_decode_ms": 1227834.08,
+        "per_shot_ms": 4796.227,
+        "logical_error_rate": 0.039062,
+        "avg_parity_violations": 0.08
+      },
+      "bp": {
+        "status": "ok",
+        "init_ms": 0.5,
+        "total_decode_ms": 6.73,
+        "per_shot_ms": 0.026,
+        "logical_error_rate": 0.0
+      },
+      "bp_osd": {
+        "status": "ok",
+        "init_ms": 0.83,
+        "total_decode_ms": 6.72,
+        "per_shot_ms": 0.026,
+        "logical_error_rate": 0.0
+      },
+      "bp_lsd": {
+        "status": "ok",
+        "init_ms": 0.5,
+        "total_decode_ms": 7.02,
+        "per_shot_ms": 0.027,
+        "logical_error_rate": 0.0
+      }
+    },
+    "ising_machine": {
+      "num_spins": 108,
+      "num_checks": 50,
+      "num_couplers_modified_qubo": 300,
+      "nnz_H": 300,
+      "max_row_weight": 6,
+      "max_col_weight": 3,
+      "avg_row_weight": 6.0,
+      "xnor_tree_depth": 3,
+      "annealing_time_ns": 320.0,
+      "estimated_throughput_gbps": 0.3375,
+      "parity_units": 50,
+      "total_spins_standard_unary": 258,
+      "total_spins_standard_binary": 208,
+      "aux_vars_unary": 150,
+      "aux_vars_binary": 100,
+      "spin_overhead_unary_pct": 138.9,
+      "spin_overhead_binary_pct": 92.6
+    }
+  },
+  {
+    "code": "QCC_108_8_10",
+    "N": 108,
+    "K": 8,
+    "D": 10.0,
+    "noise_p": 0.05,
+    "shots": 256,
+    "decoders": {
+      "qubo_sa": {
+        "status": "ok",
+        "alpha_actual": 4.24,
+        "init_ms": 2.46,
+        "total_decode_ms": 1175231.37,
+        "per_shot_ms": 4590.748,
+        "logical_error_rate": 0.261719,
+        "avg_parity_violations": 1.0
+      },
+      "bp": {
+        "status": "ok",
+        "init_ms": 0.52,
+        "total_decode_ms": 19.52,
+        "per_shot_ms": 0.076,
+        "logical_error_rate": 0.171875
+      },
+      "bp_osd": {
+        "status": "ok",
+        "init_ms": 0.54,
+        "total_decode_ms": 30.12,
+        "per_shot_ms": 0.118,
+        "logical_error_rate": 0.066406
+      },
+      "bp_lsd": {
+        "status": "ok",
+        "init_ms": 0.47,
+        "total_decode_ms": 31.2,
+        "per_shot_ms": 0.122,
+        "logical_error_rate": 0.121094
+      }
+    },
+    "ising_machine": {
+      "num_spins": 108,
+      "num_checks": 50,
+      "num_couplers_modified_qubo": 300,
+      "nnz_H": 300,
+      "max_row_weight": 6,
+      "max_col_weight": 3,
+      "avg_row_weight": 6.0,
+      "xnor_tree_depth": 3,
+      "annealing_time_ns": 320.0,
+      "estimated_throughput_gbps": 0.3375,
+      "parity_units": 50,
+      "total_spins_standard_unary": 258,
+      "total_spins_standard_binary": 208,
+      "aux_vars_unary": 150,
+      "aux_vars_binary": 100,
+      "spin_overhead_unary_pct": 138.9,
+      "spin_overhead_binary_pct": 92.6
+    }
+  },
+  {
+    "code": "QCC_144_12_12",
+    "N": 144,
+    "K": 12,
+    "D": 12.0,
+    "noise_p": 0.005,
+    "shots": 256,
+    "decoders": {
+      "qubo_sa": {
+        "status": "ok",
+        "alpha_actual": 7.7,
+        "init_ms": 3.95,
+        "total_decode_ms": 1653272.11,
+        "per_shot_ms": 6458.094,
+        "logical_error_rate": 0.011719,
+        "avg_parity_violations": 0.03
+      },
+      "bp": {
+        "status": "ok",
+        "init_ms": 0.54,
+        "total_decode_ms": 5.99,
+        "per_shot_ms": 0.023,
+        "logical_error_rate": 0.0
+      },
+      "bp_osd": {
+        "status": "ok",
+        "init_ms": 0.59,
+        "total_decode_ms": 5.94,
+        "per_shot_ms": 0.023,
+        "logical_error_rate": 0.0
+      },
+      "bp_lsd": {
+        "status": "ok",
+        "init_ms": 0.44,
+        "total_decode_ms": 7.71,
+        "per_shot_ms": 0.03,
+        "logical_error_rate": 0.0
+      }
+    },
+    "ising_machine": {
+      "num_spins": 144,
+      "num_checks": 66,
+      "num_couplers_modified_qubo": 396,
+      "nnz_H": 396,
+      "max_row_weight": 6,
+      "max_col_weight": 3,
+      "avg_row_weight": 6.0,
+      "xnor_tree_depth": 3,
+      "annealing_time_ns": 320.0,
+      "estimated_throughput_gbps": 0.45,
+      "parity_units": 66,
+      "total_spins_standard_unary": 342,
+      "total_spins_standard_binary": 276,
+      "aux_vars_unary": 198,
+      "aux_vars_binary": 132,
+      "spin_overhead_unary_pct": 137.5,
+      "spin_overhead_binary_pct": 91.7
+    }
+  },
+  {
+    "code": "QCC_144_12_12",
+    "N": 144,
+    "K": 12,
+    "D": 12.0,
+    "noise_p": 0.01,
+    "shots": 256,
+    "decoders": {
+      "qubo_sa": {
+        "status": "ok",
+        "alpha_actual": 6.68,
+        "init_ms": 4.0,
+        "total_decode_ms": 1611913.16,
+        "per_shot_ms": 6296.536,
+        "logical_error_rate": 0.03125,
+        "avg_parity_violations": 0.07
+      },
+      "bp": {
+        "status": "ok",
+        "init_ms": 0.53,
+        "total_decode_ms": 7.31,
+        "per_shot_ms": 0.029,
+        "logical_error_rate": 0.0
+      },
+      "bp_osd": {
+        "status": "ok",
+        "init_ms": 0.62,
+        "total_decode_ms": 7.24,
+        "per_shot_ms": 0.028,
+        "logical_error_rate": 0.0
+      },
+      "bp_lsd": {
+        "status": "ok",
+        "init_ms": 0.42,
+        "total_decode_ms": 8.07,
+        "per_shot_ms": 0.032,
+        "logical_error_rate": 0.0
+      }
+    },
+    "ising_machine": {
+      "num_spins": 144,
+      "num_checks": 66,
+      "num_couplers_modified_qubo": 396,
+      "nnz_H": 396,
+      "max_row_weight": 6,
+      "max_col_weight": 3,
+      "avg_row_weight": 6.0,
+      "xnor_tree_depth": 3,
+      "annealing_time_ns": 320.0,
+      "estimated_throughput_gbps": 0.45,
+      "parity_units": 66,
+      "total_spins_standard_unary": 342,
+      "total_spins_standard_binary": 276,
+      "aux_vars_unary": 198,
+      "aux_vars_binary": 132,
+      "spin_overhead_unary_pct": 137.5,
+      "spin_overhead_binary_pct": 91.7
+    }
+  },
+  {
+    "code": "QCC_144_12_12",
+    "N": 144,
+    "K": 12,
+    "D": 12.0,
+    "noise_p": 0.02,
+    "shots": 256,
+    "decoders": {
+      "qubo_sa": {
+        "status": "ok",
+        "alpha_actual": 5.66,
+        "init_ms": 3.96,
+        "total_decode_ms": 1560191.61,
+        "per_shot_ms": 6094.498,
+        "logical_error_rate": 0.085938,
+        "avg_parity_violations": 0.26
+      },
+      "bp": {
+        "status": "ok",
+        "init_ms": 0.56,
+        "total_decode_ms": 9.69,
+        "per_shot_ms": 0.038,
+        "logical_error_rate": 0.003906
+      },
+      "bp_osd": {
+        "status": "ok",
+        "init_ms": 0.67,
+        "total_decode_ms": 9.95,
+        "per_shot_ms": 0.039,
+        "logical_error_rate": 0.003906
+      },
+      "bp_lsd": {
+        "status": "ok",
+        "init_ms": 0.54,
+        "total_decode_ms": 10.28,
+        "per_shot_ms": 0.04,
+        "logical_error_rate": 0.003906
+      }
+    },
+    "ising_machine": {
+      "num_spins": 144,
+      "num_checks": 66,
+      "num_couplers_modified_qubo": 396,
+      "nnz_H": 396,
+      "max_row_weight": 6,
+      "max_col_weight": 3,
+      "avg_row_weight": 6.0,
+      "xnor_tree_depth": 3,
+      "annealing_time_ns": 320.0,
+      "estimated_throughput_gbps": 0.45,
+      "parity_units": 66,
+      "total_spins_standard_unary": 342,
+      "total_spins_standard_binary": 276,
+      "aux_vars_unary": 198,
+      "aux_vars_binary": 132,
+      "spin_overhead_unary_pct": 137.5,
+      "spin_overhead_binary_pct": 91.7
+    }
+  },
+  {
+    "code": "QCC_144_12_12",
+    "N": 144,
+    "K": 12,
+    "D": 12.0,
+    "noise_p": 0.05,
+    "shots": 256,
+    "decoders": {
+      "qubo_sa": {
+        "status": "ok",
+        "alpha_actual": 4.28,
+        "init_ms": 3.93,
+        "total_decode_ms": 1532306.75,
+        "per_shot_ms": 5985.573,
+        "logical_error_rate": 0.386719,
+        "avg_parity_violations": 1.75
+      },
+      "bp": {
+        "status": "ok",
+        "init_ms": 0.55,
+        "total_decode_ms": 27.9,
+        "per_shot_ms": 0.109,
+        "logical_error_rate": 0.226562
+      },
+      "bp_osd": {
+        "status": "ok",
+        "init_ms": 0.7,
+        "total_decode_ms": 48.4,
+        "per_shot_ms": 0.189,
+        "logical_error_rate": 0.089844
+      },
+      "bp_lsd": {
+        "status": "ok",
+        "init_ms": 0.57,
+        "total_decode_ms": 47.15,
+        "per_shot_ms": 0.184,
+        "logical_error_rate": 0.144531
+      }
+    },
+    "ising_machine": {
+      "num_spins": 144,
+      "num_checks": 66,
+      "num_couplers_modified_qubo": 396,
+      "nnz_H": 396,
+      "max_row_weight": 6,
+      "max_col_weight": 3,
+      "avg_row_weight": 6.0,
+      "xnor_tree_depth": 3,
+      "annealing_time_ns": 320.0,
+      "estimated_throughput_gbps": 0.45,
+      "parity_units": 66,
+      "total_spins_standard_unary": 342,
+      "total_spins_standard_binary": 276,
+      "aux_vars_unary": 198,
+      "aux_vars_binary": 132,
+      "spin_overhead_unary_pct": 137.5,
+      "spin_overhead_binary_pct": 91.7
+    }
+  }
+]

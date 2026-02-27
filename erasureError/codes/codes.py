@@ -148,7 +148,7 @@ def hypergraph_product(h1, h2, name=None):
 def hamming_code(rank):
     """
     Outputs a Hamming code parity check matrix given its rank.
-    
+
     Parameters
     ----------
     rank: int
@@ -157,9 +157,9 @@ def hamming_code(rank):
     Returns
     -------
     numpy.ndarray
-        The Hamming code parity check matrix in numpy.ndarray format. 
+        The Hamming code parity check matrix in numpy.ndarray format.
 
-    
+
     Example
     -------
     >>> print(hamming_code(3))
@@ -211,7 +211,7 @@ def rep_code(distance):
 def ring_code(distance):
     """
     Outputs ring code (closed-loop repetion code) parity check matrix
-    for a specified distance. 
+    for a specified distance.
 
     Parameters
     ----------
@@ -733,7 +733,8 @@ def gen_BB_code(N):
             28, 14, [26], [6, 8], [9,20], [7]
         )  # 784
     else:
-        print("unsupported N")
+        raise ValueError(f"Unsupported BB code N={N}. "
+                         f"Supported: 32, 72, 90, 108, 144, 288, 360, 756, 784.")
     return bb_code
 
 def gen_HP_ring_code(d1,d2):
@@ -784,4 +785,3 @@ def get_benchmark_code(name):
         return hypergraph_product(code1, code2)
     else:
         raise ValueError(f"Unsupported code: {name}")
-

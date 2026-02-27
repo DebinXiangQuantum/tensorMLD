@@ -51,22 +51,35 @@ def _load_torch_payload(path: Path) -> tuple[np.ndarray, np.ndarray, np.ndarray]
 
 def split_gnd_stabilizer_to_hx_hz(
         g_stabilizer: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-    """Convert GND's Pauli stabilizer representation to CSS (Hx, Hz).
+    """Convert GND's Pauli stabilizer representation to (Hx, Hz).
 
     GND encodes Pauli operators as integers per qubit:
       0: I, 1: X, 2: Z, 3: Y.
+
+    Extracts X-component and Z-component from ALL generators.
+    For X-error detection we need the Z-component of every stabilizer
+    (syndrome_i = Z_component(g_i) · error mod 2), and vice versa.
+
+    GND's row reduction (mod2.indep) may produce mixed generators
+    containing Y operators.  The X- and Z-components of such generators
+    must both be preserved; dropping the Z-component of a Y-containing
+    row silently reduces the effective code distance.
     """
     g = np.asarray(g_stabilizer, dtype=np.int64)
     if g.ndim != 2:
         raise ValueError(
             f"g_stabilizer must be a 2D matrix, got shape={g.shape}.")
 
-    x_rows = np.any((g % 2) != 0, axis=1)
-    z_rows = ~x_rows
-
     n = g.shape[1]
-    hx = (g[x_rows] % 2).astype(np.int64, copy=False)
-    hz = ((g[z_rows] // 2) % 2).astype(np.int64, copy=False)
+    # X-component: 1 for X(1) or Y(3), 0 for I(0) or Z(2)
+    hx_all = (g % 2).astype(np.int64)
+    # Z-component: 1 for Z(2) or Y(3), 0 for I(0) or X(1)
+    hz_all = ((g >> 1) & 1).astype(np.int64)
+
+    # Remove all-zero rows (generators with no X / no Z component)
+    hx = hx_all[np.any(hx_all, axis=1)]
+    hz = hz_all[np.any(hz_all, axis=1)]
+
     if hx.size == 0:
         hx = np.zeros((0, n), dtype=np.int64)
     if hz.size == 0:
@@ -99,6 +112,18 @@ def _resolve_ldpc_file_path(
     return candidates[0] / filename
 
 
+def _extract_gnd_logicals(
+    logical_opt: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Extract lx and lz from GND's Pauli-encoded logical operators."""
+    l = np.asarray(logical_opt, dtype=np.int64)
+    if l.ndim == 1:
+        l = l.reshape(1, -1)
+    lx = (l % 2).astype(np.int64)
+    lz = ((l >> 1) & 1).astype(np.int64)
+    return lx, lz
+
+
 def load_ldpc_css_code(
     n: int,
     k: int,
@@ -118,20 +143,36 @@ def load_ldpc_css_code(
     if not path.exists():
         raise FileNotFoundError(path)
 
-    g_stabilizer, _, _ = _load_torch_payload(path)
+    g_stabilizer, logical_opt, _ = _load_torch_payload(path)
     hx, hz = split_gnd_stabilizer_to_hx_hz(g_stabilizer)
 
     code_name = (
         name if name is not None else
         f"{c_type.upper()}_n{int(n)}_k{int(k)}_d{int(d)}_seed{int(seed)}")
+    # GND's row reduction may produce mixed (Y-containing) generators,
+    # so the extracted hx/hz may not satisfy the strict CSS constraint
+    # hx @ hz.T = 0 mod 2.  Disable the check.
     code = css_code(
         hx=hx,
         hz=hz,
         code_distance=float(d),
         name=code_name,
         name_prefix=c_type.upper(),
-        check_css=True,
+        check_css=False,
     )
+
+    # Override logicals with GND's stored logical operators.
+    # css_code.compute_logicals() may produce incorrect results when
+    # hx/hz have overlapping rows from mixed generators.
+    gnd_lx, gnd_lz = _extract_gnd_logicals(logical_opt)
+    # Keep only non-trivial rows (rows with at least one non-zero entry)
+    gnd_lx = gnd_lx[np.any(gnd_lx, axis=1)]
+    gnd_lz = gnd_lz[np.any(gnd_lz, axis=1)]
+    if gnd_lz.shape[0] > 0 and gnd_lz.shape[1] == code.N:
+        code.lz = gnd_lz
+        code.K = int(gnd_lz.shape[0])
+    if gnd_lx.shape[0] > 0 and gnd_lx.shape[1] == code.N:
+        code.lx = gnd_lx
 
     if strict_params:
         if int(code.N) != int(n):
@@ -146,35 +187,45 @@ def load_ldpc_css_code(
     return code
 
 
-def tb_25_3_4(seed: int = 0,
-              code_dir: str | Path | None = None,
-              strict_params: bool = True) -> css_code:
+def ldpc_25_3_4(seed: int = 0,
+                code_dir: str | Path | None = None,
+                strict_params: bool = True) -> css_code:
+    """Load LDPC [[25,3,4]] from GND ldpc file."""
     return load_ldpc_css_code(
         n=25,
         k=3,
         d=4,
         seed=seed,
         code_dir=code_dir,
+        name="LDPC_25_3_4",
         strict_params=strict_params,
     )
 
 
-def tb_30_6_4(seed: int = 0,
-              code_dir: str | Path | None = None,
-              strict_params: bool = True) -> css_code:
+def ldpc_30_6_4(seed: int = 0,
+                code_dir: str | Path | None = None,
+                strict_params: bool = True) -> css_code:
+    """Load LDPC [[30,6,4]] from GND ldpc file."""
     return load_ldpc_css_code(
         n=30,
         k=6,
         d=4,
         seed=seed,
         code_dir=code_dir,
+        name="LDPC_30_6_4",
         strict_params=strict_params,
     )
 
 
-def tb_48_4_8(seed: int = 0,
-              code_dir: str | Path | None = None,
-              strict_params: bool = True) -> css_code:
+# Backward compatibility aliases
+tb_25_3_4 = ldpc_25_3_4
+tb_30_6_4 = ldpc_30_6_4
+
+
+def tor_50_2_5(seed: int = 0,
+               code_dir: str | Path | None = None,
+               strict_params: bool = True) -> css_code:
+    """Load toric [[50,2,5]] from GND tor file."""
     return load_ldpc_css_code(
         n=50,
         k=2,
@@ -182,14 +233,14 @@ def tb_48_4_8(seed: int = 0,
         seed=seed,
         code_dir=code_dir,
         c_type="tor",
-        name="TB_48_4_8",
+        name="TOR_50_2_5",
         strict_params=strict_params,
     )
 
 
-def bb_18_4_4(seed: int = 0,
-              code_dir: str | Path | None = None,
-              strict_params: bool = True) -> css_code:
+def qcc_18_4_4(seed: int = 0,
+               code_dir: str | Path | None = None,
+               strict_params: bool = True) -> css_code:
     """Load BB [[18,4,4]] from GND qcc file."""
     return load_ldpc_css_code(
         n=18,
@@ -198,14 +249,14 @@ def bb_18_4_4(seed: int = 0,
         seed=seed,
         code_dir=code_dir,
         c_type="qcc",
-        name="BB_18_4_4",
+        name="QCC_18_4_4",
         strict_params=strict_params,
     )
 
 
-def bb_60_8_4(seed: int = 0,
-              code_dir: str | Path | None = None,
-              strict_params: bool = True) -> css_code:
+def qcc_60_8_4(seed: int = 0,
+               code_dir: str | Path | None = None,
+               strict_params: bool = True) -> css_code:
     """Load BB [[60,8,4]] from GND qcc file."""
     return load_ldpc_css_code(
         n=60,
@@ -214,14 +265,14 @@ def bb_60_8_4(seed: int = 0,
         seed=seed,
         code_dir=code_dir,
         c_type="qcc",
-        name="BB_60_8_4",
+        name="QCC_60_8_4",
         strict_params=strict_params,
     )
 
 
-def bb_72_12_6(seed: int = 0,
-               code_dir: str | Path | None = None,
-               strict_params: bool = True) -> css_code:
+def qcc_72_12_6(seed: int = 0,
+                code_dir: str | Path | None = None,
+                strict_params: bool = True) -> css_code:
     """Load BB [[72,12,6]] from GND qcc file."""
     return load_ldpc_css_code(
         n=72,
@@ -230,6 +281,54 @@ def bb_72_12_6(seed: int = 0,
         seed=seed,
         code_dir=code_dir,
         c_type="qcc",
-        name="BB_72_12_6",
+        name="QCC_72_12_6",
+        strict_params=strict_params,
+    )
+
+
+def qcc_90_8_10(seed: int = 0,
+                code_dir: str | Path | None = None,
+                strict_params: bool = True) -> css_code:
+    """Load BB [[90,8,10]] from GND qcc file."""
+    return load_ldpc_css_code(
+        n=90,
+        k=8,
+        d=10,
+        seed=seed,
+        code_dir=code_dir,
+        c_type="qcc",
+        name="QCC_90_8_10",
+        strict_params=strict_params,
+    )
+
+
+def qcc_108_8_10(seed: int = 0,
+                 code_dir: str | Path | None = None,
+                 strict_params: bool = True) -> css_code:
+    """Load BB [[108,8,10]] from GND qcc file."""
+    return load_ldpc_css_code(
+        n=108,
+        k=8,
+        d=10,
+        seed=seed,
+        code_dir=code_dir,
+        c_type="qcc",
+        name="QCC_108_8_10",
+        strict_params=strict_params,
+    )
+
+
+def qcc_144_12_12(seed: int = 0,
+                  code_dir: str | Path | None = None,
+                  strict_params: bool = True) -> css_code:
+    """Load BB [[144,12,12]] from GND qcc file."""
+    return load_ldpc_css_code(
+        n=144,
+        k=12,
+        d=12,
+        seed=seed,
+        code_dir=code_dir,
+        c_type="qcc",
+        name="QCC_144_12_12",
         strict_params=strict_params,
     )

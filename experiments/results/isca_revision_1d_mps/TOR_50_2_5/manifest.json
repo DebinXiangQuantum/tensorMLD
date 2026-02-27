@@ -1,0 +1,5378 @@
+{
+  "name": "TOR_50_2_5",
+  "K": 2,
+  "chains": [
+    {
+      "logical_idx": 0,
+      "status": "ok",
+      "num_sites": 25,
+      "num_syndrome_indices": 24,
+      "num_logical_indices": 1,
+      "compile_ms": 5195.071,
+      "trunc_error": 0.3287812904879292,
+      "offline_stats": {
+        "initial_nodes": 247,
+        "initial_edges": 273,
+        "preserved_target": 25,
+        "steps": 222,
+        "truncation_error": 0.3287812904879292,
+        "max_bond_dim": 2,
+        "active_nodes": 25,
+        "active_edges": 51,
+        "chi": 32,
+        "step_errors": [
+          {
+            "step": 1,
+            "edge": [
+              19,
+              175
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 246
+          },
+          {
+            "step": 2,
+            "edge": [
+              79,
+              165
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 245
+          },
+          {
+            "step": 3,
+            "edge": [
+              82,
+              170
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 244
+          },
+          {
+            "step": 4,
+            "edge": [
+              94,
+              169
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 243
+          },
+          {
+            "step": 5,
+            "edge": [
+              182,
+              127
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 242
+          },
+          {
+            "step": 6,
+            "edge": [
+              5,
+              182
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 241
+          },
+          {
+            "step": 7,
+            "edge": [
+              5,
+              8
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 240
+          },
+          {
+            "step": 8,
+            "edge": [
+              186,
+              128
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 239
+          },
+          {
+            "step": 9,
+            "edge": [
+              9,
+              186
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 238
+          },
+          {
+            "step": 10,
+            "edge": [
+              9,
+              12
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 237
+          },
+          {
+            "step": 11,
+            "edge": [
+              190,
+              129
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 236
+          },
+          {
+            "step": 12,
+            "edge": [
+              13,
+              190
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 235
+          },
+          {
+            "step": 13,
+            "edge": [
+              13,
+              16
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 234
+          },
+          {
+            "step": 14,
+            "edge": [
+              178,
+              130
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 233
+          },
+          {
+            "step": 15,
+            "edge": [
+              1,
+              178
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 232
+          },
+          {
+            "step": 16,
+            "edge": [
+              1,
+              17
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 231
+          },
+          {
+            "step": 17,
+            "edge": [
+              179,
+              131
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 230
+          },
+          {
+            "step": 18,
+            "edge": [
+              2,
+              179
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 229
+          },
+          {
+            "step": 19,
+            "edge": [
+              2,
+              20
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 228
+          },
+          {
+            "step": 20,
+            "edge": [
+              183,
+              132
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 227
+          },
+          {
+            "step": 21,
+            "edge": [
+              6,
+              183
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 226
+          },
+          {
+            "step": 22,
+            "edge": [
+              6,
+              24
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 225
+          },
+          {
+            "step": 23,
+            "edge": [
+              187,
+              133
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 224
+          },
+          {
+            "step": 24,
+            "edge": [
+              10,
+              187
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 223
+          },
+          {
+            "step": 25,
+            "edge": [
+              10,
+              28
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 222
+          },
+          {
+            "step": 26,
+            "edge": [
+              191,
+              134
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 221
+          },
+          {
+            "step": 27,
+            "edge": [
+              14,
+              191
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 220
+          },
+          {
+            "step": 28,
+            "edge": [
+              14,
+              32
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 219
+          },
+          {
+            "step": 29,
+            "edge": [
+              194,
+              135
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 218
+          },
+          {
+            "step": 30,
+            "edge": [
+              18,
+              194
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 217
+          },
+          {
+            "step": 31,
+            "edge": [
+              18,
+              36
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 216
+          },
+          {
+            "step": 32,
+            "edge": [
+              200,
+              137
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 215
+          },
+          {
+            "step": 33,
+            "edge": [
+              26,
+              200
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 214
+          },
+          {
+            "step": 34,
+            "edge": [
+              26,
+              29
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 213
+          },
+          {
+            "step": 35,
+            "edge": [
+              203,
+              138
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 212
+          },
+          {
+            "step": 36,
+            "edge": [
+              30,
+              203
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 211
+          },
+          {
+            "step": 37,
+            "edge": [
+              30,
+              33
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 210
+          },
+          {
+            "step": 38,
+            "edge": [
+              206,
+              139
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 209
+          },
+          {
+            "step": 39,
+            "edge": [
+              34,
+              206
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 208
+          },
+          {
+            "step": 40,
+            "edge": [
+              34,
+              37
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 207
+          },
+          {
+            "step": 41,
+            "edge": [
+              197,
+              140
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 206
+          },
+          {
+            "step": 42,
+            "edge": [
+              22,
+              197
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 205
+          },
+          {
+            "step": 43,
+            "edge": [
+              22,
+              38
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 204
+          },
+          {
+            "step": 44,
+            "edge": [
+              198,
+              141
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 203
+          },
+          {
+            "step": 45,
+            "edge": [
+              23,
+              198
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 202
+          },
+          {
+            "step": 46,
+            "edge": [
+              23,
+              40
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 201
+          },
+          {
+            "step": 47,
+            "edge": [
+              201,
+              142
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 200
+          },
+          {
+            "step": 48,
+            "edge": [
+              27,
+              201
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 199
+          },
+          {
+            "step": 49,
+            "edge": [
+              27,
+              44
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 198
+          },
+          {
+            "step": 50,
+            "edge": [
+              204,
+              143
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 197
+          },
+          {
+            "step": 51,
+            "edge": [
+              31,
+              204
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 196
+          },
+          {
+            "step": 52,
+            "edge": [
+              31,
+              48
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 195
+          },
+          {
+            "step": 53,
+            "edge": [
+              207,
+              144
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 194
+          },
+          {
+            "step": 54,
+            "edge": [
+              35,
+              207
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 193
+          },
+          {
+            "step": 55,
+            "edge": [
+              35,
+              52
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 192
+          },
+          {
+            "step": 56,
+            "edge": [
+              209,
+              145
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 191
+          },
+          {
+            "step": 57,
+            "edge": [
+              39,
+              209
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 190
+          },
+          {
+            "step": 58,
+            "edge": [
+              39,
+              56
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 189
+          },
+          {
+            "step": 59,
+            "edge": [
+              215,
+              147
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 188
+          },
+          {
+            "step": 60,
+            "edge": [
+              46,
+              215
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 187
+          },
+          {
+            "step": 61,
+            "edge": [
+              46,
+              49
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 186
+          },
+          {
+            "step": 62,
+            "edge": [
+              218,
+              148
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 185
+          },
+          {
+            "step": 63,
+            "edge": [
+              50,
+              218
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 184
+          },
+          {
+            "step": 64,
+            "edge": [
+              50,
+              53
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 183
+          },
+          {
+            "step": 65,
+            "edge": [
+              221,
+              149
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 182
+          },
+          {
+            "step": 66,
+            "edge": [
+              54,
+              221
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 181
+          },
+          {
+            "step": 67,
+            "edge": [
+              54,
+              57
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 180
+          },
+          {
+            "step": 68,
+            "edge": [
+              212,
+              150
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 179
+          },
+          {
+            "step": 69,
+            "edge": [
+              42,
+              212
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 178
+          },
+          {
+            "step": 70,
+            "edge": [
+              42,
+              58
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 177
+          },
+          {
+            "step": 71,
+            "edge": [
+              213,
+              151
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 176
+          },
+          {
+            "step": 72,
+            "edge": [
+              43,
+              213
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 175
+          },
+          {
+            "step": 73,
+            "edge": [
+              43,
+              60
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 174
+          },
+          {
+            "step": 74,
+            "edge": [
+              216,
+              152
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 173
+          },
+          {
+            "step": 75,
+            "edge": [
+              47,
+              216
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 172
+          },
+          {
+            "step": 76,
+            "edge": [
+              47,
+              64
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 171
+          },
+          {
+            "step": 77,
+            "edge": [
+              219,
+              153
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 170
+          },
+          {
+            "step": 78,
+            "edge": [
+              51,
+              219
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 169
+          },
+          {
+            "step": 79,
+            "edge": [
+              51,
+              68
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 168
+          },
+          {
+            "step": 80,
+            "edge": [
+              222,
+              154
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 167
+          },
+          {
+            "step": 81,
+            "edge": [
+              55,
+              222
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 166
+          },
+          {
+            "step": 82,
+            "edge": [
+              55,
+              72
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 165
+          },
+          {
+            "step": 83,
+            "edge": [
+              224,
+              155
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 164
+          },
+          {
+            "step": 84,
+            "edge": [
+              59,
+              224
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 163
+          },
+          {
+            "step": 85,
+            "edge": [
+              59,
+              76
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 162
+          },
+          {
+            "step": 86,
+            "edge": [
+              230,
+              157
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 161
+          },
+          {
+            "step": 87,
+            "edge": [
+              66,
+              230
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 160
+          },
+          {
+            "step": 88,
+            "edge": [
+              66,
+              69
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 159
+          },
+          {
+            "step": 89,
+            "edge": [
+              233,
+              158
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 158
+          },
+          {
+            "step": 90,
+            "edge": [
+              70,
+              233
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 157
+          },
+          {
+            "step": 91,
+            "edge": [
+              70,
+              73
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 156
+          },
+          {
+            "step": 92,
+            "edge": [
+              236,
+              159
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 155
+          },
+          {
+            "step": 93,
+            "edge": [
+              74,
+              236
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 154
+          },
+          {
+            "step": 94,
+            "edge": [
+              74,
+              77
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 153
+          },
+          {
+            "step": 95,
+            "edge": [
+              227,
+              160
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 152
+          },
+          {
+            "step": 96,
+            "edge": [
+              62,
+              227
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 151
+          },
+          {
+            "step": 97,
+            "edge": [
+              62,
+              78
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 150
+          },
+          {
+            "step": 98,
+            "edge": [
+              228,
+              161
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 149
+          },
+          {
+            "step": 99,
+            "edge": [
+              63,
+              228
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 148
+          },
+          {
+            "step": 100,
+            "edge": [
+              63,
+              80
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 147
+          },
+          {
+            "step": 101,
+            "edge": [
+              231,
+              162
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 146
+          },
+          {
+            "step": 102,
+            "edge": [
+              67,
+              231
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 145
+          },
+          {
+            "step": 103,
+            "edge": [
+              67,
+              84
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 144
+          },
+          {
+            "step": 104,
+            "edge": [
+              234,
+              163
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 143
+          },
+          {
+            "step": 105,
+            "edge": [
+              71,
+              234
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 142
+          },
+          {
+            "step": 106,
+            "edge": [
+              71,
+              88
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 141
+          },
+          {
+            "step": 107,
+            "edge": [
+              237,
+              164
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 140
+          },
+          {
+            "step": 108,
+            "edge": [
+              75,
+              237
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 139
+          },
+          {
+            "step": 109,
+            "edge": [
+              75,
+              92
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 138
+          },
+          {
+            "step": 110,
+            "edge": [
+              242,
+              167
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 137
+          },
+          {
+            "step": 111,
+            "edge": [
+              86,
+              242
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 136
+          },
+          {
+            "step": 112,
+            "edge": [
+              86,
+              89
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 135
+          },
+          {
+            "step": 113,
+            "edge": [
+              244,
+              168
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 134
+          },
+          {
+            "step": 114,
+            "edge": [
+              90,
+              244
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 133
+          },
+          {
+            "step": 115,
+            "edge": [
+              90,
+              93
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 132
+          },
+          {
+            "step": 116,
+            "edge": [
+              180,
+              171
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 131
+          },
+          {
+            "step": 117,
+            "edge": [
+              3,
+              180
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 130
+          },
+          {
+            "step": 118,
+            "edge": [
+              3,
+              83
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 129
+          },
+          {
+            "step": 119,
+            "edge": [
+              184,
+              172
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 128
+          },
+          {
+            "step": 120,
+            "edge": [
+              7,
+              184
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 127
+          },
+          {
+            "step": 121,
+            "edge": [
+              7,
+              87
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 126
+          },
+          {
+            "step": 122,
+            "edge": [
+              188,
+              173
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 125
+          },
+          {
+            "step": 123,
+            "edge": [
+              11,
+              188
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 124
+          },
+          {
+            "step": 124,
+            "edge": [
+              11,
+              91
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 123
+          },
+          {
+            "step": 125,
+            "edge": [
+              192,
+              174
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 122
+          },
+          {
+            "step": 126,
+            "edge": [
+              15,
+              192
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 121
+          },
+          {
+            "step": 127,
+            "edge": [
+              15,
+              95
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 120
+          },
+          {
+            "step": 128,
+            "edge": [
+              177,
+              126
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 119
+          },
+          {
+            "step": 129,
+            "edge": [
+              177,
+              0
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 118
+          },
+          {
+            "step": 130,
+            "edge": [
+              177,
+              4
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 117
+          },
+          {
+            "step": 131,
+            "edge": [
+              177,
+              96
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 116
+          },
+          {
+            "step": 132,
+            "edge": [
+              196,
+              136
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 115
+          },
+          {
+            "step": 133,
+            "edge": [
+              196,
+              21
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 114
+          },
+          {
+            "step": 134,
+            "edge": [
+              196,
+              25
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 113
+          },
+          {
+            "step": 135,
+            "edge": [
+              196,
+              97
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 112
+          },
+          {
+            "step": 136,
+            "edge": [
+              211,
+              146
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 111
+          },
+          {
+            "step": 137,
+            "edge": [
+              211,
+              41
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 110
+          },
+          {
+            "step": 138,
+            "edge": [
+              211,
+              45
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 109
+          },
+          {
+            "step": 139,
+            "edge": [
+              211,
+              98
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 108
+          },
+          {
+            "step": 140,
+            "edge": [
+              226,
+              156
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 107
+          },
+          {
+            "step": 141,
+            "edge": [
+              226,
+              61
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 106
+          },
+          {
+            "step": 142,
+            "edge": [
+              226,
+              65
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 105
+          },
+          {
+            "step": 143,
+            "edge": [
+              226,
+              99
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 104
+          },
+          {
+            "step": 144,
+            "edge": [
+              240,
+              166
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 103
+          },
+          {
+            "step": 145,
+            "edge": [
+              240,
+              81
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 102
+          },
+          {
+            "step": 146,
+            "edge": [
+              240,
+              85
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 101
+          },
+          {
+            "step": 147,
+            "edge": [
+              240,
+              100
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 100
+          },
+          {
+            "step": 148,
+            "edge": [
+              193,
+              19
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 99
+          },
+          {
+            "step": 149,
+            "edge": [
+              193,
+              1
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 98
+          },
+          {
+            "step": 150,
+            "edge": [
+              193,
+              13
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 97
+          },
+          {
+            "step": 151,
+            "edge": [
+              193,
+              18
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 96
+          },
+          {
+            "step": 152,
+            "edge": [
+              238,
+              79
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 95
+          },
+          {
+            "step": 153,
+            "edge": [
+              238,
+              59
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 94
+          },
+          {
+            "step": 154,
+            "edge": [
+              238,
+              62
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 93
+          },
+          {
+            "step": 155,
+            "edge": [
+              238,
+              74
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 92
+          },
+          {
+            "step": 156,
+            "edge": [
+              239,
+              82
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 91
+          },
+          {
+            "step": 157,
+            "edge": [
+              239,
+              3
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 90
+          },
+          {
+            "step": 158,
+            "edge": [
+              239,
+              63
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 89
+          },
+          {
+            "step": 159,
+            "edge": [
+              245,
+              94
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 88
+          },
+          {
+            "step": 160,
+            "edge": [
+              245,
+              15
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 87
+          },
+          {
+            "step": 161,
+            "edge": [
+              245,
+              75
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 86
+          },
+          {
+            "step": 162,
+            "edge": [
+              245,
+              90
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 85
+          },
+          {
+            "step": 163,
+            "edge": [
+              193,
+              106
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 84
+          },
+          {
+            "step": 164,
+            "edge": [
+              238,
+              121
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 83
+          },
+          {
+            "step": 165,
+            "edge": [
+              239,
+              122
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 82
+          },
+          {
+            "step": 166,
+            "edge": [
+              245,
+              125
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 81
+          },
+          {
+            "step": 167,
+            "edge": [
+              176,
+              2
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 80
+          },
+          {
+            "step": 168,
+            "edge": [
+              181,
+              5
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 79
+          },
+          {
+            "step": 169,
+            "edge": [
+              181,
+              6
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 78
+          },
+          {
+            "step": 170,
+            "edge": [
+              181,
+              7
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 77
+          },
+          {
+            "step": 171,
+            "edge": [
+              185,
+              9
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 76
+          },
+          {
+            "step": 172,
+            "edge": [
+              185,
+              10
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 75
+          },
+          {
+            "step": 173,
+            "edge": [
+              185,
+              11
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 74
+          },
+          {
+            "step": 174,
+            "edge": [
+              189,
+              14
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 73
+          },
+          {
+            "step": 175,
+            "edge": [
+              195,
+              22
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 72
+          },
+          {
+            "step": 176,
+            "edge": [
+              195,
+              23
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 71
+          },
+          {
+            "step": 177,
+            "edge": [
+              199,
+              26
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 70
+          },
+          {
+            "step": 178,
+            "edge": [
+              199,
+              27
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 69
+          },
+          {
+            "step": 179,
+            "edge": [
+              202,
+              30
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 68
+          },
+          {
+            "step": 180,
+            "edge": [
+              202,
+              31
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 67
+          },
+          {
+            "step": 181,
+            "edge": [
+              205,
+              34
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 66
+          },
+          {
+            "step": 182,
+            "edge": [
+              205,
+              35
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 65
+          },
+          {
+            "step": 183,
+            "edge": [
+              208,
+              39
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 64
+          },
+          {
+            "step": 184,
+            "edge": [
+              210,
+              42
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 63
+          },
+          {
+            "step": 185,
+            "edge": [
+              210,
+              43
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 62
+          },
+          {
+            "step": 186,
+            "edge": [
+              214,
+              46
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 61
+          },
+          {
+            "step": 187,
+            "edge": [
+              214,
+              47
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 60
+          },
+          {
+            "step": 188,
+            "edge": [
+              217,
+              50
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 59
+          },
+          {
+            "step": 189,
+            "edge": [
+              217,
+              51
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 58
+          },
+          {
+            "step": 190,
+            "edge": [
+              220,
+              54
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 57
+          },
+          {
+            "step": 191,
+            "edge": [
+              220,
+              55
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 56
+          },
+          {
+            "step": 192,
+            "edge": [
+              229,
+              66
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 55
+          },
+          {
+            "step": 193,
+            "edge": [
+              229,
+              67
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 54
+          },
+          {
+            "step": 194,
+            "edge": [
+              232,
+              70
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 53
+          },
+          {
+            "step": 195,
+            "edge": [
+              232,
+              71
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 52
+          },
+          {
+            "step": 196,
+            "edge": [
+              241,
+              86
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 51
+          },
+          {
+            "step": 197,
+            "edge": [
+              176,
+              102
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 50
+          },
+          {
+            "step": 198,
+            "edge": [
+              181,
+              103
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 49
+          },
+          {
+            "step": 199,
+            "edge": [
+              185,
+              104
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 48
+          },
+          {
+            "step": 200,
+            "edge": [
+              189,
+              105
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 47
+          },
+          {
+            "step": 201,
+            "edge": [
+              195,
+              107
+            ],
+            "eat_error": 2.8458428370808676e-18,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 2.8458428370808676e-18,
+            "active_nodes_after": 46
+          },
+          {
+            "step": 202,
+            "edge": [
+              199,
+              108
+            ],
+            "eat_error": 2.8458428370808676e-18,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 2.8458428370808676e-18,
+            "active_nodes_after": 45
+          },
+          {
+            "step": 203,
+            "edge": [
+              202,
+              109
+            ],
+            "eat_error": 2.8458428370808676e-18,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 2.8458428370808676e-18,
+            "active_nodes_after": 44
+          },
+          {
+            "step": 204,
+            "edge": [
+              205,
+              110
+            ],
+            "eat_error": 2.8458428370808676e-18,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 2.8458428370808676e-18,
+            "active_nodes_after": 43
+          },
+          {
+            "step": 205,
+            "edge": [
+              208,
+              111
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 42
+          },
+          {
+            "step": 206,
+            "edge": [
+              210,
+              112
+            ],
+            "eat_error": 2.8458428370808676e-18,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 2.8458428370808676e-18,
+            "active_nodes_after": 41
+          },
+          {
+            "step": 207,
+            "edge": [
+              214,
+              113
+            ],
+            "eat_error": 2.8458428370808676e-18,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 2.8458428370808676e-18,
+            "active_nodes_after": 40
+          },
+          {
+            "step": 208,
+            "edge": [
+              217,
+              114
+            ],
+            "eat_error": 2.8458428370808676e-18,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 2.8458428370808676e-18,
+            "active_nodes_after": 39
+          },
+          {
+            "step": 209,
+            "edge": [
+              220,
+              115
+            ],
+            "eat_error": 2.8458428370808676e-18,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 2.8458428370808676e-18,
+            "active_nodes_after": 38
+          },
+          {
+            "step": 210,
+            "edge": [
+              223,
+              116
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 37
+          },
+          {
+            "step": 211,
+            "edge": [
+              225,
+              117
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 36
+          },
+          {
+            "step": 212,
+            "edge": [
+              229,
+              118
+            ],
+            "eat_error": 2.8458428370808676e-18,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 2.8458428370808676e-18,
+            "active_nodes_after": 35
+          },
+          {
+            "step": 213,
+            "edge": [
+              232,
+              119
+            ],
+            "eat_error": 2.8458428370808676e-18,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 2.8458428370808676e-18,
+            "active_nodes_after": 34
+          },
+          {
+            "step": 214,
+            "edge": [
+              235,
+              120
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 33
+          },
+          {
+            "step": 215,
+            "edge": [
+              241,
+              123
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 32
+          },
+          {
+            "step": 216,
+            "edge": [
+              243,
+              124
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 31
+          },
+          {
+            "step": 217,
+            "edge": [
+              239,
+              240
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 30
+          },
+          {
+            "step": 218,
+            "edge": [
+              246,
+              101
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 29
+          },
+          {
+            "step": 219,
+            "edge": [
+              176,
+              177
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 28
+          },
+          {
+            "step": 220,
+            "edge": [
+              195,
+              196
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 27
+          },
+          {
+            "step": 221,
+            "edge": [
+              210,
+              211
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 26
+          },
+          {
+            "step": 222,
+            "edge": [
+              225,
+              226
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 25
+          }
+        ]
+      }
+    },
+    {
+      "logical_idx": 1,
+      "status": "ok",
+      "num_sites": 25,
+      "num_syndrome_indices": 24,
+      "num_logical_indices": 1,
+      "compile_ms": 9035.784,
+      "trunc_error": 0.2469498324521104,
+      "offline_stats": {
+        "initial_nodes": 247,
+        "initial_edges": 273,
+        "preserved_target": 25,
+        "steps": 222,
+        "truncation_error": 0.2469498324521104,
+        "max_bond_dim": 2,
+        "active_nodes": 25,
+        "active_edges": 51,
+        "chi": 32,
+        "step_errors": [
+          {
+            "step": 1,
+            "edge": [
+              19,
+              175
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 246
+          },
+          {
+            "step": 2,
+            "edge": [
+              79,
+              165
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 245
+          },
+          {
+            "step": 3,
+            "edge": [
+              82,
+              170
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 244
+          },
+          {
+            "step": 4,
+            "edge": [
+              94,
+              169
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 243
+          },
+          {
+            "step": 5,
+            "edge": [
+              177,
+              126
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 242
+          },
+          {
+            "step": 6,
+            "edge": [
+              0,
+              177
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 241
+          },
+          {
+            "step": 7,
+            "edge": [
+              0,
+              4
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 240
+          },
+          {
+            "step": 8,
+            "edge": [
+              182,
+              127
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 239
+          },
+          {
+            "step": 9,
+            "edge": [
+              5,
+              182
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 238
+          },
+          {
+            "step": 10,
+            "edge": [
+              5,
+              8
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 237
+          },
+          {
+            "step": 11,
+            "edge": [
+              186,
+              128
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 236
+          },
+          {
+            "step": 12,
+            "edge": [
+              9,
+              186
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 235
+          },
+          {
+            "step": 13,
+            "edge": [
+              9,
+              12
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 234
+          },
+          {
+            "step": 14,
+            "edge": [
+              190,
+              129
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 233
+          },
+          {
+            "step": 15,
+            "edge": [
+              13,
+              190
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 232
+          },
+          {
+            "step": 16,
+            "edge": [
+              13,
+              16
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 231
+          },
+          {
+            "step": 17,
+            "edge": [
+              178,
+              130
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 230
+          },
+          {
+            "step": 18,
+            "edge": [
+              1,
+              178
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 229
+          },
+          {
+            "step": 19,
+            "edge": [
+              1,
+              17
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 228
+          },
+          {
+            "step": 20,
+            "edge": [
+              196,
+              136
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 227
+          },
+          {
+            "step": 21,
+            "edge": [
+              21,
+              196
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 226
+          },
+          {
+            "step": 22,
+            "edge": [
+              21,
+              25
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 225
+          },
+          {
+            "step": 23,
+            "edge": [
+              200,
+              137
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 224
+          },
+          {
+            "step": 24,
+            "edge": [
+              26,
+              200
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 223
+          },
+          {
+            "step": 25,
+            "edge": [
+              26,
+              29
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 222
+          },
+          {
+            "step": 26,
+            "edge": [
+              203,
+              138
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 221
+          },
+          {
+            "step": 27,
+            "edge": [
+              30,
+              203
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 220
+          },
+          {
+            "step": 28,
+            "edge": [
+              30,
+              33
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 219
+          },
+          {
+            "step": 29,
+            "edge": [
+              206,
+              139
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 218
+          },
+          {
+            "step": 30,
+            "edge": [
+              34,
+              206
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 217
+          },
+          {
+            "step": 31,
+            "edge": [
+              34,
+              37
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 216
+          },
+          {
+            "step": 32,
+            "edge": [
+              197,
+              140
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 215
+          },
+          {
+            "step": 33,
+            "edge": [
+              22,
+              197
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 214
+          },
+          {
+            "step": 34,
+            "edge": [
+              22,
+              38
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 213
+          },
+          {
+            "step": 35,
+            "edge": [
+              198,
+              141
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 212
+          },
+          {
+            "step": 36,
+            "edge": [
+              23,
+              198
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 211
+          },
+          {
+            "step": 37,
+            "edge": [
+              23,
+              40
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 210
+          },
+          {
+            "step": 38,
+            "edge": [
+              201,
+              142
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 209
+          },
+          {
+            "step": 39,
+            "edge": [
+              27,
+              201
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 208
+          },
+          {
+            "step": 40,
+            "edge": [
+              27,
+              44
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 207
+          },
+          {
+            "step": 41,
+            "edge": [
+              204,
+              143
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 206
+          },
+          {
+            "step": 42,
+            "edge": [
+              31,
+              204
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 205
+          },
+          {
+            "step": 43,
+            "edge": [
+              31,
+              48
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 204
+          },
+          {
+            "step": 44,
+            "edge": [
+              207,
+              144
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 203
+          },
+          {
+            "step": 45,
+            "edge": [
+              35,
+              207
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 202
+          },
+          {
+            "step": 46,
+            "edge": [
+              35,
+              52
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 201
+          },
+          {
+            "step": 47,
+            "edge": [
+              209,
+              145
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 200
+          },
+          {
+            "step": 48,
+            "edge": [
+              39,
+              209
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 199
+          },
+          {
+            "step": 49,
+            "edge": [
+              39,
+              56
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 198
+          },
+          {
+            "step": 50,
+            "edge": [
+              211,
+              146
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 197
+          },
+          {
+            "step": 51,
+            "edge": [
+              41,
+              211
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 196
+          },
+          {
+            "step": 52,
+            "edge": [
+              41,
+              45
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 195
+          },
+          {
+            "step": 53,
+            "edge": [
+              215,
+              147
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 194
+          },
+          {
+            "step": 54,
+            "edge": [
+              46,
+              215
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 193
+          },
+          {
+            "step": 55,
+            "edge": [
+              46,
+              49
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 192
+          },
+          {
+            "step": 56,
+            "edge": [
+              218,
+              148
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 191
+          },
+          {
+            "step": 57,
+            "edge": [
+              50,
+              218
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 190
+          },
+          {
+            "step": 58,
+            "edge": [
+              50,
+              53
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 189
+          },
+          {
+            "step": 59,
+            "edge": [
+              221,
+              149
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 188
+          },
+          {
+            "step": 60,
+            "edge": [
+              54,
+              221
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 187
+          },
+          {
+            "step": 61,
+            "edge": [
+              54,
+              57
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 186
+          },
+          {
+            "step": 62,
+            "edge": [
+              212,
+              150
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 185
+          },
+          {
+            "step": 63,
+            "edge": [
+              42,
+              212
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 184
+          },
+          {
+            "step": 64,
+            "edge": [
+              42,
+              58
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 183
+          },
+          {
+            "step": 65,
+            "edge": [
+              213,
+              151
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 182
+          },
+          {
+            "step": 66,
+            "edge": [
+              43,
+              213
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 181
+          },
+          {
+            "step": 67,
+            "edge": [
+              43,
+              60
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 180
+          },
+          {
+            "step": 68,
+            "edge": [
+              216,
+              152
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 179
+          },
+          {
+            "step": 69,
+            "edge": [
+              47,
+              216
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 178
+          },
+          {
+            "step": 70,
+            "edge": [
+              47,
+              64
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 177
+          },
+          {
+            "step": 71,
+            "edge": [
+              219,
+              153
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 176
+          },
+          {
+            "step": 72,
+            "edge": [
+              51,
+              219
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 175
+          },
+          {
+            "step": 73,
+            "edge": [
+              51,
+              68
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 174
+          },
+          {
+            "step": 74,
+            "edge": [
+              222,
+              154
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 173
+          },
+          {
+            "step": 75,
+            "edge": [
+              55,
+              222
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 172
+          },
+          {
+            "step": 76,
+            "edge": [
+              55,
+              72
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 171
+          },
+          {
+            "step": 77,
+            "edge": [
+              224,
+              155
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 170
+          },
+          {
+            "step": 78,
+            "edge": [
+              59,
+              224
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 169
+          },
+          {
+            "step": 79,
+            "edge": [
+              59,
+              76
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 168
+          },
+          {
+            "step": 80,
+            "edge": [
+              226,
+              156
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 167
+          },
+          {
+            "step": 81,
+            "edge": [
+              61,
+              226
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 166
+          },
+          {
+            "step": 82,
+            "edge": [
+              61,
+              65
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 165
+          },
+          {
+            "step": 83,
+            "edge": [
+              230,
+              157
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 164
+          },
+          {
+            "step": 84,
+            "edge": [
+              66,
+              230
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 163
+          },
+          {
+            "step": 85,
+            "edge": [
+              66,
+              69
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 162
+          },
+          {
+            "step": 86,
+            "edge": [
+              233,
+              158
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 161
+          },
+          {
+            "step": 87,
+            "edge": [
+              70,
+              233
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 160
+          },
+          {
+            "step": 88,
+            "edge": [
+              70,
+              73
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 159
+          },
+          {
+            "step": 89,
+            "edge": [
+              236,
+              159
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 158
+          },
+          {
+            "step": 90,
+            "edge": [
+              74,
+              236
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 157
+          },
+          {
+            "step": 91,
+            "edge": [
+              74,
+              77
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 156
+          },
+          {
+            "step": 92,
+            "edge": [
+              227,
+              160
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 155
+          },
+          {
+            "step": 93,
+            "edge": [
+              62,
+              227
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 154
+          },
+          {
+            "step": 94,
+            "edge": [
+              62,
+              78
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 153
+          },
+          {
+            "step": 95,
+            "edge": [
+              228,
+              161
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 152
+          },
+          {
+            "step": 96,
+            "edge": [
+              63,
+              228
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 151
+          },
+          {
+            "step": 97,
+            "edge": [
+              63,
+              80
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 150
+          },
+          {
+            "step": 98,
+            "edge": [
+              231,
+              162
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 149
+          },
+          {
+            "step": 99,
+            "edge": [
+              67,
+              231
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 148
+          },
+          {
+            "step": 100,
+            "edge": [
+              67,
+              84
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 147
+          },
+          {
+            "step": 101,
+            "edge": [
+              234,
+              163
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 146
+          },
+          {
+            "step": 102,
+            "edge": [
+              71,
+              234
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 145
+          },
+          {
+            "step": 103,
+            "edge": [
+              71,
+              88
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 144
+          },
+          {
+            "step": 104,
+            "edge": [
+              237,
+              164
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 143
+          },
+          {
+            "step": 105,
+            "edge": [
+              75,
+              237
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 142
+          },
+          {
+            "step": 106,
+            "edge": [
+              75,
+              92
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 141
+          },
+          {
+            "step": 107,
+            "edge": [
+              240,
+              166
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 140
+          },
+          {
+            "step": 108,
+            "edge": [
+              81,
+              240
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 139
+          },
+          {
+            "step": 109,
+            "edge": [
+              81,
+              85
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 138
+          },
+          {
+            "step": 110,
+            "edge": [
+              242,
+              167
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 137
+          },
+          {
+            "step": 111,
+            "edge": [
+              86,
+              242
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 136
+          },
+          {
+            "step": 112,
+            "edge": [
+              86,
+              89
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 135
+          },
+          {
+            "step": 113,
+            "edge": [
+              244,
+              168
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 134
+          },
+          {
+            "step": 114,
+            "edge": [
+              90,
+              244
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 133
+          },
+          {
+            "step": 115,
+            "edge": [
+              90,
+              93
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 132
+          },
+          {
+            "step": 116,
+            "edge": [
+              180,
+              171
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 131
+          },
+          {
+            "step": 117,
+            "edge": [
+              3,
+              180
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 130
+          },
+          {
+            "step": 118,
+            "edge": [
+              3,
+              83
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 129
+          },
+          {
+            "step": 119,
+            "edge": [
+              184,
+              172
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 128
+          },
+          {
+            "step": 120,
+            "edge": [
+              7,
+              184
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 127
+          },
+          {
+            "step": 121,
+            "edge": [
+              7,
+              87
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 126
+          },
+          {
+            "step": 122,
+            "edge": [
+              188,
+              173
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 125
+          },
+          {
+            "step": 123,
+            "edge": [
+              11,
+              188
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 124
+          },
+          {
+            "step": 124,
+            "edge": [
+              11,
+              91
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 123
+          },
+          {
+            "step": 125,
+            "edge": [
+              192,
+              174
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 122
+          },
+          {
+            "step": 126,
+            "edge": [
+              15,
+              192
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 121
+          },
+          {
+            "step": 127,
+            "edge": [
+              15,
+              95
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 120
+          },
+          {
+            "step": 128,
+            "edge": [
+              179,
+              131
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 119
+          },
+          {
+            "step": 129,
+            "edge": [
+              179,
+              2
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 118
+          },
+          {
+            "step": 130,
+            "edge": [
+              179,
+              20
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 117
+          },
+          {
+            "step": 131,
+            "edge": [
+              179,
+              96
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 116
+          },
+          {
+            "step": 132,
+            "edge": [
+              183,
+              132
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 115
+          },
+          {
+            "step": 133,
+            "edge": [
+              183,
+              6
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 114
+          },
+          {
+            "step": 134,
+            "edge": [
+              183,
+              24
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 113
+          },
+          {
+            "step": 135,
+            "edge": [
+              183,
+              97
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 112
+          },
+          {
+            "step": 136,
+            "edge": [
+              187,
+              133
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 111
+          },
+          {
+            "step": 137,
+            "edge": [
+              187,
+              10
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 110
+          },
+          {
+            "step": 138,
+            "edge": [
+              187,
+              28
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 109
+          },
+          {
+            "step": 139,
+            "edge": [
+              187,
+              98
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 108
+          },
+          {
+            "step": 140,
+            "edge": [
+              191,
+              134
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 107
+          },
+          {
+            "step": 141,
+            "edge": [
+              191,
+              14
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 106
+          },
+          {
+            "step": 142,
+            "edge": [
+              191,
+              32
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 105
+          },
+          {
+            "step": 143,
+            "edge": [
+              191,
+              99
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 104
+          },
+          {
+            "step": 144,
+            "edge": [
+              194,
+              135
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 103
+          },
+          {
+            "step": 145,
+            "edge": [
+              194,
+              18
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 102
+          },
+          {
+            "step": 146,
+            "edge": [
+              194,
+              36
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 101
+          },
+          {
+            "step": 147,
+            "edge": [
+              194,
+              100
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 100
+          },
+          {
+            "step": 148,
+            "edge": [
+              193,
+              19
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 99
+          },
+          {
+            "step": 149,
+            "edge": [
+              193,
+              1
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 98
+          },
+          {
+            "step": 150,
+            "edge": [
+              193,
+              13
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 97
+          },
+          {
+            "step": 151,
+            "edge": [
+              238,
+              79
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 96
+          },
+          {
+            "step": 152,
+            "edge": [
+              238,
+              59
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 95
+          },
+          {
+            "step": 153,
+            "edge": [
+              238,
+              62
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 94
+          },
+          {
+            "step": 154,
+            "edge": [
+              238,
+              74
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 93
+          },
+          {
+            "step": 155,
+            "edge": [
+              239,
+              82
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 92
+          },
+          {
+            "step": 156,
+            "edge": [
+              239,
+              3
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 91
+          },
+          {
+            "step": 157,
+            "edge": [
+              239,
+              63
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 90
+          },
+          {
+            "step": 158,
+            "edge": [
+              239,
+              81
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 89
+          },
+          {
+            "step": 159,
+            "edge": [
+              245,
+              94
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 88
+          },
+          {
+            "step": 160,
+            "edge": [
+              245,
+              15
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 87
+          },
+          {
+            "step": 161,
+            "edge": [
+              245,
+              75
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 86
+          },
+          {
+            "step": 162,
+            "edge": [
+              245,
+              90
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 85
+          },
+          {
+            "step": 163,
+            "edge": [
+              193,
+              106
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 84
+          },
+          {
+            "step": 164,
+            "edge": [
+              238,
+              121
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 83
+          },
+          {
+            "step": 165,
+            "edge": [
+              239,
+              122
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 82
+          },
+          {
+            "step": 166,
+            "edge": [
+              245,
+              125
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 81
+          },
+          {
+            "step": 167,
+            "edge": [
+              176,
+              0
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 80
+          },
+          {
+            "step": 168,
+            "edge": [
+              181,
+              5
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 79
+          },
+          {
+            "step": 169,
+            "edge": [
+              181,
+              7
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 78
+          },
+          {
+            "step": 170,
+            "edge": [
+              185,
+              9
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 77
+          },
+          {
+            "step": 171,
+            "edge": [
+              185,
+              11
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 76
+          },
+          {
+            "step": 172,
+            "edge": [
+              195,
+              21
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 75
+          },
+          {
+            "step": 173,
+            "edge": [
+              195,
+              22
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 74
+          },
+          {
+            "step": 174,
+            "edge": [
+              195,
+              23
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 73
+          },
+          {
+            "step": 175,
+            "edge": [
+              199,
+              26
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 72
+          },
+          {
+            "step": 176,
+            "edge": [
+              199,
+              27
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 71
+          },
+          {
+            "step": 177,
+            "edge": [
+              202,
+              30
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 70
+          },
+          {
+            "step": 178,
+            "edge": [
+              202,
+              31
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 69
+          },
+          {
+            "step": 179,
+            "edge": [
+              205,
+              34
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 68
+          },
+          {
+            "step": 180,
+            "edge": [
+              205,
+              35
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 67
+          },
+          {
+            "step": 181,
+            "edge": [
+              208,
+              39
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 66
+          },
+          {
+            "step": 182,
+            "edge": [
+              210,
+              41
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 65
+          },
+          {
+            "step": 183,
+            "edge": [
+              210,
+              42
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 64
+          },
+          {
+            "step": 184,
+            "edge": [
+              210,
+              43
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 63
+          },
+          {
+            "step": 185,
+            "edge": [
+              214,
+              46
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 62
+          },
+          {
+            "step": 186,
+            "edge": [
+              214,
+              47
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 61
+          },
+          {
+            "step": 187,
+            "edge": [
+              217,
+              50
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 60
+          },
+          {
+            "step": 188,
+            "edge": [
+              217,
+              51
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 59
+          },
+          {
+            "step": 189,
+            "edge": [
+              220,
+              54
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 58
+          },
+          {
+            "step": 190,
+            "edge": [
+              220,
+              55
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 57
+          },
+          {
+            "step": 191,
+            "edge": [
+              225,
+              61
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 56
+          },
+          {
+            "step": 192,
+            "edge": [
+              229,
+              66
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 55
+          },
+          {
+            "step": 193,
+            "edge": [
+              229,
+              67
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 54
+          },
+          {
+            "step": 194,
+            "edge": [
+              232,
+              70
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 53
+          },
+          {
+            "step": 195,
+            "edge": [
+              232,
+              71
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 52
+          },
+          {
+            "step": 196,
+            "edge": [
+              241,
+              86
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 51
+          },
+          {
+            "step": 197,
+            "edge": [
+              176,
+              102
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 50
+          },
+          {
+            "step": 198,
+            "edge": [
+              181,
+              103
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 49
+          },
+          {
+            "step": 199,
+            "edge": [
+              185,
+              104
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 48
+          },
+          {
+            "step": 200,
+            "edge": [
+              189,
+              105
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 47
+          },
+          {
+            "step": 201,
+            "edge": [
+              195,
+              107
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 46
+          },
+          {
+            "step": 202,
+            "edge": [
+              199,
+              108
+            ],
+            "eat_error": 2.8458428370808676e-18,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 2.8458428370808676e-18,
+            "active_nodes_after": 45
+          },
+          {
+            "step": 203,
+            "edge": [
+              202,
+              109
+            ],
+            "eat_error": 2.8458428370808676e-18,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 2.8458428370808676e-18,
+            "active_nodes_after": 44
+          },
+          {
+            "step": 204,
+            "edge": [
+              205,
+              110
+            ],
+            "eat_error": 2.8458428370808676e-18,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 2.8458428370808676e-18,
+            "active_nodes_after": 43
+          },
+          {
+            "step": 205,
+            "edge": [
+              208,
+              111
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 42
+          },
+          {
+            "step": 206,
+            "edge": [
+              210,
+              112
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 41
+          },
+          {
+            "step": 207,
+            "edge": [
+              214,
+              113
+            ],
+            "eat_error": 2.8458428370808676e-18,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 2.8458428370808676e-18,
+            "active_nodes_after": 40
+          },
+          {
+            "step": 208,
+            "edge": [
+              217,
+              114
+            ],
+            "eat_error": 2.8458428370808676e-18,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 2.8458428370808676e-18,
+            "active_nodes_after": 39
+          },
+          {
+            "step": 209,
+            "edge": [
+              220,
+              115
+            ],
+            "eat_error": 2.8458428370808676e-18,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 2.8458428370808676e-18,
+            "active_nodes_after": 38
+          },
+          {
+            "step": 210,
+            "edge": [
+              223,
+              116
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 37
+          },
+          {
+            "step": 211,
+            "edge": [
+              225,
+              117
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 36
+          },
+          {
+            "step": 212,
+            "edge": [
+              229,
+              118
+            ],
+            "eat_error": 2.8458428370808676e-18,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 2.8458428370808676e-18,
+            "active_nodes_after": 35
+          },
+          {
+            "step": 213,
+            "edge": [
+              232,
+              119
+            ],
+            "eat_error": 2.8458428370808676e-18,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 2.8458428370808676e-18,
+            "active_nodes_after": 34
+          },
+          {
+            "step": 214,
+            "edge": [
+              235,
+              120
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 33
+          },
+          {
+            "step": 215,
+            "edge": [
+              241,
+              123
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 32
+          },
+          {
+            "step": 216,
+            "edge": [
+              243,
+              124
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 31
+          },
+          {
+            "step": 217,
+            "edge": [
+              193,
+              194
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 30
+          },
+          {
+            "step": 218,
+            "edge": [
+              246,
+              101
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 29
+          },
+          {
+            "step": 219,
+            "edge": [
+              176,
+              179
+            ],
+            "eat_error": 1.5255830622176614e-16,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 1.5255830622176614e-16,
+            "active_nodes_after": 28
+          },
+          {
+            "step": 220,
+            "edge": [
+              181,
+              183
+            ],
+            "eat_error": 2.177302665012993e-16,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 2.177302665012993e-16,
+            "active_nodes_after": 27
+          },
+          {
+            "step": 221,
+            "edge": [
+              185,
+              187
+            ],
+            "eat_error": 2.177302665012993e-16,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 2.177302665012993e-16,
+            "active_nodes_after": 26
+          },
+          {
+            "step": 222,
+            "edge": [
+              189,
+              191
+            ],
+            "eat_error": 0.0,
+            "merge_error": 0.0,
+            "compress_error": 0.0,
+            "total_error": 0.0,
+            "active_nodes_after": 25
+          }
+        ]
+      }
+    }
+  ]
+}

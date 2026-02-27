@@ -5,104 +5,77 @@ defaults:
   noise_values: "0.005,0.01,0.02"
 
 cases:
-  # Bivariate Bicycle (BB) codes
-  - name: bb_18_4_4
-    source: codegen
-    module: experiments.codes.codes
-    factory: create_bivariate_bicycle_codes
-    factory_args: [3, 3, [1], [0, 1], [0, 2], [2]]
-    parity_attr: hz
-    logical_attr: lz
-    max_logicals: 1
+  # All codes loaded from experiments/codes/gnd_data/ via GND format.
+  # Name format: {c_type}_{n}_{k}_{d} matching [[n,k,d]] notation.
 
-  - name: bb_60_8_4
-    source: codegen
-    module: experiments.codes.codes
-    factory: create_bivariate_bicycle_codes
-    factory_args: [3, 10, [0], [0, 2], [1, 2], [2]]
-    parity_attr: hz
-    logical_attr: lz
-    max_logicals: 1
-
-  - name: bb_72_12_6
-    source: codegen
-    module: experiments.codes.codes
-    factory: gen_BB_code
-    factory_args: [72]
-    parity_attr: hz
-    logical_attr: lz
-    max_logicals: 1
-
-  - name: bb_144_12_12
-    source: codegen
-    module: experiments.codes.codes
-    factory: gen_BB_code
-    factory_args: [144]
-    parity_attr: hz
-    logical_attr: lz
-    max_logicals: 1
-
-  - name: bb_288_12_12
-    source: codegen
-    module: experiments.codes.codes
-    factory: gen_BB_code
-    factory_args: [288]
-    parity_attr: hz
-    logical_attr: lz
-    max_logicals: 1
-
-  # Hypergraph Product (HP) codes
-  - name: hp_162_rank9_ring
-    source: codegen
-    module: experiments.codes.codes
-    factory: gen_HP_ring_code
-    factory_args: [9, 9]
-    parity_attr: hz
-    logical_attr: lz
-    max_logicals: 1
-
-  - name: hp_338_rank13_ring
-    source: codegen
-    module: experiments.codes.codes
-    factory: gen_HP_ring_code
-    factory_args: [13, 13]
-    parity_attr: hz
-    logical_attr: lz
-    max_logicals: 1
-
-  - name: hp_288_12_6
-    source: codegen
-    module: experiments.codes.codes
-    factory: get_benchmark_code
-    factory_args: ["HP_288"]
-    parity_attr: hz
-    logical_attr: lz
-    max_logicals: 1
-
-  # Trivariate Bicycle (TB) codes
-  - name: tb_25_3_4
+  - name: ldpc_25_3_4
     source: codegen
     module: experiments.codes.gnd_ldpc_codes
-    factory: load_ldpc_css_code
-    factory_args: [25, 3, 4, 0]
+    factory: ldpc_25_3_4
+    factory_args: []
     parity_attr: hz
     logical_attr: lz
-    skip_if_missing: true
-    max_logicals: 1
 
-  - name: tb_30_6_4
+  - name: ldpc_30_6_4
     source: codegen
     module: experiments.codes.gnd_ldpc_codes
-    factory: load_ldpc_css_code
-    factory_args: [30, 6, 4, 0]
+    factory: ldpc_30_6_4
+    factory_args: []
     parity_attr: hz
     logical_attr: lz
-    skip_if_missing: true
-    max_logicals: 1
 
-  - name: tb_48_4_8
-    source: matrix
-    h_path: experiments/data/cases/tb_48_4_8/H.npy
-    logical_path: experiments/data/cases/tb_48_4_8/logical.npy
-    skip_if_missing: true
-    max_logicals: 1
+  - name: tor_50_2_5
+    source: codegen
+    module: experiments.codes.gnd_ldpc_codes
+    factory: tor_50_2_5
+    factory_args: []
+    parity_attr: hz
+    logical_attr: lz
+
+  - name: qcc_18_4_4
+    source: codegen
+    module: experiments.codes.gnd_ldpc_codes
+    factory: qcc_18_4_4
+    factory_args: []
+    parity_attr: hz
+    logical_attr: lz
+
+  - name: qcc_60_8_4
+    source: codegen
+    module: experiments.codes.gnd_ldpc_codes
+    factory: qcc_60_8_4
+    factory_args: []
+    parity_attr: hz
+    logical_attr: lz
+
+  - name: qcc_72_12_6
+    source: codegen
+    module: experiments.codes.gnd_ldpc_codes
+    factory: qcc_72_12_6
+    factory_args: []
+    parity_attr: hz
+    logical_attr: lz
+
+  - name: qcc_90_8_10
+    source: codegen
+    module: experiments.codes.gnd_ldpc_codes
+    factory: qcc_90_8_10
+    factory_args: []
+    parity_attr: hz
+    logical_attr: lz
+
+  - name: qcc_108_8_10
+    source: codegen
+    module: experiments.codes.gnd_ldpc_codes
+    factory: qcc_108_8_10
+    factory_args: []
+    parity_attr: hz
+    logical_attr: lz
+
+  - name: qcc_144_12_12
+    source: codegen
+    module: experiments.codes.gnd_ldpc_codes
+    factory: qcc_144_12_12
+    factory_args: []
+    parity_attr: hz
+    logical_attr: lz

@@ -547,7 +547,7 @@ def test_gpu_metrics_smoke():
         seed=42,
         warmup=2,
         repeats=5,
-        code_names=["BB_90"],
+        code_names=["QCC_90_8_10"],
         skip_missing=True,
         parallel_workers=2,
         verbose=True,

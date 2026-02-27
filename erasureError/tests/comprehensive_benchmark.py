@@ -9,10 +9,10 @@ Uses multiprocessing to parallelise across (code, erasure_rate, error_rate, deco
 configurations. Each worker handles one full (code, params, decoder) job so that
 the GIL is not a bottleneck.
 
-Codes tested:
-- BB codes: [[18,4,4]], [[60,8,4]], [[72,12,6]]
-- TB codes: [[25,3,4]], [[30,6,4]]
-- HP codes: [[50,...]], [[98,...]]
+Codes tested (ISCA revision benchmark set):
+- LDPC codes: [[25,3,4]], [[30,6,4]]
+- Toric code: [[50,2,5]]
+- QCC codes: [[18,4,4]], [[60,8,4]], [[72,12,6]], [[90,8,10]], [[108,8,10]], [[144,12,12]]
 """
 
 import sys
@@ -31,8 +31,9 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from codes.codes import gen_BB_code, gen_HP_ring_code, hypergraph_product, rep_code
 from codes.gnd_ldpc_codes import (
-    bb_18_4_4, bb_60_8_4, bb_72_12_6,
-    tb_25_3_4, tb_30_6_4,tor_n50_d5_k2
+    qcc_18_4_4, qcc_60_8_4, qcc_72_12_6,
+    qcc_90_8_10, qcc_108_8_10, qcc_144_12_12,
+    ldpc_25_3_4, ldpc_30_6_4, tor_50_2_5,
 )
 from erasure_tensor_network_decoder import ErasureTensorNetworkDecoder
 from simple_decoders import (
@@ -179,15 +180,15 @@ def decode_with_decoder(
 # Code loaders – picklable factories
 # ---------------------------------------------------------------------------
 CODE_LOADER_REGISTRY: Dict[str, Any] = {
-    'BB_18_4_4': lambda: bb_18_4_4(),
-    'BB_60_8_4': lambda: bb_60_8_4(),
-    'BB_72_12_6': lambda: bb_72_12_6(),
-    'TB_25_3_4': lambda: tb_25_3_4(),
-    'TB_30_6_4': lambda: tb_30_6_4(),
-    'TOR_50_5_2': lambda: tor_n50_d5_k2(),
-    "BB_90":lambda: gen_BB_code(90),
-    "BB_108":lambda: gen_BB_code(108),
-    "BB_144":lambda: gen_BB_code(144)
+    'LDPC_25_3_4': lambda: ldpc_25_3_4(),
+    'LDPC_30_6_4': lambda: ldpc_30_6_4(),
+    'TOR_50_2_5': lambda: tor_50_2_5(),
+    'QCC_18_4_4': lambda: qcc_18_4_4(),
+    'QCC_60_8_4': lambda: qcc_60_8_4(),
+    'QCC_72_12_6': lambda: qcc_72_12_6(),
+    'QCC_90_8_10': lambda: qcc_90_8_10(),
+    'QCC_108_8_10': lambda: qcc_108_8_10(),
+    'QCC_144_12_12': lambda: qcc_144_12_12(),
 }
 
 

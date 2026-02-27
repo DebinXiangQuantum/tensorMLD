@@ -1,0 +1,647 @@
+{
+  "timestamp": "2026-02-25T20:55:37.240837",
+  "error_rates": [
+    0.001,
+    0.003,
+    0.005,
+    0.008,
+    0.01
+  ],
+  "erasure_rates": [
+    0.0,
+    0.05,
+    0.1,
+    0.15
+  ],
+  "num_shots": 1000000,
+  "tn_max_shots": 1000000,
+  "max_workers": 32,
+  "codes": {
+    "TOR_50_5_2": {
+      "code_name": "TOR_50_5_2",
+      "N": 50,
+      "K": 2,
+      "D": 5,
+      "num_shots": 1000000,
+      "tn_max_shots": 1000000,
+      "data": [
+        {
+          "error_rate": 0.001,
+          "erasure_rate": 0.0,
+          "decoders": {
+            "min_sum_bp": {
+              "decoder": "min_sum_bp",
+              "logical_error_rate": 4.199999999998649e-05,
+              "num_shots": 1000000,
+              "correct_count": 999958,
+              "converged_count": 999855,
+              "time_seconds": 130.37375569343567
+            },
+            "bp_osd": {
+              "decoder": "bp_osd",
+              "logical_error_rate": 3.500000000000725e-05,
+              "num_shots": 1000000,
+              "correct_count": 999965,
+              "converged_count": 1000000,
+              "time_seconds": 145.45810770988464
+            },
+            "relaybp": {
+              "decoder": "relaybp",
+              "logical_error_rate": 3.6000000000036e-05,
+              "num_shots": 1000000,
+              "correct_count": 999964,
+              "converged_count": 999959,
+              "time_seconds": 471.06053256988525
+            }
+          }
+        },
+        {
+          "error_rate": 0.01,
+          "erasure_rate": 0.0,
+          "decoders": {
+            "min_sum_bp": {
+              "decoder": "min_sum_bp",
+              "logical_error_rate": 0.004565999999999959,
+              "num_shots": 1000000,
+              "correct_count": 995434,
+              "converged_count": 986435,
+              "time_seconds": 130.41614151000977
+            },
+            "bp_osd": {
+              "decoder": "bp_osd",
+              "logical_error_rate": 0.003079000000000054,
+              "num_shots": 1000000,
+              "correct_count": 996921,
+              "converged_count": 1000000,
+              "time_seconds": 145.30054926872253
+            },
+            "relaybp": {
+              "decoder": "relaybp",
+              "logical_error_rate": 0.003726000000000007,
+              "num_shots": 1000000,
+              "correct_count": 996274,
+              "converged_count": 995270,
+              "time_seconds": 470.9315674304962
+            }
+          }
+        },
+        {
+          "error_rate": 0.005,
+          "erasure_rate": 0.0,
+          "decoders": {
+            "min_sum_bp": {
+              "decoder": "min_sum_bp",
+              "logical_error_rate": 0.0011379999999999724,
+              "num_shots": 1000000,
+              "correct_count": 998862,
+              "converged_count": 996486,
+              "time_seconds": 132.1818561553955
+            },
+            "bp_osd": {
+              "decoder": "bp_osd",
+              "logical_error_rate": 0.0007599999999999829,
+              "num_shots": 1000000,
+              "correct_count": 999240,
+              "converged_count": 1000000,
+              "time_seconds": 145.16735076904297
+            },
+            "relaybp": {
+              "decoder": "relaybp",
+              "logical_error_rate": 0.0009500000000000064,
+              "num_shots": 1000000,
+              "correct_count": 999050,
+              "converged_count": 998843,
+              "time_seconds": 464.50482869148254
+            }
+          }
+        },
+        {
+          "error_rate": 0.008,
+          "erasure_rate": 0.0,
+          "decoders": {
+            "min_sum_bp": {
+              "decoder": "min_sum_bp",
+              "logical_error_rate": 0.002958000000000016,
+              "num_shots": 1000000,
+              "correct_count": 997042,
+              "converged_count": 991246,
+              "time_seconds": 133.06455206871033
+            },
+            "bp_osd": {
+              "decoder": "bp_osd",
+              "logical_error_rate": 0.0019820000000000393,
+              "num_shots": 1000000,
+              "correct_count": 998018,
+              "converged_count": 1000000,
+              "time_seconds": 150.3736674785614
+            },
+            "relaybp": {
+              "decoder": "relaybp",
+              "logical_error_rate": 0.0023999999999999577,
+              "num_shots": 1000000,
+              "correct_count": 997600,
+              "converged_count": 996987,
+              "time_seconds": 476.90830969810486
+            }
+          }
+        },
+        {
+          "error_rate": 0.003,
+          "erasure_rate": 0.0,
+          "decoders": {
+            "min_sum_bp": {
+              "decoder": "min_sum_bp",
+              "logical_error_rate": 0.00040399999999995995,
+              "num_shots": 1000000,
+              "correct_count": 999596,
+              "converged_count": 998716,
+              "time_seconds": 132.93724656105042
+            },
+            "bp_osd": {
+              "decoder": "bp_osd",
+              "logical_error_rate": 0.0002969999999999917,
+              "num_shots": 1000000,
+              "correct_count": 999703,
+              "converged_count": 1000000,
+              "time_seconds": 144.2562210559845
+            },
+            "relaybp": {
+              "decoder": "relaybp",
+              "logical_error_rate": 0.00034000000000000696,
+              "num_shots": 1000000,
+              "correct_count": 999660,
+              "converged_count": 999587,
+              "time_seconds": 467.6733396053314
+            }
+          }
+        },
+        {
+          "error_rate": 0.001,
+          "erasure_rate": 0.05,
+          "decoders": {
+            "min_sum_bp": {
+              "decoder": "min_sum_bp",
+              "logical_error_rate": 0.0003049999999999997,
+              "num_shots": 1000000,
+              "correct_count": 999695,
+              "converged_count": 999002,
+              "time_seconds": 133.7627308368683
+            },
+            "bp_osd": {
+              "decoder": "bp_osd",
+              "logical_error_rate": 0.00019599999999997397,
+              "num_shots": 1000000,
+              "correct_count": 999804,
+              "converged_count": 1000000,
+              "time_seconds": 148.0908670425415
+            },
+            "relaybp": {
+              "decoder": "relaybp",
+              "logical_error_rate": 0.0002510000000000012,
+              "num_shots": 1000000,
+              "correct_count": 999749,
+              "converged_count": 999600,
+              "time_seconds": 476.1424345970154
+            }
+          }
+        },
+        {
+          "error_rate": 0.005,
+          "erasure_rate": 0.05,
+          "decoders": {
+            "min_sum_bp": {
+              "decoder": "min_sum_bp",
+              "logical_error_rate": 0.002491000000000021,
+              "num_shots": 1000000,
+              "correct_count": 997509,
+              "converged_count": 992792,
+              "time_seconds": 133.56573390960693
+            },
+            "bp_osd": {
+              "decoder": "bp_osd",
+              "logical_error_rate": 0.0016100000000000003,
+              "num_shots": 1000000,
+              "correct_count": 998390,
+              "converged_count": 1000000,
+              "time_seconds": 149.90041303634644
+            },
+            "relaybp": {
+              "decoder": "relaybp",
+              "logical_error_rate": 0.0020569999999999755,
+              "num_shots": 1000000,
+              "correct_count": 997943,
+              "converged_count": 997333,
+              "time_seconds": 483.6671736240387
+            }
+          }
+        },
+        {
+          "error_rate": 0.003,
+          "erasure_rate": 0.05,
+          "decoders": {
+            "min_sum_bp": {
+              "decoder": "min_sum_bp",
+              "logical_error_rate": 0.0011879999999999669,
+              "num_shots": 1000000,
+              "correct_count": 998812,
+              "converged_count": 996408,
+              "time_seconds": 137.50237703323364
+            },
+            "bp_osd": {
+              "decoder": "bp_osd",
+              "logical_error_rate": 0.0007789999999999742,
+              "num_shots": 1000000,
+              "correct_count": 999221,
+              "converged_count": 1000000,
+              "time_seconds": 149.70870971679688
+            },
+            "relaybp": {
+              "decoder": "relaybp",
+              "logical_error_rate": 0.0009829999999999561,
+              "num_shots": 1000000,
+              "correct_count": 999017,
+              "converged_count": 998685,
+              "time_seconds": 477.7117681503296
+            }
+          }
+        },
+        {
+          "error_rate": 0.01,
+          "erasure_rate": 0.05,
+          "decoders": {
+            "min_sum_bp": {
+              "decoder": "min_sum_bp",
+              "logical_error_rate": 0.007630000000000026,
+              "num_shots": 1000000,
+              "correct_count": 992370,
+              "converged_count": 979251,
+              "time_seconds": 133.38732433319092
+            },
+            "bp_osd": {
+              "decoder": "bp_osd",
+              "logical_error_rate": 0.004843000000000042,
+              "num_shots": 1000000,
+              "correct_count": 995157,
+              "converged_count": 1000000,
+              "time_seconds": 153.7425377368927
+            },
+            "relaybp": {
+              "decoder": "relaybp",
+              "logical_error_rate": 0.006237000000000048,
+              "num_shots": 1000000,
+              "correct_count": 993763,
+              "converged_count": 991834,
+              "time_seconds": 493.3505210876465
+            }
+          }
+        },
+        {
+          "error_rate": 0.008,
+          "erasure_rate": 0.05,
+          "decoders": {
+            "min_sum_bp": {
+              "decoder": "min_sum_bp",
+              "logical_error_rate": 0.005314000000000041,
+              "num_shots": 1000000,
+              "correct_count": 994686,
+              "converged_count": 985402,
+              "time_seconds": 136.45608973503113
+            },
+            "bp_osd": {
+              "decoder": "bp_osd",
+              "logical_error_rate": 0.003367000000000009,
+              "num_shots": 1000000,
+              "correct_count": 996633,
+              "converged_count": 1000000,
+              "time_seconds": 146.8164520263672
+            },
+            "relaybp": {
+              "decoder": "relaybp",
+              "logical_error_rate": 0.004329000000000027,
+              "num_shots": 1000000,
+              "correct_count": 995671,
+              "converged_count": 994415,
+              "time_seconds": 482.1377966403961
+            }
+          }
+        },
+        {
+          "error_rate": 0.001,
+          "erasure_rate": 0.1,
+          "decoders": {
+            "min_sum_bp": {
+              "decoder": "min_sum_bp",
+              "logical_error_rate": 0.0016460000000000363,
+              "num_shots": 1000000,
+              "correct_count": 998354,
+              "converged_count": 994868,
+              "time_seconds": 138.3088128566742
+            },
+            "bp_osd": {
+              "decoder": "bp_osd",
+              "logical_error_rate": 0.0011179999999999524,
+              "num_shots": 1000000,
+              "correct_count": 998882,
+              "converged_count": 1000000,
+              "time_seconds": 150.5592224597931
+            },
+            "relaybp": {
+              "decoder": "relaybp",
+              "logical_error_rate": 0.0014450000000000296,
+              "num_shots": 1000000,
+              "correct_count": 998555,
+              "converged_count": 996577,
+              "time_seconds": 477.9176216125488
+            }
+          }
+        },
+        {
+          "error_rate": 0.003,
+          "erasure_rate": 0.1,
+          "decoders": {
+            "min_sum_bp": {
+              "decoder": "min_sum_bp",
+              "logical_error_rate": 0.003947000000000034,
+              "num_shots": 1000000,
+              "correct_count": 996053,
+              "converged_count": 988408,
+              "time_seconds": 135.63517451286316
+            },
+            "bp_osd": {
+              "decoder": "bp_osd",
+              "logical_error_rate": 0.0025530000000000275,
+              "num_shots": 1000000,
+              "correct_count": 997447,
+              "converged_count": 1000000,
+              "time_seconds": 149.82826805114746
+            },
+            "relaybp": {
+              "decoder": "relaybp",
+              "logical_error_rate": 0.003381999999999996,
+              "num_shots": 1000000,
+              "correct_count": 996618,
+              "converged_count": 993910,
+              "time_seconds": 509.924658536911
+            }
+          }
+        },
+        {
+          "error_rate": 0.005,
+          "erasure_rate": 0.1,
+          "decoders": {
+            "min_sum_bp": {
+              "decoder": "min_sum_bp",
+              "logical_error_rate": 0.006809999999999983,
+              "num_shots": 1000000,
+              "correct_count": 993190,
+              "converged_count": 980974,
+              "time_seconds": 134.56548166275024
+            },
+            "bp_osd": {
+              "decoder": "bp_osd",
+              "logical_error_rate": 0.004354999999999998,
+              "num_shots": 1000000,
+              "correct_count": 995645,
+              "converged_count": 1000000,
+              "time_seconds": 150.88470005989075
+            },
+            "relaybp": {
+              "decoder": "relaybp",
+              "logical_error_rate": 0.005769000000000024,
+              "num_shots": 1000000,
+              "correct_count": 994231,
+              "converged_count": 990677,
+              "time_seconds": 488.37037920951843
+            }
+          }
+        },
+        {
+          "error_rate": 0.008,
+          "erasure_rate": 0.1,
+          "decoders": {
+            "min_sum_bp": {
+              "decoder": "min_sum_bp",
+              "logical_error_rate": 0.011830000000000007,
+              "num_shots": 1000000,
+              "correct_count": 988170,
+              "converged_count": 968165,
+              "time_seconds": 138.22663402557373
+            },
+            "bp_osd": {
+              "decoder": "bp_osd",
+              "logical_error_rate": 0.007588999999999957,
+              "num_shots": 1000000,
+              "correct_count": 992411,
+              "converged_count": 1000000,
+              "time_seconds": 155.02536988258362
+            },
+            "relaybp": {
+              "decoder": "relaybp",
+              "logical_error_rate": 0.010078999999999949,
+              "num_shots": 1000000,
+              "correct_count": 989921,
+              "converged_count": 984806,
+              "time_seconds": 487.130065202713
+            }
+          }
+        },
+        {
+          "error_rate": 0.01,
+          "erasure_rate": 0.1,
+          "decoders": {
+            "min_sum_bp": {
+              "decoder": "min_sum_bp",
+              "logical_error_rate": 0.01562600000000003,
+              "num_shots": 1000000,
+              "correct_count": 984374,
+              "converged_count": 958549,
+              "time_seconds": 137.5137631893158
+            },
+            "bp_osd": {
+              "decoder": "bp_osd",
+              "logical_error_rate": 0.009996000000000005,
+              "num_shots": 1000000,
+              "correct_count": 990004,
+              "converged_count": 1000000,
+              "time_seconds": 154.34464859962463
+            },
+            "relaybp": {
+              "decoder": "relaybp",
+              "logical_error_rate": 0.013310000000000044,
+              "num_shots": 1000000,
+              "correct_count": 986690,
+              "converged_count": 980199,
+              "time_seconds": 490.3298227787018
+            }
+          }
+        },
+        {
+          "error_rate": 0.001,
+          "erasure_rate": 0.15,
+          "decoders": {
+            "min_sum_bp": {
+              "decoder": "min_sum_bp",
+              "logical_error_rate": 0.005809999999999982,
+              "num_shots": 1000000,
+              "correct_count": 994190,
+              "converged_count": 981889,
+              "time_seconds": 143.92516922950745
+            },
+            "bp_osd": {
+              "decoder": "bp_osd",
+              "logical_error_rate": 0.004013000000000044,
+              "num_shots": 1000000,
+              "correct_count": 995987,
+              "converged_count": 1000000,
+              "time_seconds": 152.3506302833557
+            },
+            "relaybp": {
+              "decoder": "relaybp",
+              "logical_error_rate": 0.005467,
+              "num_shots": 1000000,
+              "correct_count": 994533,
+              "converged_count": 985026,
+              "time_seconds": 488.24408984184265
+            }
+          }
+        },
+        {
+          "error_rate": 0.003,
+          "erasure_rate": 0.15,
+          "decoders": {
+            "min_sum_bp": {
+              "decoder": "min_sum_bp",
+              "logical_error_rate": 0.010410999999999948,
+              "num_shots": 1000000,
+              "correct_count": 989589,
+              "converged_count": 969754,
+              "time_seconds": 143.69520235061646
+            },
+            "bp_osd": {
+              "decoder": "bp_osd",
+              "logical_error_rate": 0.0068430000000000435,
+              "num_shots": 1000000,
+              "correct_count": 993157,
+              "converged_count": 1000000,
+              "time_seconds": 153.24270510673523
+            },
+            "relaybp": {
+              "decoder": "relaybp",
+              "logical_error_rate": 0.009411999999999976,
+              "num_shots": 1000000,
+              "correct_count": 990588,
+              "converged_count": 979322,
+              "time_seconds": 494.0434145927429
+            }
+          }
+        },
+        {
+          "error_rate": 0.005,
+          "erasure_rate": 0.15,
+          "decoders": {
+            "min_sum_bp": {
+              "decoder": "min_sum_bp",
+              "logical_error_rate": 0.015653999999999946,
+              "num_shots": 1000000,
+              "correct_count": 984346,
+              "converged_count": 956915,
+              "time_seconds": 144.34395360946655
+            },
+            "bp_osd": {
+              "decoder": "bp_osd",
+              "logical_error_rate": 0.010105999999999948,
+              "num_shots": 1000000,
+              "correct_count": 989894,
+              "converged_count": 1000000,
+              "time_seconds": 158.72702884674072
+            },
+            "relaybp": {
+              "decoder": "relaybp",
+              "logical_error_rate": 0.013935999999999948,
+              "num_shots": 1000000,
+              "correct_count": 986064,
+              "converged_count": 972918,
+              "time_seconds": 506.91426944732666
+            }
+          }
+        },
+        {
+          "error_rate": 0.008,
+          "erasure_rate": 0.15,
+          "decoders": {
+            "min_sum_bp": {
+              "decoder": "min_sum_bp",
+              "logical_error_rate": 0.02407300000000001,
+              "num_shots": 1000000,
+              "correct_count": 975927,
+              "converged_count": 936734,
+              "time_seconds": 141.7429323196411
+            },
+            "bp_osd": {
+              "decoder": "bp_osd",
+              "logical_error_rate": 0.01550600000000002,
+              "num_shots": 1000000,
+              "correct_count": 984494,
+              "converged_count": 1000000,
+              "time_seconds": 155.9246690273285
+            }
+          }
+        },
+        {
+          "error_rate": 0.01,
+          "erasure_rate": 0.15,
+          "decoders": {
+            "bp_osd": {
+              "decoder": "bp_osd",
+              "logical_error_rate": 0.01943399999999995,
+              "num_shots": 1000000,
+              "correct_count": 980566,
+              "converged_count": 1000000,
+              "time_seconds": 164.0528666973114
+            },
+            "min_sum_bp": {
+              "decoder": "min_sum_bp",
+              "logical_error_rate": 0.03009600000000001,
+              "num_shots": 1000000,
+              "correct_count": 969904,
+              "converged_count": 922263,
+              "time_seconds": 144.259024143219
+            }
+          }
+        }
+      ]
+    },
+    "BB_90": {
+      "code_name": "BB_90",
+      "N": 90,
+      "K": 8,
+      "D": 10,
+      "num_shots": 1000000,
+      "tn_max_shots": 1000000,
+      "data": [
+        {
+          "error_rate": 0.001,
+          "erasure_rate": 0.0,
+          "decoders": {
+            "min_sum_bp": {
+              "decoder": "min_sum_bp",
+              "logical_error_rate": 2.9999999999752447e-06,
+              "num_shots": 1000000,
+              "correct_count": 999997,
+              "converged_count": 999995,
+              "time_seconds": 179.75144147872925
+            },
+            "bp_osd": {
+              "decoder": "bp_osd",
+              "logical_error_rate": 1.0000000000287557e-06,
+              "num_shots": 1000000,
+              "correct_count": 999999,
+              "converged_count": 1000000,
+              "time_seconds": 215.7738552093506
+            }
+          }
+        }
+      ]
+    }
+  }
+}

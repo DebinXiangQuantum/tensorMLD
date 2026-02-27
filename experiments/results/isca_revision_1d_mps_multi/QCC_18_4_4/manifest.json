@@ -1,0 +1,49 @@
+{
+  "name": "QCC_18_4_4",
+  "K": 4,
+  "M": 7,
+  "num_sites": 11,
+  "syndrome_labels": [
+    "syn_param_4",
+    "syn_param_3",
+    "syn_param_5",
+    "syn_param_0",
+    "syn_param_6",
+    "syn_param_1",
+    "syn_param_2"
+  ],
+  "logical_labels": [
+    "obs_3",
+    "obs_0",
+    "obs_1",
+    "obs_2"
+  ],
+  "site_labels": [
+    "obs_3",
+    "syn_param_4",
+    "syn_param_3",
+    "syn_param_5",
+    "syn_param_0",
+    "syn_param_6",
+    "syn_param_1",
+    "obs_0",
+    "obs_1",
+    "syn_param_2",
+    "obs_2"
+  ],
+  "bond_dims": [
+    1,
+    1,
+    2,
+    4,
+    6,
+    8,
+    4,
+    2,
+    2,
+    2,
+    1
+  ],
+  "trunc_error": 8.775067418695621e-15,
+  "compile_ms": 349.752
+}

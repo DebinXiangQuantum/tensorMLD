@@ -65,7 +65,7 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(
-        description="Multi-p benchmark for BB_18_4_4 and TB_25_3_4"
+        description="Multi-p benchmark for QCC_18_4_4 and LDPC_25_3_4"
     )
     parser.add_argument("--shots", type=int, default=2000)
     parser.add_argument("--chi", type=int, default=32)
@@ -79,7 +79,7 @@ def main():
     parser.add_argument(
         "--codes",
         nargs="*",
-        default=["BB_18_4_4", "TB_25_3_4"],
+        default=["QCC_18_4_4", "LDPC_25_3_4"],
     )
     parser.add_argument("--workers", type=int, default=4)
     args = parser.parse_args()

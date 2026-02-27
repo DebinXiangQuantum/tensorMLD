@@ -1,0 +1,103 @@
+\begin{algorithm}[t]
+\caption{Online Decoding via Conditional Marginal Probability}
+\label{alg:conditional-decoding}
+\SetKwFunction{Pjudge}{JudgeP}
+\SetKwFunction{Contract}{Contract}
+\SetKwProg{Fn}{Function}{:}{end}
+
+\KwIn{Measured syndrome vector $\boldsymbol{s} = (s_1, \dots, s_M)$; 
+MPS chain with tensor set $\mathcal{T} = \{\mathcal{T}_1, \dots, \mathcal{T}_{M+K}\}$ with maximum bond $\chi$. Each tensor has shape [$\chi$,$\chi$,2]. Here, M is the length of syndrome bits, and K is the length of logical bits.} 
+\KwOut{Decoded logical spin vector $\boldsymbol{l} = (l_1, \dots, l_K)$.}
+
+
+
+\Fn{\Pjudge{$P$}}{
+    \If{$P > 0.6$}{\KwRet  $1$}
+    \If{$P < 0.4$}{\KwRet $0$}{
+            \KwRet $\text{unknown}$
+        }
+}
+\Fn{\Contract{$\{\mathcal{A}_1, \dots, \mathcal{A}_{T}\}$}}{
+    \For{$p = 1 \dots \log_2 T$}{
+        \ForPar{$i = 1 \dots \frac{T}{2^p}$}{
+        $\mathcal{A}_{2i}[:][:] \leftarrow 
+        \sum_{t=0}^{\chi-1} \mathcal{A}_{2i}[:][t]\times \mathcal{A}_{2i+1}[t][:]$  \tcp*[r]{Matrix-matrix product}
+        pop $\mathcal{A}_{2i+1}$ from chain $\mathcal{A}$;
+        }
+    }
+    \KwRet $\mathcal{A}_{0}$
+}
+
+
+% =========================================================
+\textbf{Step 1: Fix syndrome indices and contract to logical MPS}\\
+\ForPar{$i = 1 \dots M$}{
+    \tcp{Fix physical index of $\mathcal{T}_i$ by measured $s_i$}
+    $\mathcal{T}_i[:][:] \leftarrow \mathcal{T}_i[:][:][s_i]$
+}
+
+\tcp{Multiply the M matrices in tree}
+% \For{$p = 1 \dots \log_2 M$}{
+%     \ForPar{$i = 1 \dots \frac{M}{2^p}$}{
+%     $\mathcal{T}_{2i}[:][:] \leftarrow 
+%     \sum_{t=1}^{\chi} \mathcal{T}_{2i}[:][t]\times \mathcal{T}_{2i+1}[t][:]$  \tcp*[r]{Matrix-matrix product}
+%     pop $\mathcal{T}_{2i+1}$ from chain $\mathcal{T}$;
+%     }
+% }
+$\mathcal{T}_{0} \gets $  \Contract{$\{\mathcal{T}_1, \dots, \mathcal{T}_{M}\}$}\;
+$\mathcal{T}_{M+1}[:][:][0] \gets  \sum_{t=0}^{\chi-1}\mathcal{T}_{0}[:][t]  \times  \mathcal{T}_{M+1}$[t][:][0] \;
+$\mathcal{T}_{M+1}[:][:][1] \gets  \sum_{t=0}^{\chi-1}\mathcal{T}_{0}[:][t]  \times  \mathcal{T}_{M+1}$[t][:][1] \;
+
+
+\tcp{After Contraction, MPS chain has only K tensors.}
+
+
+
+\end{algorithm}
+
+
+
+\begin{algorithm}[t]
+\caption{Online Decoding via Conditional Marginal Probability (Continue)}
+
+% =========================================================
+\BlankLine
+\textbf{Step 2: Conditional refinement of uncertain bits} \\
+\For{$i = 1 \dots K$}{
+    $l_i \gets \text{unknown}$\; \tcp{Initialize logical bits }
+}
+\While{$\exists\; l_i \in \vec{l} == \text{unknown}$}{
+    \ForPar{all unknown $i$}{
+            \tcp{Contract locally with $l_i =0,1$}
+            \For{$\lambda \in \{0,1\}$}{
+                % $\psi_\lambda \leftarrow \text{Identity matrix with shape }[\chi, \chi]$ \tcp*[r]{Initialize scalar}
+                \For{$k = 1 \dots K$}{
+                    \If{$k=i$}{
+                        $T_k'[:][:] \leftarrow \mathcal{T}_k[:][:][\lambda]$
+                    }\If{$l_k \in \{0,1\}$}{
+                    $\mathcal{T}_{k}'[:][:] \leftarrow \mathcal{T}_{k}[:][:][l_k]$
+                }\Else{
+                        $\mathcal{T}_k'[:][:] \leftarrow \mathcal{T}_k[:][:][0]+ \mathcal{T}_k[:][:][1]$
+                    }
+                    % $\psi_\lambda[:][:] \leftarrow \sum_{t=1}^\chi \psi_\lambda[:][t] \times T_k'[t][:]$ \tcp*[r]{Matrix-matrix product}
+                }
+                $\psi_\lambda[:][:] \leftarrow$ \Contract{$\{\mathcal{T}'_1, \dots, \mathcal{T}'_{K}\}$}
+                
+                $F_\lambda \leftarrow |\sum_{t=1}^{\chi} \psi_\lambda[t][t]|$
+            }
+
+            $P_i^{\text{cond}} \leftarrow \dfrac{F_{1}}{F_{1} + F_{0}}$ \;
+            $l_i \leftarrow$ \Pjudge{$P_i$}
+        
+    }
+}
+
+\BlankLine
+\Return{$\boldsymbol{l}$}
+
+\BlankLine
+\textbf{Complexity Summary:} \\
+Sequential: $O(M\chi^2 + \log K \cdot K^2\chi^4)$; \\
+Parallel: $O(M\chi^2 + \log K \cdot K\chi^4)$.
+
+\end{algorithm}
