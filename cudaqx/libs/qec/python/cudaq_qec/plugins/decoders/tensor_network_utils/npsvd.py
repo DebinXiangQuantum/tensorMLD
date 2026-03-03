@@ -3,11 +3,11 @@ import time
 import sys
 from scipy import linalg
 
-def svd(A):
+def svd(A, full_matrices=False):
     try:
-        U,s,V = np.linalg.svd(A)
+        U,s,V = np.linalg.svd(A, full_matrices=full_matrices)
     except np.linalg.LinAlgError:
-        U,s,V = linalg.svd(A,lapack_driver='gesvd')
+        U,s,V = linalg.svd(A, full_matrices=full_matrices, lapack_driver='gesvd')
     return U,s,V.T
 
 

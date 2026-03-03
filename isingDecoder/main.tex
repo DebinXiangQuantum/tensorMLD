@@ -1,0 +1,152 @@
+\documentclass[twocolumn, conference, 10pt]{IEEEtran}
+
+\setlength {\marginparwidth }{2cm} 
+
+\usepackage{graphicx, pifont}
+\usepackage{subfigure}
+\usepackage{mathtools}
+\usepackage{tikz}
+\usepackage{soul}
+\usepackage{cite}
+\usepackage{changes}
+\usepackage{physics}
+\usepackage{amsmath,amssymb}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage[toc,page]{appendix}
+\usepackage{wrapfig}
+\usepackage[makeroom]{cancel}
+\usepackage{tablefootnote}
+\usepackage{comment}
+\usepackage[english]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{boxedminipage}
+\usepackage{textcomp}
+\usepackage{xcolor, wrapfig}
+\usepackage{fancyhdr}
+\usepackage{tabularx}
+\usepackage{makecell}
+%\usepackage[disable]{todonotes}
+%\usepackage{todonotes}
+%\usepackage{biblatex}
+\presetkeys{todonotes}{disable}{}
+
+\IEEEoverridecommandlockouts
+\usepackage{listings}
+% \usepackage{caption}
+
+\definecolor{mygreen}{RGB}{28,172,0}
+\lstset{
+    xleftmargin=15pt,
+    xrightmargin=5pt,
+    frame=single,%
+    captionpos=b,
+    language=Matlab,
+    basicstyle=\ttfamily\scriptsize,%
+    breaklines=true,%
+    keywordstyle=\color{black},%
+    commentstyle=\color{mygreen},%
+    showstringspaces=false,%
+    numbers=left,%
+    numberstyle={\tiny \color{black}},%
+    numbersep=9pt,%
+    emph=[1]{for,end,break,function},
+    emphstyle=[1]\color{blue}\bfseries, %
+    emph=[2]{sparse,length,unique,full,rand,ode45},
+    emphstyle=[2]\color{black}\bfseries, %
+}
+
+\DeclareMathOperator\arctanh{arctanh}
+
+\algnewcommand\algorithmicforeach{\textbf{for each}}
+\algdef{S}[FOR]{ForEach}[1]{\algorithmicforeach\ #1\ \algorithmicdo}
+\let\oldtodo\todo
+\newcommand*{\Scale}[2][4]{\scalebox{#1}{$#2$}}%
+\renewcommand{\todo}[1]{\oldtodo[inline, color=yellow]{{\bf TODO:} #1}}
+%\newcommand{\fixme}[1]{\oldtodo[inline, color=red]{{\bf FIXME:} #1}}
+\newcommand{\fixme}[1]{\fcolorbox{black}{red}{\color{yellow}{\bf FIXME:} #1}}
+\newcommand{\note}[1]{\oldtodo[inline, color=green]{{\bf Note:} #1}}
+\newcommand{\donotshow}[1]{}
+\newcommand\encircle[1]{%
+    \tikz[baseline=(X.base)]
+    \node (X) [draw, shape=circle, inner sep=0] {\strut #1};
+}
+\def\eg{{\em e.g.}, }
+\def\ie{{\em i.e.}, }
+\def\etal{et al.\ }
+\newcommand{\red}[1]{{\color{red}#1}}
+\newcommand{\blue}[1]{{\color{blue}#1}}
+
+\newcommand*\xor{\oplus}
+
+%\setlength{\abovedisplayskip}{5pt}
+%\setlength{\belowdisplayskip}{5pt}
+
+\graphicspath{{FIGS/}}
+
+\title{Efficient LDPC Decoding using Physical Computation
+%\thanks{Copyright and Reprint Permission: Abstracting is permitted with 
+%credit to the source. Libraries are permitted to photocopy beyond the 
+%limit of U.S. copyright law for private use of patrons those articles 
+%in this volume that carry a code at the bottom of the first page, provided 
+%the per-copy fee indicated in the code is paid through Copyright Clearance 
+%Center, 222 Rosewood Drive, Danvers, MA 01923. For reprint or republication 
+%permission, email to IEEE Copyrights Manager at pubs-permissions@ieee.org. 
+%All rights reserved. Copyright ©2021 by IEEE.}
+}
+\author{
+\IEEEauthorblockN{Uday Kumar Reddy Vengalam, Andrew Hahn, Yongchao Liu, Anshujit Sharma, Hui Wu, and Michael Huang}
+%\IEEEauthorblockN{Richard Afoakwa, Yiqiao Zhang, Uday Kumar Reddy Vengalam, 
+%Zeljko Ignjatovic, and Michael Huang}
+\IEEEauthorblockA{Department of Electrical and Computer Engineering, 
+University of Rochester \\
+\{uvengala, ahahn7, yongchao.liu, ashar36, hui.wu,
+michael.huang\}@rochester.edu}
+}
+
+%\author{Uday Kumar Reddy Vengalam}
+%\additionalaffiliation{\institution{AMD Research} \country{USA}}
+%\orcid{0000-0001-6748-0625}
+%\email{uvengala@ur.rochester.edu}
+
+%\affiliation{ \institution{University of Rochester} \country{USA}}
+
+%\author {Yongchao Liu} 
+%\orcid{0009-0005-6756-7911}
+%\email{yongchao.liu@rochester.edu}
+%\affiliation{ \institution{University of Rochester} \country{USA}}
+
+%\author{Tong Geng} 
+%\orcid{0000-0002-3644-2922}
+%\email{tong.geng@rochester.edu}
+%\affiliation{ \institution{University of Rochester} \country{USA}}
+
+
+%\author{Hui Wu}
+%\orcid{0009-0008-9150-5608}
+%\email{hui.wu@rochester.edu}
+%\affiliation{ \institution{University of Rochester} \country{USA}}
+
+%\author{Michael Huang}
+%\orcid{0000-0001-9799-2920}
+%\email{michael.huang@rochester.edu}
+%\affiliation{ \institution{University of Rochester} \country{USA}}
+
+\begin{document}
+\maketitle
+\pagestyle{plain}
+
+\input{Sections/0abstract}
+\input{Sections/1intro.tex}
+\input{Sections/2background.tex}
+\input{Sections/3proposed.tex}
+\input{Sections/4evaluation.tex}
+\input{Sections/5conclusion.tex}
+
+\small
+\bibliographystyle{IEEEtran}
+\bibliography{main}
+
+%\newpage
+%\input{LDPC codes/Sections/7notes}
+\end{document}

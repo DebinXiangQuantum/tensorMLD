@@ -1,0 +1,2552 @@
+[
+  {
+    "code_name": "QCC_18_4_4",
+    "error_rate": 0.01,
+    "erasure_rate": 0.0,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.0007088176920895946,
+    "num_shots": 7054,
+    "num_errors": 5,
+    "per_shot_ms": 0.253332888130294,
+    "time_seconds": 4.345192193984985,
+    "converged": true,
+    "code_params": {
+      "N": 18,
+      "K": 4,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "QCC_18_4_4",
+    "error_rate": 0.008,
+    "erasure_rate": 0.0,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.0005636978579481398,
+    "num_shots": 8870,
+    "num_errors": 5,
+    "per_shot_ms": 0.2518047474685893,
+    "time_seconds": 4.509038209915161,
+    "converged": true,
+    "code_params": {
+      "N": 18,
+      "K": 4,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "QCC_18_4_4",
+    "error_rate": 0.005,
+    "erasure_rate": 0.05,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.0004984547901505334,
+    "num_shots": 10031,
+    "num_errors": 5,
+    "per_shot_ms": 0.25234858448514197,
+    "time_seconds": 4.903029441833496,
+    "converged": true,
+    "code_params": {
+      "N": 18,
+      "K": 4,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "QCC_18_4_4",
+    "error_rate": 0.008,
+    "erasure_rate": 0.05,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.0011887779362815027,
+    "num_shots": 4206,
+    "num_errors": 5,
+    "per_shot_ms": 0.25417789979826766,
+    "time_seconds": 1.197072982788086,
+    "converged": true,
+    "code_params": {
+      "N": 18,
+      "K": 4,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "QCC_18_4_4",
+    "error_rate": 0.01,
+    "erasure_rate": 0.05,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.0029291154071470417,
+    "num_shots": 1707,
+    "num_errors": 5,
+    "per_shot_ms": 0.25507156515093526,
+    "time_seconds": 0.48881053924560547,
+    "converged": true,
+    "code_params": {
+      "N": 18,
+      "K": 4,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "QCC_18_4_4",
+    "error_rate": 0.003,
+    "erasure_rate": 0.05,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.00017524183373054817,
+    "num_shots": 28532,
+    "num_errors": 5,
+    "per_shot_ms": 0.20103650625868766,
+    "time_seconds": 8.329172849655151,
+    "converged": true,
+    "code_params": {
+      "N": 18,
+      "K": 4,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "QCC_18_4_4",
+    "error_rate": 0.005,
+    "erasure_rate": 0.0,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.0002299484915378955,
+    "num_shots": 21744,
+    "num_errors": 5,
+    "per_shot_ms": 0.2611563366243645,
+    "time_seconds": 8.484931468963623,
+    "converged": true,
+    "code_params": {
+      "N": 18,
+      "K": 4,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "QCC_18_4_4",
+    "error_rate": 0.01,
+    "erasure_rate": 0.05,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.0008188666885031117,
+    "num_shots": 6106,
+    "num_errors": 5,
+    "per_shot_ms": 0.8602120077418687,
+    "time_seconds": 5.504290580749512,
+    "converged": true,
+    "code_params": {
+      "N": 18,
+      "K": 4,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "QCC_18_4_4",
+    "error_rate": 0.003,
+    "erasure_rate": 0.1,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.0014484356894553883,
+    "num_shots": 3452,
+    "num_errors": 5,
+    "per_shot_ms": 0.16044513651559417,
+    "time_seconds": 0.6275818347930908,
+    "converged": true,
+    "code_params": {
+      "N": 18,
+      "K": 4,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "QCC_18_4_4",
+    "error_rate": 0.008,
+    "erasure_rate": 0.05,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.0004997501249375312,
+    "num_shots": 10005,
+    "num_errors": 5,
+    "per_shot_ms": 0.9274837554901139,
+    "time_seconds": 9.644227981567383,
+    "converged": true,
+    "code_params": {
+      "N": 18,
+      "K": 4,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "QCC_18_4_4",
+    "error_rate": 0.001,
+    "erasure_rate": 0.1,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.00024193158174868148,
+    "num_shots": 20667,
+    "num_errors": 5,
+    "per_shot_ms": 0.24678529811458041,
+    "time_seconds": 5.710116624832153,
+    "converged": true,
+    "code_params": {
+      "N": 18,
+      "K": 4,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "QCC_18_4_4",
+    "error_rate": 0.003,
+    "erasure_rate": 0.0,
+    "decoder": "bp_osd",
+    "logical_error_rate": 8.961376467425397e-05,
+    "num_shots": 55795,
+    "num_errors": 5,
+    "per_shot_ms": 0.19082071875380685,
+    "time_seconds": 14.294207334518433,
+    "converged": true,
+    "code_params": {
+      "N": 18,
+      "K": 4,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "QCC_18_4_4",
+    "error_rate": 0.008,
+    "erasure_rate": 0.1,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.006925207756232687,
+    "num_shots": 722,
+    "num_errors": 5,
+    "per_shot_ms": 0.2516151465207256,
+    "time_seconds": 0.21032381057739258,
+    "converged": true,
+    "code_params": {
+      "N": 18,
+      "K": 4,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "QCC_18_4_4",
+    "error_rate": 0.005,
+    "erasure_rate": 0.1,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.0013344008540165466,
+    "num_shots": 3747,
+    "num_errors": 5,
+    "per_shot_ms": 0.24620908274471143,
+    "time_seconds": 1.0464298725128174,
+    "converged": true,
+    "code_params": {
+      "N": 18,
+      "K": 4,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "QCC_18_4_4",
+    "error_rate": 0.008,
+    "erasure_rate": 0.1,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.004389815627743635,
+    "num_shots": 1139,
+    "num_errors": 5,
+    "per_shot_ms": 0.9268814267768893,
+    "time_seconds": 1.175342082977295,
+    "converged": true,
+    "code_params": {
+      "N": 18,
+      "K": 4,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "QCC_18_4_4",
+    "error_rate": 0.01,
+    "erasure_rate": 0.1,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.00563063063063063,
+    "num_shots": 888,
+    "num_errors": 5,
+    "per_shot_ms": 0.23738731135119187,
+    "time_seconds": 0.23789358139038086,
+    "converged": true,
+    "code_params": {
+      "N": 18,
+      "K": 4,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "QCC_18_4_4",
+    "error_rate": 0.01,
+    "erasure_rate": 0.1,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.004432624113475178,
+    "num_shots": 1128,
+    "num_errors": 5,
+    "per_shot_ms": 0.871530238618242,
+    "time_seconds": 1.1127314567565918,
+    "converged": true,
+    "code_params": {
+      "N": 18,
+      "K": 4,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "QCC_18_4_4",
+    "error_rate": 0.001,
+    "erasure_rate": 0.15,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.001644736842105263,
+    "num_shots": 3040,
+    "num_errors": 5,
+    "per_shot_ms": 0.8660147064610532,
+    "time_seconds": 2.734041929244995,
+    "converged": true,
+    "code_params": {
+      "N": 18,
+      "K": 4,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "QCC_18_4_4",
+    "error_rate": 0.003,
+    "erasure_rate": 0.15,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.00400962309542903,
+    "num_shots": 1247,
+    "num_errors": 5,
+    "per_shot_ms": 0.15040197273015785,
+    "time_seconds": 0.22491145133972168,
+    "converged": true,
+    "code_params": {
+      "N": 18,
+      "K": 4,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "QCC_18_4_4",
+    "error_rate": 0.001,
+    "erasure_rate": 0.15,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.00038877225721172535,
+    "num_shots": 12861,
+    "num_errors": 5,
+    "per_shot_ms": 0.2403891982895786,
+    "time_seconds": 3.4229073524475098,
+    "converged": true,
+    "code_params": {
+      "N": 18,
+      "K": 4,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "QCC_18_4_4",
+    "error_rate": 0.003,
+    "erasure_rate": 0.15,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.0013846579894765993,
+    "num_shots": 3611,
+    "num_errors": 5,
+    "per_shot_ms": 0.8892558744098301,
+    "time_seconds": 3.305022954940796,
+    "converged": true,
+    "code_params": {
+      "N": 18,
+      "K": 4,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "QCC_18_4_4",
+    "error_rate": 0.005,
+    "erasure_rate": 0.15,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.0032216494845360823,
+    "num_shots": 1552,
+    "num_errors": 5,
+    "per_shot_ms": 0.23954246462005932,
+    "time_seconds": 0.4241654872894287,
+    "converged": true,
+    "code_params": {
+      "N": 18,
+      "K": 4,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "QCC_18_4_4",
+    "error_rate": 0.008,
+    "erasure_rate": 0.15,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.00425531914893617,
+    "num_shots": 1175,
+    "num_errors": 5,
+    "per_shot_ms": 0.24000330174222906,
+    "time_seconds": 0.3345680236816406,
+    "converged": true,
+    "code_params": {
+      "N": 18,
+      "K": 4,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "QCC_18_4_4",
+    "error_rate": 0.005,
+    "erasure_rate": 0.15,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.0017355085039916696,
+    "num_shots": 2881,
+    "num_errors": 5,
+    "per_shot_ms": 0.6621759494780171,
+    "time_seconds": 1.9678478240966797,
+    "converged": true,
+    "code_params": {
+      "N": 18,
+      "K": 4,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "QCC_18_4_4",
+    "error_rate": 0.01,
+    "erasure_rate": 0.15,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.006657789613848202,
+    "num_shots": 751,
+    "num_errors": 5,
+    "per_shot_ms": 0.15178469621071644,
+    "time_seconds": 0.13355207443237305,
+    "converged": true,
+    "code_params": {
+      "N": 18,
+      "K": 4,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "QCC_18_4_4",
+    "error_rate": 0.008,
+    "erasure_rate": 0.15,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.0027793218454697055,
+    "num_shots": 1799,
+    "num_errors": 5,
+    "per_shot_ms": 0.9074863160299288,
+    "time_seconds": 1.6735575199127197,
+    "converged": true,
+    "code_params": {
+      "N": 18,
+      "K": 4,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "QCC_18_4_4",
+    "error_rate": 0.005,
+    "erasure_rate": 0.1,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.0004059759662227996,
+    "num_shots": 12316,
+    "num_errors": 5,
+    "per_shot_ms": 0.757310772995238,
+    "time_seconds": 9.623162031173706,
+    "converged": true,
+    "code_params": {
+      "N": 18,
+      "K": 4,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "QCC_18_4_4",
+    "error_rate": 0.005,
+    "erasure_rate": 0.05,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.0002072538860103627,
+    "num_shots": 24125,
+    "num_errors": 5,
+    "per_shot_ms": 0.7648390241237503,
+    "time_seconds": 21.078422784805298,
+    "converged": true,
+    "code_params": {
+      "N": 18,
+      "K": 4,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "QCC_18_4_4",
+    "error_rate": 0.01,
+    "erasure_rate": 0.15,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.0016784155756965425,
+    "num_shots": 2979,
+    "num_errors": 5,
+    "per_shot_ms": 0.918764682294699,
+    "time_seconds": 2.815187454223633,
+    "converged": true,
+    "code_params": {
+      "N": 18,
+      "K": 4,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "QCC_18_4_4",
+    "error_rate": 0.001,
+    "erasure_rate": 0.05,
+    "decoder": "bp_osd",
+    "logical_error_rate": 6.208712064769285e-05,
+    "num_shots": 80532,
+    "num_errors": 5,
+    "per_shot_ms": 0.2454721595469716,
+    "time_seconds": 24.18968677520752,
+    "converged": true,
+    "code_params": {
+      "N": 18,
+      "K": 4,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_25_3_4",
+    "error_rate": 0.005,
+    "erasure_rate": 0.0,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.0020755500207555004,
+    "num_shots": 2409,
+    "num_errors": 5,
+    "per_shot_ms": 0.2714403935515965,
+    "time_seconds": 0.7468166351318359,
+    "converged": true,
+    "code_params": {
+      "N": 25,
+      "K": 3,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "QCC_18_4_4",
+    "error_rate": 0.003,
+    "erasure_rate": 0.1,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.00029730051135687955,
+    "num_shots": 16818,
+    "num_errors": 5,
+    "per_shot_ms": 0.9547334489109032,
+    "time_seconds": 16.602147579193115,
+    "converged": true,
+    "code_params": {
+      "N": 18,
+      "K": 4,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_25_3_4",
+    "error_rate": 0.003,
+    "erasure_rate": 0.0,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.000281610813855252,
+    "num_shots": 17755,
+    "num_errors": 5,
+    "per_shot_ms": 0.19683304789099212,
+    "time_seconds": 3.919516086578369,
+    "converged": true,
+    "code_params": {
+      "N": 25,
+      "K": 3,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_25_3_4",
+    "error_rate": 0.008,
+    "erasure_rate": 0.0,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.002925687536571094,
+    "num_shots": 1709,
+    "num_errors": 5,
+    "per_shot_ms": 0.26868894966531737,
+    "time_seconds": 0.5174808502197266,
+    "converged": true,
+    "code_params": {
+      "N": 25,
+      "K": 3,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_25_3_4",
+    "error_rate": 0.01,
+    "erasure_rate": 0.0,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.0016207455429497568,
+    "num_shots": 3085,
+    "num_errors": 5,
+    "per_shot_ms": 0.27175521541453257,
+    "time_seconds": 0.9561975002288818,
+    "converged": true,
+    "code_params": {
+      "N": 25,
+      "K": 3,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_25_3_4",
+    "error_rate": 0.01,
+    "erasure_rate": 0.0,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.001954652071931196,
+    "num_shots": 2558,
+    "num_errors": 5,
+    "per_shot_ms": 2.5144520916912687,
+    "time_seconds": 6.592893123626709,
+    "converged": true,
+    "code_params": {
+      "N": 25,
+      "K": 3,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_25_3_4",
+    "error_rate": 0.005,
+    "erasure_rate": 0.0,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.0011361054305839581,
+    "num_shots": 4401,
+    "num_errors": 5,
+    "per_shot_ms": 2.771619069958188,
+    "time_seconds": 12.437114000320435,
+    "converged": true,
+    "code_params": {
+      "N": 25,
+      "K": 3,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_25_3_4",
+    "error_rate": 0.008,
+    "erasure_rate": 0.0,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.0012919896640826874,
+    "num_shots": 3870,
+    "num_errors": 5,
+    "per_shot_ms": 2.4689472922983096,
+    "time_seconds": 9.789170742034912,
+    "converged": true,
+    "code_params": {
+      "N": 25,
+      "K": 3,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_25_3_4",
+    "error_rate": 0.003,
+    "erasure_rate": 0.05,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.0008595495960116899,
+    "num_shots": 5817,
+    "num_errors": 5,
+    "per_shot_ms": 0.25469334198884663,
+    "time_seconds": 1.654461145401001,
+    "converged": true,
+    "code_params": {
+      "N": 25,
+      "K": 3,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_25_3_4",
+    "error_rate": 0.001,
+    "erasure_rate": 0.05,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.00024001536098310292,
+    "num_shots": 20832,
+    "num_errors": 5,
+    "per_shot_ms": 0.2750334903574942,
+    "time_seconds": 6.382049560546875,
+    "converged": true,
+    "code_params": {
+      "N": 25,
+      "K": 3,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_25_3_4",
+    "error_rate": 0.005,
+    "erasure_rate": 0.05,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.00294811320754717,
+    "num_shots": 1696,
+    "num_errors": 5,
+    "per_shot_ms": 0.2777368392584459,
+    "time_seconds": 0.5332660675048828,
+    "converged": true,
+    "code_params": {
+      "N": 25,
+      "K": 3,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_25_3_4",
+    "error_rate": 0.003,
+    "erasure_rate": 0.05,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.00319693094629156,
+    "num_shots": 1564,
+    "num_errors": 5,
+    "per_shot_ms": 2.7335455350558777,
+    "time_seconds": 4.338823080062866,
+    "converged": true,
+    "code_params": {
+      "N": 25,
+      "K": 3,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_25_3_4",
+    "error_rate": 0.008,
+    "erasure_rate": 0.05,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.008912655971479501,
+    "num_shots": 561,
+    "num_errors": 5,
+    "per_shot_ms": 0.2777780441039386,
+    "time_seconds": 0.1879563331604004,
+    "converged": true,
+    "code_params": {
+      "N": 25,
+      "K": 3,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_25_3_4",
+    "error_rate": 0.01,
+    "erasure_rate": 0.05,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.0032278889606197547,
+    "num_shots": 1549,
+    "num_errors": 5,
+    "per_shot_ms": 2.7259652117439206,
+    "time_seconds": 4.285461902618408,
+    "converged": true,
+    "code_params": {
+      "N": 25,
+      "K": 3,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_25_3_4",
+    "error_rate": 0.01,
+    "erasure_rate": 0.05,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.015151515151515152,
+    "num_shots": 330,
+    "num_errors": 5,
+    "per_shot_ms": 0.2848415663748077,
+    "time_seconds": 0.12631487846374512,
+    "converged": true,
+    "code_params": {
+      "N": 25,
+      "K": 3,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_25_3_4",
+    "error_rate": 0.001,
+    "erasure_rate": 0.0,
+    "decoder": "bp_osd",
+    "logical_error_rate": 5.5687969171140264e-05,
+    "num_shots": 89786,
+    "num_errors": 5,
+    "per_shot_ms": 0.23447194251421896,
+    "time_seconds": 23.530181169509888,
+    "converged": true,
+    "code_params": {
+      "N": 25,
+      "K": 3,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_25_3_4",
+    "error_rate": 0.001,
+    "erasure_rate": 0.1,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.00109217999126256,
+    "num_shots": 4578,
+    "num_errors": 5,
+    "per_shot_ms": 0.2348680275400011,
+    "time_seconds": 1.2063159942626953,
+    "converged": true,
+    "code_params": {
+      "N": 25,
+      "K": 3,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_25_3_4",
+    "error_rate": 0.005,
+    "erasure_rate": 0.05,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.0011266336187471834,
+    "num_shots": 4438,
+    "num_errors": 5,
+    "per_shot_ms": 2.393876179320794,
+    "time_seconds": 10.777191877365112,
+    "converged": true,
+    "code_params": {
+      "N": 25,
+      "K": 3,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_25_3_4",
+    "error_rate": 0.008,
+    "erasure_rate": 0.05,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.0015248551387618177,
+    "num_shots": 3279,
+    "num_errors": 5,
+    "per_shot_ms": 2.6333022313933796,
+    "time_seconds": 8.763747215270996,
+    "converged": true,
+    "code_params": {
+      "N": 25,
+      "K": 3,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_25_3_4",
+    "error_rate": 0.003,
+    "erasure_rate": 0.1,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.004985044865403789,
+    "num_shots": 1003,
+    "num_errors": 5,
+    "per_shot_ms": 0.25244795551090865,
+    "time_seconds": 0.31926965713500977,
+    "converged": true,
+    "code_params": {
+      "N": 25,
+      "K": 3,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_25_3_4",
+    "error_rate": 0.005,
+    "erasure_rate": 0.1,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.004262574595055414,
+    "num_shots": 1173,
+    "num_errors": 5,
+    "per_shot_ms": 0.2525513332721421,
+    "time_seconds": 0.35659193992614746,
+    "converged": true,
+    "code_params": {
+      "N": 25,
+      "K": 3,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "QCC_18_4_4",
+    "error_rate": 0.008,
+    "erasure_rate": 0.0,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 9.499924000607995e-05,
+    "num_shots": 52632,
+    "num_errors": 5,
+    "per_shot_ms": 0.8531393414483025,
+    "time_seconds": 48.04390859603882,
+    "converged": true,
+    "code_params": {
+      "N": 18,
+      "K": 4,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_25_3_4",
+    "error_rate": 0.008,
+    "erasure_rate": 0.1,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.02040816326530612,
+    "num_shots": 245,
+    "num_errors": 5,
+    "per_shot_ms": 0.2909251621791295,
+    "time_seconds": 0.10613536834716797,
+    "converged": true,
+    "code_params": {
+      "N": 25,
+      "K": 3,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_25_3_4",
+    "error_rate": 0.01,
+    "erasure_rate": 0.1,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.013262599469496022,
+    "num_shots": 377,
+    "num_errors": 5,
+    "per_shot_ms": 2.521710939685609,
+    "time_seconds": 1.044865369796753,
+    "converged": true,
+    "code_params": {
+      "N": 25,
+      "K": 3,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_25_3_4",
+    "error_rate": 0.01,
+    "erasure_rate": 0.1,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.023923444976076555,
+    "num_shots": 209,
+    "num_errors": 5,
+    "per_shot_ms": 0.30059335334449294,
+    "time_seconds": 0.09813284873962402,
+    "converged": true,
+    "code_params": {
+      "N": 25,
+      "K": 3,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_25_3_4",
+    "error_rate": 0.008,
+    "erasure_rate": 0.1,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.008210180623973728,
+    "num_shots": 609,
+    "num_errors": 5,
+    "per_shot_ms": 2.45772050127803,
+    "time_seconds": 1.532531499862671,
+    "converged": true,
+    "code_params": {
+      "N": 25,
+      "K": 3,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_25_3_4",
+    "error_rate": 0.001,
+    "erasure_rate": 0.15,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.0067842605156037995,
+    "num_shots": 737,
+    "num_errors": 5,
+    "per_shot_ms": 0.2579465811741077,
+    "time_seconds": 0.2246243953704834,
+    "converged": true,
+    "code_params": {
+      "N": 25,
+      "K": 3,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_25_3_4",
+    "error_rate": 0.003,
+    "erasure_rate": 0.1,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.002635740643120717,
+    "num_shots": 1897,
+    "num_errors": 5,
+    "per_shot_ms": 2.546870337703948,
+    "time_seconds": 4.9928388595581055,
+    "converged": true,
+    "code_params": {
+      "N": 25,
+      "K": 3,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_25_3_4",
+    "error_rate": 0.003,
+    "erasure_rate": 0.15,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.009615384615384616,
+    "num_shots": 520,
+    "num_errors": 5,
+    "per_shot_ms": 0.30163939182574934,
+    "time_seconds": 0.19141864776611328,
+    "converged": true,
+    "code_params": {
+      "N": 25,
+      "K": 3,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_25_3_4",
+    "error_rate": 0.005,
+    "erasure_rate": 0.1,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.00422654268808115,
+    "num_shots": 1183,
+    "num_errors": 5,
+    "per_shot_ms": 2.6395649398068506,
+    "time_seconds": 3.1940739154815674,
+    "converged": true,
+    "code_params": {
+      "N": 25,
+      "K": 3,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_25_3_4",
+    "error_rate": 0.005,
+    "erasure_rate": 0.15,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.017361111111111112,
+    "num_shots": 288,
+    "num_errors": 5,
+    "per_shot_ms": 0.2899136808183458,
+    "time_seconds": 0.11632013320922852,
+    "converged": true,
+    "code_params": {
+      "N": 25,
+      "K": 3,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_25_3_4",
+    "error_rate": 0.001,
+    "erasure_rate": 0.15,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.008928571428571428,
+    "num_shots": 560,
+    "num_errors": 5,
+    "per_shot_ms": 2.603540675980704,
+    "time_seconds": 1.4947218894958496,
+    "converged": true,
+    "code_params": {
+      "N": 25,
+      "K": 3,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_25_3_4",
+    "error_rate": 0.008,
+    "erasure_rate": 0.15,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.0205761316872428,
+    "num_shots": 243,
+    "num_errors": 5,
+    "per_shot_ms": 0.3127894774385931,
+    "time_seconds": 0.1110527515411377,
+    "converged": true,
+    "code_params": {
+      "N": 25,
+      "K": 3,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_25_3_4",
+    "error_rate": 0.001,
+    "erasure_rate": 0.05,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.00043489605984169783,
+    "num_shots": 11497,
+    "num_errors": 5,
+    "per_shot_ms": 2.0894463439500774,
+    "time_seconds": 24.42597246170044,
+    "converged": true,
+    "code_params": {
+      "N": 25,
+      "K": 3,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_25_3_4",
+    "error_rate": 0.01,
+    "erasure_rate": 0.15,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.01838235294117647,
+    "num_shots": 272,
+    "num_errors": 5,
+    "per_shot_ms": 0.19149131634656122,
+    "time_seconds": 0.08336019515991211,
+    "converged": true,
+    "code_params": {
+      "N": 25,
+      "K": 3,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_25_3_4",
+    "error_rate": 0.005,
+    "erasure_rate": 0.15,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.01524390243902439,
+    "num_shots": 328,
+    "num_errors": 5,
+    "per_shot_ms": 2.6182430546458173,
+    "time_seconds": 0.8948731422424316,
+    "converged": true,
+    "code_params": {
+      "N": 25,
+      "K": 3,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "QCC_18_4_4",
+    "error_rate": 0.001,
+    "erasure_rate": 0.1,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 9.412650602409639e-05,
+    "num_shots": 53120,
+    "num_errors": 5,
+    "per_shot_ms": 0.8340516901877989,
+    "time_seconds": 45.73087739944458,
+    "converged": true,
+    "code_params": {
+      "N": 18,
+      "K": 4,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_25_3_4",
+    "error_rate": 0.003,
+    "erasure_rate": 0.15,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.005252100840336135,
+    "num_shots": 952,
+    "num_errors": 5,
+    "per_shot_ms": 2.4004874109220107,
+    "time_seconds": 2.3209609985351562,
+    "converged": true,
+    "code_params": {
+      "N": 25,
+      "K": 3,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_25_3_4",
+    "error_rate": 0.01,
+    "erasure_rate": 0.15,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.01126126126126126,
+    "num_shots": 444,
+    "num_errors": 5,
+    "per_shot_ms": 2.491214790859738,
+    "time_seconds": 1.1427602767944336,
+    "converged": true,
+    "code_params": {
+      "N": 25,
+      "K": 3,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_25_3_4",
+    "error_rate": 0.008,
+    "erasure_rate": 0.15,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.006648936170212766,
+    "num_shots": 752,
+    "num_errors": 5,
+    "per_shot_ms": 2.631528580442388,
+    "time_seconds": 2.01347279548645,
+    "converged": true,
+    "code_params": {
+      "N": 25,
+      "K": 3,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_25_3_4",
+    "error_rate": 0.001,
+    "erasure_rate": 0.1,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.0013469827586206897,
+    "num_shots": 3712,
+    "num_errors": 5,
+    "per_shot_ms": 2.757026524893169,
+    "time_seconds": 10.358037948608398,
+    "converged": true,
+    "code_params": {
+      "N": 25,
+      "K": 3,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_30_6_4",
+    "error_rate": 0.005,
+    "erasure_rate": 0.0,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.0011539349180706207,
+    "num_shots": 4333,
+    "num_errors": 5,
+    "per_shot_ms": 0.26947709723375096,
+    "time_seconds": 1.3383862972259521,
+    "converged": true,
+    "code_params": {
+      "N": 30,
+      "K": 6,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_30_6_4",
+    "error_rate": 0.003,
+    "erasure_rate": 0.0,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.0006098304671301379,
+    "num_shots": 8199,
+    "num_errors": 5,
+    "per_shot_ms": 0.2536025770205756,
+    "time_seconds": 2.36995005607605,
+    "converged": true,
+    "code_params": {
+      "N": 30,
+      "K": 6,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_30_6_4",
+    "error_rate": 0.008,
+    "erasure_rate": 0.0,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.0037285607755406414,
+    "num_shots": 1341,
+    "num_errors": 5,
+    "per_shot_ms": 0.27438902659348635,
+    "time_seconds": 0.4407334327697754,
+    "converged": true,
+    "code_params": {
+      "N": 30,
+      "K": 6,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_30_6_4",
+    "error_rate": 0.01,
+    "erasure_rate": 0.0,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.007473841554559043,
+    "num_shots": 669,
+    "num_errors": 5,
+    "per_shot_ms": 0.2755060324219845,
+    "time_seconds": 0.22107720375061035,
+    "converged": true,
+    "code_params": {
+      "N": 30,
+      "K": 6,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_30_6_4",
+    "error_rate": 0.01,
+    "erasure_rate": 0.0,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.00228310502283105,
+    "num_shots": 2190,
+    "num_errors": 5,
+    "per_shot_ms": 4.197540783991008,
+    "time_seconds": 9.557842254638672,
+    "converged": true,
+    "code_params": {
+      "N": 30,
+      "K": 6,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_30_6_4",
+    "error_rate": 0.001,
+    "erasure_rate": 0.05,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.0005842486562280906,
+    "num_shots": 8558,
+    "num_errors": 5,
+    "per_shot_ms": 0.2587157505977708,
+    "time_seconds": 2.5225930213928223,
+    "converged": true,
+    "code_params": {
+      "N": 30,
+      "K": 6,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_30_6_4",
+    "error_rate": 0.008,
+    "erasure_rate": 0.0,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.0011603620329542817,
+    "num_shots": 4309,
+    "num_errors": 5,
+    "per_shot_ms": 4.46445926985848,
+    "time_seconds": 19.605966091156006,
+    "converged": true,
+    "code_params": {
+      "N": 30,
+      "K": 6,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_30_6_4",
+    "error_rate": 0.003,
+    "erasure_rate": 0.05,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.00463821892393321,
+    "num_shots": 1078,
+    "num_errors": 5,
+    "per_shot_ms": 0.1839620505281636,
+    "time_seconds": 0.2517714500427246,
+    "converged": true,
+    "code_params": {
+      "N": 30,
+      "K": 6,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_30_6_4",
+    "error_rate": 0.001,
+    "erasure_rate": 0.0,
+    "decoder": "bp_osd",
+    "logical_error_rate": 5.410611290863642e-05,
+    "num_shots": 92411,
+    "num_errors": 5,
+    "per_shot_ms": 0.22801766630501874,
+    "time_seconds": 23.835375547409058,
+    "converged": true,
+    "code_params": {
+      "N": 30,
+      "K": 6,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "QCC_18_4_4",
+    "error_rate": 0.01,
+    "erasure_rate": 0.0,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 6.407381303261357e-05,
+    "num_shots": 78035,
+    "num_errors": 5,
+    "per_shot_ms": 0.9061933518555955,
+    "time_seconds": 75.17027068138123,
+    "converged": true,
+    "code_params": {
+      "N": 18,
+      "K": 4,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_30_6_4",
+    "error_rate": 0.005,
+    "erasure_rate": 0.05,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.0037936267071320183,
+    "num_shots": 1318,
+    "num_errors": 5,
+    "per_shot_ms": 0.17546485877724446,
+    "time_seconds": 0.28192591667175293,
+    "converged": true,
+    "code_params": {
+      "N": 30,
+      "K": 6,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_30_6_4",
+    "error_rate": 0.008,
+    "erasure_rate": 0.05,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.00819672131147541,
+    "num_shots": 610,
+    "num_errors": 5,
+    "per_shot_ms": 0.17938105786432987,
+    "time_seconds": 0.13527774810791016,
+    "converged": true,
+    "code_params": {
+      "N": 30,
+      "K": 6,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_30_6_4",
+    "error_rate": 0.01,
+    "erasure_rate": 0.05,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.004604051565377533,
+    "num_shots": 1086,
+    "num_errors": 5,
+    "per_shot_ms": 2.9669556608955285,
+    "time_seconds": 3.494886636734009,
+    "converged": true,
+    "code_params": {
+      "N": 30,
+      "K": 6,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_30_6_4",
+    "error_rate": 0.01,
+    "erasure_rate": 0.05,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.005175983436853002,
+    "num_shots": 966,
+    "num_errors": 5,
+    "per_shot_ms": 0.20511895726679769,
+    "time_seconds": 0.2408289909362793,
+    "converged": true,
+    "code_params": {
+      "N": 30,
+      "K": 6,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_30_6_4",
+    "error_rate": 0.008,
+    "erasure_rate": 0.05,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.006242197253433208,
+    "num_shots": 801,
+    "num_errors": 5,
+    "per_shot_ms": 5.870903624726294,
+    "time_seconds": 5.040359735488892,
+    "converged": true,
+    "code_params": {
+      "N": 30,
+      "K": 6,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "QCC_18_4_4",
+    "error_rate": 0.003,
+    "erasure_rate": 0.05,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 5.8670984851151713e-05,
+    "num_shots": 85221,
+    "num_errors": 5,
+    "per_shot_ms": 0.8943768760444897,
+    "time_seconds": 80.58882689476013,
+    "converged": true,
+    "code_params": {
+      "N": 18,
+      "K": 4,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_30_6_4",
+    "error_rate": 0.001,
+    "erasure_rate": 0.1,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.002992220227408737,
+    "num_shots": 1671,
+    "num_errors": 5,
+    "per_shot_ms": 0.2657426894602841,
+    "time_seconds": 0.5089473724365234,
+    "converged": true,
+    "code_params": {
+      "N": 30,
+      "K": 6,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_30_6_4",
+    "error_rate": 0.003,
+    "erasure_rate": 0.1,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.00589622641509434,
+    "num_shots": 848,
+    "num_errors": 5,
+    "per_shot_ms": 0.2666782095747174,
+    "time_seconds": 0.26057863235473633,
+    "converged": true,
+    "code_params": {
+      "N": 30,
+      "K": 6,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_30_6_4",
+    "error_rate": 0.003,
+    "erasure_rate": 0.05,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.000971628449280995,
+    "num_shots": 5146,
+    "num_errors": 5,
+    "per_shot_ms": 3.89829323164832,
+    "time_seconds": 20.229652404785156,
+    "converged": true,
+    "code_params": {
+      "N": 30,
+      "K": 6,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_30_6_4",
+    "error_rate": 0.005,
+    "erasure_rate": 0.1,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.010438413361169102,
+    "num_shots": 479,
+    "num_errors": 5,
+    "per_shot_ms": 0.19639270041830106,
+    "time_seconds": 0.12295293807983398,
+    "converged": true,
+    "code_params": {
+      "N": 30,
+      "K": 6,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_30_6_4",
+    "error_rate": 0.003,
+    "erasure_rate": 0.1,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.0033444816053511705,
+    "num_shots": 1495,
+    "num_errors": 5,
+    "per_shot_ms": 5.326536108418851,
+    "time_seconds": 8.14767599105835,
+    "converged": true,
+    "code_params": {
+      "N": 30,
+      "K": 6,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_30_6_4",
+    "error_rate": 0.008,
+    "erasure_rate": 0.1,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.02824858757062147,
+    "num_shots": 177,
+    "num_errors": 5,
+    "per_shot_ms": 0.3092679600257658,
+    "time_seconds": 0.09230875968933105,
+    "converged": true,
+    "code_params": {
+      "N": 30,
+      "K": 6,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_30_6_4",
+    "error_rate": 0.008,
+    "erasure_rate": 0.1,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.006016847172081829,
+    "num_shots": 831,
+    "num_errors": 5,
+    "per_shot_ms": 4.002961871426028,
+    "time_seconds": 3.3566737174987793,
+    "converged": true,
+    "code_params": {
+      "N": 30,
+      "K": 6,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_30_6_4",
+    "error_rate": 0.01,
+    "erasure_rate": 0.1,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.016129032258064516,
+    "num_shots": 310,
+    "num_errors": 5,
+    "per_shot_ms": 0.3070000679262223,
+    "time_seconds": 0.13377833366394043,
+    "converged": true,
+    "code_params": {
+      "N": 30,
+      "K": 6,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_30_6_4",
+    "error_rate": 0.005,
+    "erasure_rate": 0.1,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.003003003003003003,
+    "num_shots": 1665,
+    "num_errors": 5,
+    "per_shot_ms": 5.8637991323843375,
+    "time_seconds": 9.830440282821655,
+    "converged": true,
+    "code_params": {
+      "N": 30,
+      "K": 6,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_30_6_4",
+    "error_rate": 0.001,
+    "erasure_rate": 0.15,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.008305647840531562,
+    "num_shots": 602,
+    "num_errors": 5,
+    "per_shot_ms": 0.2816654122945082,
+    "time_seconds": 0.2038133144378662,
+    "converged": true,
+    "code_params": {
+      "N": 30,
+      "K": 6,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_30_6_4",
+    "error_rate": 0.01,
+    "erasure_rate": 0.1,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.010121457489878543,
+    "num_shots": 494,
+    "num_errors": 5,
+    "per_shot_ms": 5.311672021502908,
+    "time_seconds": 2.663062810897827,
+    "converged": true,
+    "code_params": {
+      "N": 30,
+      "K": 6,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_30_6_4",
+    "error_rate": 0.003,
+    "erasure_rate": 0.15,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.005537098560354375,
+    "num_shots": 903,
+    "num_errors": 5,
+    "per_shot_ms": 0.29834930022821604,
+    "time_seconds": 0.30685997009277344,
+    "converged": true,
+    "code_params": {
+      "N": 30,
+      "K": 6,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_30_6_4",
+    "error_rate": 0.001,
+    "erasure_rate": 0.1,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.0011627906976744186,
+    "num_shots": 4300,
+    "num_errors": 5,
+    "per_shot_ms": 2.9460750624190926,
+    "time_seconds": 12.794731616973877,
+    "converged": true,
+    "code_params": {
+      "N": 30,
+      "K": 6,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_30_6_4",
+    "error_rate": 0.005,
+    "erasure_rate": 0.15,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.023809523809523808,
+    "num_shots": 210,
+    "num_errors": 5,
+    "per_shot_ms": 0.31398137410481775,
+    "time_seconds": 0.10464310646057129,
+    "converged": true,
+    "code_params": {
+      "N": 30,
+      "K": 6,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_30_6_4",
+    "error_rate": 0.001,
+    "erasure_rate": 0.15,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.0073964497041420114,
+    "num_shots": 676,
+    "num_errors": 5,
+    "per_shot_ms": 4.002419096478343,
+    "time_seconds": 2.745870351791382,
+    "converged": true,
+    "code_params": {
+      "N": 30,
+      "K": 6,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_30_6_4",
+    "error_rate": 0.008,
+    "erasure_rate": 0.15,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.024630541871921183,
+    "num_shots": 203,
+    "num_errors": 5,
+    "per_shot_ms": 0.20064978763974947,
+    "time_seconds": 0.0680394172668457,
+    "converged": true,
+    "code_params": {
+      "N": 30,
+      "K": 6,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_30_6_4",
+    "error_rate": 0.008,
+    "erasure_rate": 0.15,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.02127659574468085,
+    "num_shots": 235,
+    "num_errors": 5,
+    "per_shot_ms": 3.5878577130906124,
+    "time_seconds": 0.8790810108184814,
+    "converged": true,
+    "code_params": {
+      "N": 30,
+      "K": 6,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_30_6_4",
+    "error_rate": 0.01,
+    "erasure_rate": 0.15,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.08333333333333333,
+    "num_shots": 60,
+    "num_errors": 5,
+    "per_shot_ms": 0.3379901250203451,
+    "time_seconds": 0.0589754581451416,
+    "converged": true,
+    "code_params": {
+      "N": 30,
+      "K": 6,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_30_6_4",
+    "error_rate": 0.003,
+    "erasure_rate": 0.15,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.012376237623762377,
+    "num_shots": 404,
+    "num_errors": 5,
+    "per_shot_ms": 5.900675707524366,
+    "time_seconds": 2.419654607772827,
+    "converged": true,
+    "code_params": {
+      "N": 30,
+      "K": 6,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_30_6_4",
+    "error_rate": 0.01,
+    "erasure_rate": 0.15,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.02564102564102564,
+    "num_shots": 195,
+    "num_errors": 5,
+    "per_shot_ms": 4.212746253380408,
+    "time_seconds": 0.8530905246734619,
+    "converged": true,
+    "code_params": {
+      "N": 30,
+      "K": 6,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_30_6_4",
+    "error_rate": 0.005,
+    "erasure_rate": 0.15,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.007668711656441718,
+    "num_shots": 652,
+    "num_errors": 5,
+    "per_shot_ms": 5.347051503468145,
+    "time_seconds": 3.5251097679138184,
+    "converged": true,
+    "code_params": {
+      "N": 30,
+      "K": 6,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "LDPC_30_6_4",
+    "error_rate": 0.005,
+    "erasure_rate": 0.05,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.0010460251046025104,
+    "num_shots": 4780,
+    "num_errors": 5,
+    "per_shot_ms": 4.861485608950818,
+    "time_seconds": 23.402132987976074,
+    "converged": true,
+    "code_params": {
+      "N": 30,
+      "K": 6,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "TOR_50_2_5",
+    "error_rate": 0.003,
+    "erasure_rate": 0.0,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.000437636761487965,
+    "num_shots": 11425,
+    "num_errors": 5,
+    "per_shot_ms": 0.2677058756221045,
+    "time_seconds": 3.6421687602996826,
+    "converged": true,
+    "code_params": {
+      "N": 50,
+      "K": 2,
+      "D": 5
+    }
+  },
+  {
+    "code_name": "LDPC_25_3_4",
+    "error_rate": 0.003,
+    "erasure_rate": 0.0,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.00015776354400025242,
+    "num_shots": 31693,
+    "num_errors": 5,
+    "per_shot_ms": 2.4939283290869416,
+    "time_seconds": 79.94316864013672,
+    "converged": true,
+    "code_params": {
+      "N": 25,
+      "K": 3,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "TOR_50_2_5",
+    "error_rate": 0.005,
+    "erasure_rate": 0.0,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.0007408504963698325,
+    "num_shots": 6749,
+    "num_errors": 5,
+    "per_shot_ms": 0.26635114025726975,
+    "time_seconds": 2.131197690963745,
+    "converged": true,
+    "code_params": {
+      "N": 50,
+      "K": 2,
+      "D": 5
+    }
+  },
+  {
+    "code_name": "TOR_50_2_5",
+    "error_rate": 0.008,
+    "erasure_rate": 0.0,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.0026301946344029457,
+    "num_shots": 1901,
+    "num_errors": 5,
+    "per_shot_ms": 0.26768687397225915,
+    "time_seconds": 0.6083335876464844,
+    "converged": true,
+    "code_params": {
+      "N": 50,
+      "K": 2,
+      "D": 5
+    }
+  },
+  {
+    "code_name": "TOR_50_2_5",
+    "error_rate": 0.008,
+    "erasure_rate": 0.0,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.002658160552897395,
+    "num_shots": 1881,
+    "num_errors": 5,
+    "per_shot_ms": 2.2934631487589323,
+    "time_seconds": 4.459823369979858,
+    "converged": true,
+    "code_params": {
+      "N": 50,
+      "K": 2,
+      "D": 5
+    }
+  },
+  {
+    "code_name": "TOR_50_2_5",
+    "error_rate": 0.01,
+    "erasure_rate": 0.0,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.0025075225677031092,
+    "num_shots": 1994,
+    "num_errors": 5,
+    "per_shot_ms": 1.8612164312762505,
+    "time_seconds": 3.8533987998962402,
+    "converged": true,
+    "code_params": {
+      "N": 50,
+      "K": 2,
+      "D": 5
+    }
+  },
+  {
+    "code_name": "TOR_50_2_5",
+    "error_rate": 0.01,
+    "erasure_rate": 0.0,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.0031565656565656565,
+    "num_shots": 1584,
+    "num_errors": 5,
+    "per_shot_ms": 0.24815505803233442,
+    "time_seconds": 0.49379682540893555,
+    "converged": true,
+    "code_params": {
+      "N": 50,
+      "K": 2,
+      "D": 5
+    }
+  },
+  {
+    "code_name": "TOR_50_2_5",
+    "error_rate": 0.001,
+    "erasure_rate": 0.05,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.00023953243269138642,
+    "num_shots": 20874,
+    "num_errors": 5,
+    "per_shot_ms": 0.21502911570520594,
+    "time_seconds": 5.310910701751709,
+    "converged": true,
+    "code_params": {
+      "N": 50,
+      "K": 2,
+      "D": 5
+    }
+  },
+  {
+    "code_name": "TOR_50_2_5",
+    "error_rate": 0.005,
+    "erasure_rate": 0.0,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.0007524454477050414,
+    "num_shots": 6645,
+    "num_errors": 5,
+    "per_shot_ms": 2.0295255071153493,
+    "time_seconds": 13.864372253417969,
+    "converged": true,
+    "code_params": {
+      "N": 50,
+      "K": 2,
+      "D": 5
+    }
+  },
+  {
+    "code_name": "TOR_50_2_5",
+    "error_rate": 0.003,
+    "erasure_rate": 0.05,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.0010046212577858146,
+    "num_shots": 4977,
+    "num_errors": 5,
+    "per_shot_ms": 0.19695918340148375,
+    "time_seconds": 1.1616299152374268,
+    "converged": true,
+    "code_params": {
+      "N": 50,
+      "K": 2,
+      "D": 5
+    }
+  },
+  {
+    "code_name": "QCC_18_4_4",
+    "error_rate": 0.001,
+    "erasure_rate": 0.0,
+    "decoder": "bp_osd",
+    "logical_error_rate": 7.977166159584804e-06,
+    "num_shots": 626789,
+    "num_errors": 5,
+    "per_shot_ms": 0.1583224533381294,
+    "time_seconds": 113.30342364311218,
+    "converged": true,
+    "code_params": {
+      "N": 18,
+      "K": 4,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "TOR_50_2_5",
+    "error_rate": 0.005,
+    "erasure_rate": 0.05,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.001650709805216243,
+    "num_shots": 3029,
+    "num_errors": 5,
+    "per_shot_ms": 0.2012565294166885,
+    "time_seconds": 0.7644870281219482,
+    "converged": true,
+    "code_params": {
+      "N": 50,
+      "K": 2,
+      "D": 5
+    }
+  },
+  {
+    "code_name": "TOR_50_2_5",
+    "error_rate": 0.008,
+    "erasure_rate": 0.05,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.0021691973969631237,
+    "num_shots": 2305,
+    "num_errors": 5,
+    "per_shot_ms": 1.4970200180748796,
+    "time_seconds": 3.628977060317993,
+    "converged": true,
+    "code_params": {
+      "N": 50,
+      "K": 2,
+      "D": 5
+    }
+  },
+  {
+    "code_name": "TOR_50_2_5",
+    "error_rate": 0.008,
+    "erasure_rate": 0.05,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.002891844997108155,
+    "num_shots": 1729,
+    "num_errors": 5,
+    "per_shot_ms": 0.19827448887380994,
+    "time_seconds": 0.4186980724334717,
+    "converged": true,
+    "code_params": {
+      "N": 50,
+      "K": 2,
+      "D": 5
+    }
+  },
+  {
+    "code_name": "LDPC_30_6_4",
+    "error_rate": 0.005,
+    "erasure_rate": 0.0,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.0002795638803466592,
+    "num_shots": 17885,
+    "num_errors": 5,
+    "per_shot_ms": 3.6433590901507857,
+    "time_seconds": 65.91012787818909,
+    "converged": true,
+    "code_params": {
+      "N": 30,
+      "K": 6,
+      "D": 4
+    }
+  },
+  {
+    "code_name": "TOR_50_2_5",
+    "error_rate": 0.01,
+    "erasure_rate": 0.05,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.004409171075837742,
+    "num_shots": 1134,
+    "num_errors": 5,
+    "per_shot_ms": 0.17209238055732096,
+    "time_seconds": 0.2643399238586426,
+    "converged": true,
+    "code_params": {
+      "N": 50,
+      "K": 2,
+      "D": 5
+    }
+  },
+  {
+    "code_name": "TOR_50_2_5",
+    "error_rate": 0.01,
+    "erasure_rate": 0.05,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.003714710252600297,
+    "num_shots": 1346,
+    "num_errors": 5,
+    "per_shot_ms": 1.7160807817864383,
+    "time_seconds": 2.3978896141052246,
+    "converged": true,
+    "code_params": {
+      "N": 50,
+      "K": 2,
+      "D": 5
+    }
+  },
+  {
+    "code_name": "TOR_50_2_5",
+    "error_rate": 0.001,
+    "erasure_rate": 0.1,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.0020764119601328905,
+    "num_shots": 2408,
+    "num_errors": 5,
+    "per_shot_ms": 0.2597256554321593,
+    "time_seconds": 0.7594559192657471,
+    "converged": true,
+    "code_params": {
+      "N": 50,
+      "K": 2,
+      "D": 5
+    }
+  },
+  {
+    "code_name": "TOR_50_2_5",
+    "error_rate": 0.005,
+    "erasure_rate": 0.05,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.0009514747859181732,
+    "num_shots": 5255,
+    "num_errors": 5,
+    "per_shot_ms": 1.8072452690349545,
+    "time_seconds": 9.713671445846558,
+    "converged": true,
+    "code_params": {
+      "N": 50,
+      "K": 2,
+      "D": 5
+    }
+  },
+  {
+    "code_name": "TOR_50_2_5",
+    "error_rate": 0.003,
+    "erasure_rate": 0.1,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.004329004329004329,
+    "num_shots": 1155,
+    "num_errors": 5,
+    "per_shot_ms": 0.22038897394617915,
+    "time_seconds": 0.32874369621276855,
+    "converged": true,
+    "code_params": {
+      "N": 50,
+      "K": 2,
+      "D": 5
+    }
+  },
+  {
+    "code_name": "TOR_50_2_5",
+    "error_rate": 0.003,
+    "erasure_rate": 0.0,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.0003240860772621208,
+    "num_shots": 15428,
+    "num_errors": 5,
+    "per_shot_ms": 1.826315693265575,
+    "time_seconds": 28.9666428565979,
+    "converged": true,
+    "code_params": {
+      "N": 50,
+      "K": 2,
+      "D": 5
+    }
+  },
+  {
+    "code_name": "TOR_50_2_5",
+    "error_rate": 0.005,
+    "erasure_rate": 0.1,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.0032959789057350032,
+    "num_shots": 1517,
+    "num_errors": 5,
+    "per_shot_ms": 0.26219049879965534,
+    "time_seconds": 0.491868257522583,
+    "converged": true,
+    "code_params": {
+      "N": 50,
+      "K": 2,
+      "D": 5
+    }
+  },
+  {
+    "code_name": "TOR_50_2_5",
+    "error_rate": 0.008,
+    "erasure_rate": 0.1,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.005952380952380952,
+    "num_shots": 840,
+    "num_errors": 5,
+    "per_shot_ms": 2.0103338218870617,
+    "time_seconds": 1.7437372207641602,
+    "converged": true,
+    "code_params": {
+      "N": 50,
+      "K": 2,
+      "D": 5
+    }
+  },
+  {
+    "code_name": "TOR_50_2_5",
+    "error_rate": 0.005,
+    "erasure_rate": 0.1,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.0033579583613163196,
+    "num_shots": 1489,
+    "num_errors": 5,
+    "per_shot_ms": 1.8843651778590687,
+    "time_seconds": 2.890578508377075,
+    "converged": true,
+    "code_params": {
+      "N": 50,
+      "K": 2,
+      "D": 5
+    }
+  },
+  {
+    "code_name": "TOR_50_2_5",
+    "error_rate": 0.008,
+    "erasure_rate": 0.1,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.006038647342995169,
+    "num_shots": 828,
+    "num_errors": 5,
+    "per_shot_ms": 0.2763565035833829,
+    "time_seconds": 0.28265833854675293,
+    "converged": true,
+    "code_params": {
+      "N": 50,
+      "K": 2,
+      "D": 5
+    }
+  },
+  {
+    "code_name": "TOR_50_2_5",
+    "error_rate": 0.003,
+    "erasure_rate": 0.1,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.002061855670103093,
+    "num_shots": 2425,
+    "num_errors": 5,
+    "per_shot_ms": 1.7961861915195112,
+    "time_seconds": 4.495652914047241,
+    "converged": true,
+    "code_params": {
+      "N": 50,
+      "K": 2,
+      "D": 5
+    }
+  },
+  {
+    "code_name": "TOR_50_2_5",
+    "error_rate": 0.01,
+    "erasure_rate": 0.1,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.007473841554559043,
+    "num_shots": 669,
+    "num_errors": 5,
+    "per_shot_ms": 0.23897488911946616,
+    "time_seconds": 0.1997377872467041,
+    "converged": true,
+    "code_params": {
+      "N": 50,
+      "K": 2,
+      "D": 5
+    }
+  },
+  {
+    "code_name": "TOR_50_2_5",
+    "error_rate": 0.001,
+    "erasure_rate": 0.15,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.0037593984962406013,
+    "num_shots": 1330,
+    "num_errors": 5,
+    "per_shot_ms": 0.25735457140700263,
+    "time_seconds": 0.43318891525268555,
+    "converged": true,
+    "code_params": {
+      "N": 50,
+      "K": 2,
+      "D": 5
+    }
+  },
+  {
+    "code_name": "TOR_50_2_5",
+    "error_rate": 0.003,
+    "erasure_rate": 0.05,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.0006995942353435008,
+    "num_shots": 7147,
+    "num_errors": 5,
+    "per_shot_ms": 2.1273908338897694,
+    "time_seconds": 15.514443159103394,
+    "converged": true,
+    "code_params": {
+      "N": 50,
+      "K": 2,
+      "D": 5
+    }
+  },
+  {
+    "code_name": "TOR_50_2_5",
+    "error_rate": 0.001,
+    "erasure_rate": 0.15,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.008347245409015025,
+    "num_shots": 599,
+    "num_errors": 5,
+    "per_shot_ms": 1.6922365643942296,
+    "time_seconds": 1.0556080341339111,
+    "converged": true,
+    "code_params": {
+      "N": 50,
+      "K": 2,
+      "D": 5
+    }
+  },
+  {
+    "code_name": "TOR_50_2_5",
+    "error_rate": 0.003,
+    "erasure_rate": 0.15,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.01639344262295082,
+    "num_shots": 305,
+    "num_errors": 5,
+    "per_shot_ms": 0.2187291129690702,
+    "time_seconds": 0.10490608215332031,
+    "converged": true,
+    "code_params": {
+      "N": 50,
+      "K": 2,
+      "D": 5
+    }
+  },
+  {
+    "code_name": "TOR_50_2_5",
+    "error_rate": 0.005,
+    "erasure_rate": 0.15,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.01845018450184502,
+    "num_shots": 271,
+    "num_errors": 5,
+    "per_shot_ms": 0.2280170187299102,
+    "time_seconds": 0.10341572761535645,
+    "converged": true,
+    "code_params": {
+      "N": 50,
+      "K": 2,
+      "D": 5
+    }
+  },
+  {
+    "code_name": "TOR_50_2_5",
+    "error_rate": 0.01,
+    "erasure_rate": 0.1,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.008130081300813009,
+    "num_shots": 615,
+    "num_errors": 5,
+    "per_shot_ms": 2.365050277089685,
+    "time_seconds": 1.5095677375793457,
+    "converged": true,
+    "code_params": {
+      "N": 50,
+      "K": 2,
+      "D": 5
+    }
+  },
+  {
+    "code_name": "TOR_50_2_5",
+    "error_rate": 0.008,
+    "erasure_rate": 0.15,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.0102880658436214,
+    "num_shots": 486,
+    "num_errors": 5,
+    "per_shot_ms": 0.1970053700262627,
+    "time_seconds": 0.13312268257141113,
+    "converged": true,
+    "code_params": {
+      "N": 50,
+      "K": 2,
+      "D": 5
+    }
+  },
+  {
+    "code_name": "TOR_50_2_5",
+    "error_rate": 0.01,
+    "erasure_rate": 0.15,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.013368983957219251,
+    "num_shots": 374,
+    "num_errors": 5,
+    "per_shot_ms": 1.936355376626081,
+    "time_seconds": 0.7652456760406494,
+    "converged": true,
+    "code_params": {
+      "N": 50,
+      "K": 2,
+      "D": 5
+    }
+  },
+  {
+    "code_name": "TOR_50_2_5",
+    "error_rate": 0.01,
+    "erasure_rate": 0.15,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.020491803278688523,
+    "num_shots": 244,
+    "num_errors": 5,
+    "per_shot_ms": 0.21059102699404855,
+    "time_seconds": 0.0882418155670166,
+    "converged": true,
+    "code_params": {
+      "N": 50,
+      "K": 2,
+      "D": 5
+    }
+  },
+  {
+    "code_name": "TOR_50_2_5",
+    "error_rate": 0.003,
+    "erasure_rate": 0.15,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.00544069640914037,
+    "num_shots": 919,
+    "num_errors": 5,
+    "per_shot_ms": 1.970990827475331,
+    "time_seconds": 1.8664252758026123,
+    "converged": true,
+    "code_params": {
+      "N": 50,
+      "K": 2,
+      "D": 5
+    }
+  },
+  {
+    "code_name": "TOR_50_2_5",
+    "error_rate": 0.005,
+    "erasure_rate": 0.15,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.0059665871121718375,
+    "num_shots": 838,
+    "num_errors": 5,
+    "per_shot_ms": 1.5949025074451237,
+    "time_seconds": 1.3820929527282715,
+    "converged": true,
+    "code_params": {
+      "N": 50,
+      "K": 2,
+      "D": 5
+    }
+  },
+  {
+    "code_name": "TOR_50_2_5",
+    "error_rate": 0.008,
+    "erasure_rate": 0.15,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.00764525993883792,
+    "num_shots": 654,
+    "num_errors": 5,
+    "per_shot_ms": 2.13901858081876,
+    "time_seconds": 1.4376120567321777,
+    "converged": true,
+    "code_params": {
+      "N": 50,
+      "K": 2,
+      "D": 5
+    }
+  },
+  {
+    "code_name": "TOR_50_2_5",
+    "error_rate": 0.001,
+    "erasure_rate": 0.1,
+    "decoder": "tensor_network_mld",
+    "logical_error_rate": 0.0006815703380588877,
+    "num_shots": 7336,
+    "num_errors": 5,
+    "per_shot_ms": 3.0048475595700963,
+    "time_seconds": 22.506366968154907,
+    "converged": true,
+    "code_params": {
+      "N": 50,
+      "K": 2,
+      "D": 5
+    }
+  },
+  {
+    "code_name": "QCC_60_8_4",
+    "error_rate": 0.003,
+    "erasure_rate": 0.0,
+    "decoder": "bp_osd",
+    "logical_error_rate": 0.00014091652105292825,
+    "num_shots": 35482,
+    "num_errors": 5,
+    "per_shot_ms": 0.776660683579593,
+    "time_seconds": 32.10276460647583,
+    "converged": true,
+    "code_params": {
+      "N": 60,
+      "K": 8,
+      "D": 4
+    }
+  }
+]

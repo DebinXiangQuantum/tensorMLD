@@ -123,6 +123,12 @@ _COLORS = {
 }
 
 
+def _node_graph_degree(nid: int, nodes: dict[int, Any],
+                       active_nodes: set[int]) -> int:
+    """Count graph degree = number of internal edges + open indices."""
+    return len(nodes[nid].neighbor)
+
+
 def draw_pairwise_graph(
     active_nodes: set[int],
     nodes: dict[int, Any],
@@ -134,26 +140,40 @@ def draw_pairwise_graph(
     cumulative_trunc_error: float = 0.0,
     out_path: Optional[Path] = None,
 ) -> None:
-    """Draw the pairwise graph at a given compression step."""
+    """Draw the pairwise graph at a given compression step.
+
+    Each graph node represents an MPS chain (list of rank-3 cores).
+    The graph degree = number of MPS sites (external physical indices).
+    Node label: "id  deg=D  cores=C" shows both graph degree and MPS core count.
+    """
     G = nx.Graph()
 
+    # Compute per-node stats
+    node_degrees: dict[int, int] = {}
+    node_core_counts: dict[int, int] = {}
+    max_core_order = 0
     for nid in active_nodes:
         cls = _classify_node(nid, preserved_nodes, nodes,
                              syndrome_param_inds, logical_obs_inds)
-        G.add_node(nid, cls=cls)
+        deg = len(nodes[nid].neighbor)
+        n_cores = len(nodes[nid].mps)
+        node_degrees[nid] = deg
+        node_core_counts[nid] = n_cores
+        for c in nodes[nid].mps:
+            max_core_order = max(max_core_order, c.ndim)
+        G.add_node(nid, cls=cls, degree=deg, cores=n_cores)
 
     edge_list = []
     for nid in active_nodes:
         for pos, nb in enumerate(nodes[nid].neighbor):
             if isinstance(nb, int) and nb in active_nodes and nb > nid:
-                # Compute bond dimension for label
                 bd = 1
                 if pos < len(nodes[nid].mps):
                     bd = int(nodes[nid].mps[pos].shape[2])
                 G.add_edge(nid, nb, bond_dim=bd)
                 edge_list.append((nid, nb))
 
-    fig, ax = plt.subplots(1, 1, figsize=(12, 10))
+    fig, ax = plt.subplots(1, 1, figsize=(14, 11))
 
     if len(G.nodes) == 0:
         ax.text(0.5, 0.5, "Empty graph", ha='center', va='center',
@@ -161,20 +181,21 @@ def draw_pairwise_graph(
     else:
         pos = nx.spring_layout(G, seed=42, k=2.0 / max(1, len(G.nodes)**0.5))
 
-        # Draw nodes
+        # Node size proportional to degree (minimum 200, maximum 800)
         for cls, color in _COLORS.items():
             cls_nodes = [n for n, d in G.nodes(data=True) if d.get('cls') == cls]
             if cls_nodes:
+                sizes = [min(800, max(200, 100 * node_degrees.get(n, 1)))
+                         for n in cls_nodes]
                 nx.draw_networkx_nodes(
                     G, pos, nodelist=cls_nodes, node_color=color,
-                    node_size=300, alpha=0.9, ax=ax)
+                    node_size=sizes, alpha=0.9, ax=ax)
 
-        # Draw edges (highlight contracted edge)
+        # Draw edges
         normal_edges = [(u, v) for u, v in G.edges() if (u, v) != contracted_edge
                         and (v, u) != contracted_edge]
         highlight_edges = [(u, v) for u, v in G.edges() if (u, v) == contracted_edge
                            or (v, u) == contracted_edge]
-
         nx.draw_networkx_edges(G, pos, edgelist=normal_edges, edge_color='#666666',
                                width=1.0, alpha=0.6, ax=ax)
         if highlight_edges:
@@ -186,33 +207,37 @@ def draw_pairwise_graph(
         nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels,
                                      font_size=7, font_color='#333333', ax=ax)
 
-        # Node labels: show id and number of MPS cores
+        # Node labels: id, degree, and MPS core count
         node_labels = {}
         for n in G.nodes():
-            n_cores = len(nodes[n].mps) if n in nodes else 0
-            node_labels[n] = f"{n}\n({n_cores})"
+            deg = node_degrees.get(n, 0)
+            cores = node_core_counts.get(n, 0)
+            node_labels[n] = f"{n}\nord={deg}"
         nx.draw_networkx_labels(G, pos, labels=node_labels,
-                                font_size=6, font_color='white', ax=ax)
+                                font_size=5, font_color='white', ax=ax)
 
     # Title with metadata
     n_nodes = len(active_nodes)
     n_edges = len(edge_list)
+    max_deg = max(node_degrees.values()) if node_degrees else 0
     full_title = (f"{title}\n"
                   f"Nodes: {n_nodes}  Edges: {n_edges}  "
+                  f"Max tensor order: {max_deg}  "
+                  f"Max MPS core ndim: {max_core_order}  "
                   f"Trunc error: {cumulative_trunc_error:.2e}")
-    ax.set_title(full_title, fontsize=11)
+    ax.set_title(full_title, fontsize=10)
 
     # Legend
     from matplotlib.patches import Patch
     legend_elements = [
         Patch(facecolor=_COLORS["syndrome"], label="Syndrome (preserved)"),
         Patch(facecolor=_COLORS["logical"], label="Logical (preserved)"),
-        Patch(facecolor=_COLORS["delta"], label="Delta / Copy"),
-        Patch(facecolor=_COLORS["noise"], label="Noise model"),
-        Patch(facecolor=_COLORS["hadamard"], label="Code Hadamard"),
-        Patch(facecolor=_COLORS["hadamard_log"], label="Logical Hadamard"),
-        Patch(facecolor=_COLORS["syn_param"], label="Syndrome param"),
-        Patch(facecolor=_COLORS["internal"], label="Internal"),
+        Patch(facecolor=_COLORS["delta"], label="Delta / Copy (ord \u2264 3)"),
+        Patch(facecolor=_COLORS["noise"], label="Noise model (ord 1)"),
+        Patch(facecolor=_COLORS["hadamard"], label="Code Hadamard (ord 2)"),
+        Patch(facecolor=_COLORS["hadamard_log"], label="Logical Hadamard (ord 2)"),
+        Patch(facecolor=_COLORS["syn_param"], label="Syndrome param (ord 2)"),
+        Patch(facecolor=_COLORS["internal"], label="Internal / MPS chain"),
     ]
     ax.legend(handles=legend_elements, loc='upper left', fontsize=7)
 
@@ -221,6 +246,91 @@ def draw_pairwise_graph(
         out_path.parent.mkdir(parents=True, exist_ok=True)
         fig.savefig(str(out_path), dpi=150, bbox_inches='tight')
         print(f"  [viz] saved: {out_path}")
+    plt.close(fig)
+
+
+def _draw_1d_chain(chain, code_name: str, total_error: float,
+                   out_path: Path) -> None:
+    """Draw the final 1D chain showing each site as an individual node."""
+    n_sites = len(chain.sites)
+    syn_set = set(chain.syndrome_labels)
+    log_set = set(chain.logical_labels)
+
+    fig, ax = plt.subplots(1, 1, figsize=(max(14, n_sites * 1.2), 5))
+
+    # Layout: sites on a horizontal line
+    x_positions = np.linspace(0.5, n_sites - 0.5, n_sites)
+    y_base = 0.5
+
+    for i, site in enumerate(chain.sites):
+        label = site.label
+        dl, dp, dr = site.tensor.shape
+
+        # Color by type
+        if label in syn_set:
+            color = _COLORS["syndrome"]
+            stype = "S"
+        elif label in log_set:
+            color = _COLORS["logical"]
+            stype = "L"
+        else:
+            color = _COLORS["internal"]
+            stype = "?"
+
+        # Draw node
+        circle = plt.Circle((x_positions[i], y_base), 0.3, color=color,
+                             alpha=0.9, zorder=3)
+        ax.add_patch(circle)
+
+        # Node text: label + shape
+        ax.text(x_positions[i], y_base + 0.05, f"{stype}: {label}",
+                ha='center', va='bottom', fontsize=6, fontweight='bold',
+                color='white', zorder=4)
+        ax.text(x_positions[i], y_base - 0.08,
+                f"({dl},{dp},{dr})", ha='center', va='top',
+                fontsize=5, color='white', zorder=4)
+
+        # Draw bond to next site
+        if i < n_sites - 1:
+            bond_dim = dr
+            x_mid = (x_positions[i] + x_positions[i + 1]) / 2
+            ax.annotate("", xy=(x_positions[i + 1] - 0.3, y_base),
+                        xytext=(x_positions[i] + 0.3, y_base),
+                        arrowprops=dict(arrowstyle="-", color='#666666',
+                                        lw=max(1, min(4, bond_dim / 2))))
+            ax.text(x_mid, y_base + 0.35, f"D={bond_dim}",
+                    ha='center', va='bottom', fontsize=7, color='#333333')
+
+        # Draw physical index (downward leg)
+        ax.annotate("", xy=(x_positions[i], y_base - 0.55),
+                    xytext=(x_positions[i], y_base - 0.3),
+                    arrowprops=dict(arrowstyle="-", color='#999999', lw=1))
+        ax.text(x_positions[i], y_base - 0.62, f"d={dp}",
+                ha='center', va='top', fontsize=5, color='#666666')
+
+    # Title
+    ax.set_title(
+        f"{code_name} - Final 1D MPS chain ({n_sites} sites: "
+        f"{len(chain.syndrome_labels)} syn + {len(chain.logical_labels)} log)\n"
+        f"Total truncation error: {total_error:.2e}",
+        fontsize=11)
+
+    # Legend
+    from matplotlib.patches import Patch
+    legend_elements = [
+        Patch(facecolor=_COLORS["syndrome"], label="Syndrome site"),
+        Patch(facecolor=_COLORS["logical"], label="Logical site"),
+    ]
+    ax.legend(handles=legend_elements, loc='upper left', fontsize=8)
+
+    ax.set_xlim(-0.2, n_sites + 0.2)
+    ax.set_ylim(-0.3, 1.5)
+    ax.set_aspect('equal')
+    ax.axis('off')
+    plt.tight_layout()
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(str(out_path), dpi=150, bbox_inches='tight')
+    print(f"  [viz] saved: {out_path}")
     plt.close(fig)
 
 
@@ -237,6 +347,7 @@ def process_code(
     code_dir: Optional[str],
     max_steps: int,
     cutoff: float,
+    max_trunc_error: float = 0.0,
 ) -> dict[str, Any]:
     """Build multi-logical TN, compress with snapshots, draw key steps."""
     code = load_isca_revision_code(code_name, seed=seed, code_dir=code_dir)
@@ -270,12 +381,27 @@ def process_code(
 
     # Build pairwise graph
     pairwise = core.build_pairwise_graph_from_tn(full_tn, preserve_inds=preserve_inds)
-    nodes = core.build_mps_nodes(pairwise, chi=bond_dim, cutoff=cutoff)
+    nodes = core.build_mps_nodes(pairwise, chi=bond_dim, cutoff=cutoff,
+                                  max_trunc_error=max_trunc_error)
     preserved_nodes = set(pairwise.preserved_nodes)
 
     print(f"  Pairwise graph: {len(nodes)} nodes, "
           f"{pairwise.initial_internal_edges} edges, "
           f"{len(preserved_nodes)} preserved")
+
+    # Validate: ALL initial tensors must be order ≤ 3 (per ISCA paper §4)
+    max_init_order = 0
+    order_hist: dict[int, int] = {}
+    for nid in nodes:
+        deg = len(nodes[nid].neighbor)
+        max_init_order = max(max_init_order, deg)
+        order_hist[deg] = order_hist.get(deg, 0) + 1
+    print(f"  Initial tensor order distribution: "
+          + ", ".join(f"ord-{k}={v}" for k, v in sorted(order_hist.items())))
+    if max_init_order > 3:
+        print(f"  WARNING: max initial tensor order = {max_init_order} > 3!")
+    else:
+        print(f"  OK: all initial tensors order <= 3 (max={max_init_order})")
 
     # --- Phase 1: compress_until_preserved with snapshot callback ---
     cumulative_error = [0.0]  # mutable for closure
@@ -318,7 +444,8 @@ def process_code(
             )
         step_counter[0] = step
 
-    print(f"\n  [Phase 1] compress_until_preserved (chi={bond_dim})...")
+    print(f"\n  [Phase 1] compress_until_preserved (chi={bond_dim}, "
+          f"max_trunc_error={max_trunc_error:.2e})...")
     t0 = time.perf_counter()
     offline = core.compress_until_preserved(
         nodes=nodes,
@@ -328,6 +455,7 @@ def process_code(
         compress_each_step=True,
         verbose=True,
         chi=bond_dim,
+        max_trunc_error=max_trunc_error,
         snapshot_callback=compress_snapshot_cb,
     )
     phase1_ms = (time.perf_counter() - t0) * 1e3
@@ -395,6 +523,7 @@ def process_code(
             nodes=offline.nodes,
             active_nodes=offline.active_nodes,
             chi=bond_dim,
+            max_trunc_error=max_trunc_error,
             max_steps=max_steps,
             verbose=True,
             snapshot_callback=merge_snapshot_cb,
@@ -414,18 +543,10 @@ def process_code(
 
     total_error = offline.stats.truncation_error + merge_error
 
-    # --- Draw final 1D chain layout ---
+    # --- Draw final 1D chain as per-site diagram ---
     if chain is not None:
-        draw_pairwise_graph(
-            active_nodes=offline.active_nodes,
-            nodes=offline.nodes,
-            preserved_nodes=offline.preserved_nodes,
-            syndrome_param_inds=syn_set,
-            logical_obs_inds=log_set,
-            title=f"{code_name} - Final 1D chain ({len(chain.sites)} sites)",
-            cumulative_trunc_error=total_error,
-            out_path=code_out / "final_chain.png",
-        )
+        _draw_1d_chain(chain, code_name, total_error,
+                       code_out / "final_chain.png")
 
         # Print summary
         print(f"\n  === Final 1D chain summary for {code_name} ===")
@@ -534,6 +655,13 @@ def _build_arg_parser() -> argparse.ArgumentParser:
         default=1.0e-12,
         help="SVD cutoff for compression.",
     )
+    parser.add_argument(
+        "--max-trunc-error",
+        type=float,
+        default=0.0,
+        help=("Per-step max truncation error for adaptive chi. "
+              "0 = disabled (use fixed chi). E.g. 1e-10."),
+    )
     return parser
 
 
@@ -557,6 +685,7 @@ def main():
     print(f"Codes to process: {code_names}")
     print(f"Output directory: {output_dir}")
     print(f"Bond dimension: {args.bond_dim}")
+    print(f"Max trunc error: {args.max_trunc_error}")
     print(f"Workers: {args.workers}")
 
     results = []
@@ -574,6 +703,7 @@ def main():
                     code_dir=args.code_dir,
                     max_steps=args.max_steps,
                     cutoff=args.cutoff,
+                    max_trunc_error=args.max_trunc_error,
                 )
                 results.append(result)
             except Exception as exc:
@@ -596,6 +726,7 @@ def main():
                     code_dir=args.code_dir,
                     max_steps=args.max_steps,
                     cutoff=args.cutoff,
+                    max_trunc_error=args.max_trunc_error,
                 ): code_name
                 for code_name in code_names
             }

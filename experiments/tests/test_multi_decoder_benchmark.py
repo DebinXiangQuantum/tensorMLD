@@ -304,42 +304,54 @@ def _run_single_code_case(
 
     # --- MPS decoder ---
     # Decode each logical independently: the Hadamard TN formulation only
-    # supports one logical per network. Build K separate MPS chains.
+    # supports one logical per network.
+    # To avoid OOM, compile one logical at a time, decode all shots, then free.
     # Offline compression always on CPU (quimb); online decode on GPU (cupy) if available.
+    import gc
     try:
         t0 = time.perf_counter()
-        chains_and_tns = []
+        all_probs_per_logical = np.full((shots, K), 0.5)  # (shots, K)
+        total_compile_ms = 0.0
+        total_decode_ms = 0.0
+
         for k in range(K):
+            tk0 = time.perf_counter()
             ch, ctn, _st = _build_tn_and_compile_single_logical(
                 H, lz[k], noise_p, chi=chi,
                 verbose=(verbose and k == 0))
-            chains_and_tns.append((ch, ctn))
-        init_ms = (time.perf_counter() - t0) * 1e3
+            total_compile_ms += (time.perf_counter() - tk0) * 1e3
 
-        all_probs = []
-        t1 = time.perf_counter()
-        for i in range(shots):
-            probs_k = []
-            for k in range(K):
-                ch, ctn = chains_and_tns[k]
+            # Decode all shots for this logical
+            tk1 = time.perf_counter()
+            for i in range(shots):
                 p1 = _decode_mps_single(
                     ch, ctn, syndromes[i], num_checks, use_gpu=use_gpu)
-                probs_k.append(p1)
-            all_probs.append(probs_k)
-        decode_ms = (time.perf_counter() - t1) * 1e3
-        backend = "gpu" if use_gpu else "cpu"
+                all_probs_per_logical[i, k] = p1
+            total_decode_ms += (time.perf_counter() - tk1) * 1e3
 
-        predictions = (np.array(all_probs) >= 0.5).astype(np.int8)  # (shots, K)
+            if verbose:
+                print(f"  [MPS logical {k}/{K}] compile={total_compile_ms:.0f}ms, "
+                      f"decode={total_decode_ms:.0f}ms")
+
+            # Free chain memory before compiling next logical
+            del ch, ctn, _st
+            gc.collect()
+
+        backend = "gpu" if use_gpu else "cpu"
+        predictions = (all_probs_per_logical >= 0.5).astype(np.int8)
         ler = _block_logical_error_rate(errors, lz, predictions)
+        wall_ms = (time.perf_counter() - t0) * 1e3
         record["decoders"]["mps_tn"] = {
             "status": "ok", "backend": backend,
-            "init_ms": round(init_ms, 2),
-            "total_decode_ms": round(decode_ms, 2),
-            "per_shot_ms": round(decode_ms / shots, 3),
+            "compile_ms": round(total_compile_ms, 2),
+            "total_decode_ms": round(total_decode_ms, 2),
+            "per_shot_ms": round(total_decode_ms / shots, 3),
+            "wall_ms": round(wall_ms, 2),
             "logical_error_rate": round(ler, 6),
         }
         if verbose:
-            print(f"  MPS-TN ({backend}): block_LER={ler:.4f}, {decode_ms:.1f}ms total")
+            print(f"  MPS-TN ({backend}): block_LER={ler:.4f}, "
+                  f"compile={total_compile_ms:.0f}ms, decode={total_decode_ms:.0f}ms")
     except Exception as e:
         record["decoders"]["mps_tn"] = {"status": "error", "error": str(e)}
         if verbose:
@@ -492,7 +504,7 @@ def _run_single_code_case(
 def run_benchmark(
     shots: int = 128,
     noise_p: float = 0.01,
-    chi: int = 16,
+    chi: int = 128,
     seed: int = 42,
     code_names: Optional[list[str]] = None,
     skip_missing: bool = False,
@@ -584,7 +596,7 @@ if __name__ == "__main__":
     results = run_benchmark(
         shots=20000,
         noise_p=0.01,
-        chi=16,
+        chi=128,
         seed=2026,
         skip_missing=False,
         parallel_workers=None,

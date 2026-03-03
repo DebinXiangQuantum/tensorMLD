@@ -1,0 +1,25 @@
+\section{Introduction}
+
+Error-correcting codes (ECCs) are used to control data errors over unreliable or noisy communication channels. The central idea is that the sender encodes the message with redundant information in the form of an ECC. The redundancy allows the receiver to detect a limited number of errors that may occur anywhere in the message and often correct them without the need for retransmission. These codes are used in communication systems for reliable transmission and computer memories for reliable storage. There have been many ECCs introduced in the literature, such as Hamming codes ~\cite{hamming1950error}, convolutional codes~\cite{viterbi1971convolutional}, polar codes~\cite{arikan2008performance}, turbo codes~\cite{berrou1993near}, etc. However, among them, low density parity check (LDPC) codes have become more popular due to their ability to achieve the Shannon limit~\cite{mackay1999good}. 
+
+These codes were introduced by Robert Gagllaer in 1962~\cite{gallager1962low} and are used in various applications and standards. Recently they have been introduced in the 5G-NR standard along with Polar codes~\cite{bae2019overview}. Decoding LDPC codes is a combinatorial optimization problem with constraints. Many algorithms like the sum of products and belief propagation have been developed to solve this problem. These algorithms calculate the belief of a bit being one or zero. The Min-Sum algorithm, an approximation to belief propagation, is most popular among digital ASIC designers.
+
+In a related but different track of work, researchers are trying to solve a combinatorial optimization problem by mapping to physical processes such that the resulting state represents an answer to the problem. Quantum computers marketed by D-Wave Systems are prominent examples. Unlike circuit model quantum computers~\cite{google_quantum,pednault2019leveraging}, D-Wave machines perform quantum annealing~\cite{bunyk_2014_tas}. The idea is to map a combinatorial optimization problem to a system of qubits such that the system's energy maps to the metric of minimization. Then, when the system is controlled to settle down to a low-energy state, the qubits can be read out, which correspond to a solution of the mapped problem.
+
+Indeed, several alternative designs have emerged recently, showing good quality solutions for non-trivial sizes in milli- or micro-second latencies~\cite{inagaki2016cim, wang2019oim, carmes_comm2020}. These systems all share the property that a problem can be mapped to the machine's setup. Then the machine's state evolves according to the physics of the system. This evolution has the effect of optimizing a formula called the Ising model (more on that later). 
+Hence they are called Ising Machines. Reading out the state of such a system at the end of the evolution thus has the effect of obtaining a solution (usually a very good one) to the problem mapped. 
+
+%Quadratic Unconstrained binary optimization (QUBO) problem. 
+%Bistable Resistively-coupled Ising Machine (BRIM) is a CMOS-compatible Ising machine that is shown to outperform many existing Ising machines~\cite{afoakwa.hpca21}, which we use as a baseline system.
+
+LDPC decoding can be formulated as an optimization problem for a standard Ising machine. However, the problem itself is a form of constrained optimization. A standard formulation approach causes the problem size to 
+be doubled. 
+As the state space of in a combinatorial optimization increases 
+exponentially with regard to the problem size, such increase in problem
+size comes with devastating impact on any solvers.
+In this paper, we address this problem by modifying the hardware of 
+a state-of-the-art electronic Ising machine so that it more efficiently
+solve LDPC decodes without drawback from the standard formulation approach.
+The proposed modification helps to achieve an LDPC decoder with a 
+throughput of \blue{118 Gbits/sec} and a power consumption of \blue{158.24mW}, 
+representing at least an order of magnitude reduction in energy compared to state-of-the-art decoders for 5G standards.

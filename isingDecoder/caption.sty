@@ -1,0 +1,74 @@
+%\font\tenhv  = ptmb at 10pt
+%\font\tenr  = ptmr at 10pt
+%\font\tenhv  = phvb at 11pt
+%\font\tenr  = phvr at 11pt
+\newlength{\@ctmp}
+\newlength{\@figindent}
+\setlength{\@figindent}{0.9pc}
+
+\long\def\@makecaption#1#2{
+	\vskip 5pt
+	\setlength{\@ctmp}{\hsize}
+	\addtolength{\@ctmp}{-\@figindent}\addtolength{\@ctmp}{-\@figindent}
+	\setbox\@tempboxa\hbox{\small \noindent \textbf{#1.}~\protect \small #2}
+	\centerline{\begin{minipage}{\@ctmp}	
+   		\ifdim \wd\@tempboxa >\@ctmp
+			\small \noindent \textbf{#1.}~\protect \small #2
+		\else
+			\hfil 
+			\small \noindent \textbf{#1.}~\protect \small #2
+			\hfil
+		\fi
+	\end{minipage}}
+}
+
+\def\@maketitle
+   {
+   \newpage
+   \null
+   \vskip .1in 
+   \begin{center}
+      {\Large \bf \@title \par} 
+      % additional two empty lines at the end of the title 
+      \vspace*{16pt} 
+      {
+      %\large 
+      \lineskip .2em
+      \begin{tabular}[t]{c}
+         \@author 
+      \end{tabular}
+      \par
+      } 
+      % additional small space at the end of the author name 
+      \vskip .5em 
+      {
+       \large 
+      \begin{tabular}[t]{c}
+         \@affiliation 
+      \end{tabular}
+      \par 
+      \ifx \@empty \@email
+      \else
+         \begin{tabular}{r@{~}l}
+            E-mail: & {\tt \@email}
+         \end{tabular}
+         \par
+      \fi
+      }
+      % additional empty line at the end of the title block 
+      \vspace*{0pt} 
+   \end{center}
+   } 
+
+\def\abstract
+   {%
+   \centerline{\large\bf Abstract}%
+   \vspace*{12pt}%
+   %\it%
+   }
+
+\def\affiliation#1{\gdef\@affiliation{#1}} \gdef\@affiliation{}
+
+\def\email#1{\gdef\@email{#1}}
+\gdef\@email{}
+

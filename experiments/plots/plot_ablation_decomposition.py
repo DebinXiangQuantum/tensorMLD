@@ -27,6 +27,7 @@ if str(WORKSPACE) not in sys.path:
 
 from experiments.plots.paper_style import (
     DOUBLE_COLUMN_PT,
+    SINGLE_COLUMN_PT,
     METHOD_COLORS,
     apply_paper_style,
     method_display_name,
@@ -181,12 +182,13 @@ def _plot_grouped_bars(
     show_values: bool = False,
 ) -> None:
     x = np.arange(len(codes))
-    width = 0.24
+    width = 0.22
+    sep =0.25
     labels = [_short_code_label(c) for c in codes]
 
     for i, method in enumerate(METHOD_ORDER):
         y = matrix[i]
-        offset = (i - (len(METHOD_ORDER) - 1) / 2) * width
+        offset = (i - (len(METHOD_ORDER) - 1) / 2) * sep
         mask = ~np.isnan(y) & (y > 0)
         y_plot = np.where(mask, y, np.nan)
         bars = ax.bar(
@@ -196,7 +198,7 @@ def _plot_grouped_bars(
             label=method_display_name(method),
             color=METHOD_COLORS.get(method, "#4c72b0"),
             alpha=0.92,
-            edgecolor="white",
+            edgecolor="k",
             linewidth=0.3,
         )
         if show_values:
@@ -211,6 +213,7 @@ def _plot_grouped_bars(
     ax.set_xticklabels(labels, fontsize=6)
     if log_scale:
         ax.set_yscale("log")
+    ax.set_xlim(x[0]-0.5,x[-1]+0.5)
     ax.tick_params(axis='x', rotation=0)
 
 
@@ -226,31 +229,31 @@ def generate_estimate_plots(input_path: Path, output_dir: Path) -> list[Path]:
     storage = _build_matrix(codes, code_data, _get_storage_mb)
 
     # --- Figure 1: Main comparison (FLOPs + Peak Memory) ---
-    figsize = apply_paper_style(width_pt=DOUBLE_COLUMN_PT, ncols=2, nrows=1,
-                                panel_aspect=1.2)
-    fig, axes = plt.subplots(1, 2, figsize=figsize, constrained_layout=True)
-
+    apply_paper_style(width_pt=SINGLE_COLUMN_PT, ncols=2, nrows=1)
+    w_in = SINGLE_COLUMN_PT / 72.27
+    fig, axes = plt.subplots(2,1, figsize=(w_in, w_in * 0.8))
+    fig.subplots_adjust(left=0.0, right=0.97, hspace=0.1, top=0.78, bottom=0.20)
     _plot_grouped_bars(axes[0], flops, codes=codes,
-                       ylabel="Estimated FLOPs / shot", log_scale=True)
-    axes[0].set_title("(a) Computational Cost", fontsize=8, fontweight="bold")
+                       ylabel="FLOPs", log_scale=True)
+    # axes[0].set_title("(a) Computational Cost", fontsize=8, fontweight="bold")
 
     _plot_grouped_bars(axes[1], peak_gb, codes=codes,
-                       ylabel="Estimated Peak Memory (GB)", log_scale=True)
-    axes[1].set_title("(b) Memory Requirement", fontsize=8, fontweight="bold")
+                       ylabel="Peak Memory (GB)", log_scale=True)
+    # axes[1].set_title("(b) Memory Requirement", fontsize=8, fontweight="bold")
 
-    # Shared legend
+    # Shared legend above all subplots
     handles, labels = axes[0].get_legend_handles_labels()
     if handles:
         fig.legend(handles, labels, loc="upper center", ncol=3,
-                   bbox_to_anchor=(0.5, 1.06), fontsize=7)
-
+                   bbox_to_anchor=(0.5, 0.9), fontsize=7,
+                   columnspacing=1.5, handletextpad=0.5)
     saved = save_figure(fig, output_dir, "ablation_cost_comparison")
+
     plt.close(fig)
 
     # --- Figure 2: Contraction Width + Storage ---
-    figsize2 = apply_paper_style(width_pt=DOUBLE_COLUMN_PT, ncols=2, nrows=1,
-                                 panel_aspect=1.2)
-    fig2, axes2 = plt.subplots(1, 2, figsize=figsize2, constrained_layout=True)
+    fig2, axes2 = plt.subplots(1, 2, figsize=(w_in, w_in * 0.38))
+    fig2.subplots_adjust(left=0.0, right=0.98, wspace=0.30, top=0.78, bottom=0.20)
 
     _plot_grouped_bars(axes2[0], width_log2, codes=codes,
                        ylabel="Contraction Width (log$_2$)", log_scale=False)
@@ -263,15 +266,15 @@ def generate_estimate_plots(input_path: Path, output_dir: Path) -> list[Path]:
     handles2, labels2 = axes2[0].get_legend_handles_labels()
     if handles2:
         fig2.legend(handles2, labels2, loc="upper center", ncol=3,
-                    bbox_to_anchor=(0.5, 1.06), fontsize=7)
+                    bbox_to_anchor=(0.5, 0.96), fontsize=7,
+                    columnspacing=1.5, handletextpad=0.5)
 
     saved += save_figure(fig2, output_dir, "ablation_width_storage")
     plt.close(fig2)
 
     # --- Figure 3: Scaling trend (line plot FLOPs vs N) ---
-    figsize3 = apply_paper_style(width_pt=DOUBLE_COLUMN_PT * 0.55, ncols=1, nrows=1,
-                                 panel_aspect=1.3)
-    fig3, ax3 = plt.subplots(1, 1, figsize=figsize3, constrained_layout=True)
+    fig3, ax3 = plt.subplots(1, 1, figsize=(w_in * 0.5, w_in * 0.38),
+                              constrained_layout=True)
 
     # Extract N values
     with open(input_path, "r") as f:
@@ -342,7 +345,7 @@ def generate_ablation_plots(input_path: Path, output_dir: Path) -> list[Path]:
     peak_mb = _build_matrix(codes, code_data, _ablation_peak_mb)
     ler = _build_matrix(codes, code_data, _ablation_ler)
 
-    figsize = apply_paper_style(width_pt=DOUBLE_COLUMN_PT, ncols=2, nrows=2)
+    figsize = apply_paper_style(width_pt=SINGLE_COLUMN_PT, ncols=2, nrows=2)
     fig, axes = plt.subplots(2, 2, figsize=figsize, constrained_layout=True)
 
     _plot_grouped_bars(axes[0, 0], latency, codes=codes,

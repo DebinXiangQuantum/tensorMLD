@@ -1,0 +1,54 @@
+\begin{abstract}\label{sec:abstract}
+\begin{comment}
+    
+
+Low density parity code (LDPC) has become the standard channel coding for many
+communication applications including the 5G-NR. Fast and energy efficient LDPC
+decoding is thus crucial for the modern communication infrastructure and the
+society that depends on it. The vast majority of research and prototyping effort
+in decoding LDPC is focused on engineering an efficient custom circuitry hardwiring
+a variant of a Belief Propagation (BP) algorithm. An alternative approach is
+to express the decoding as a Combinatorial Optimization Problem (COP) and leverage
+recent advances in hardware that accelerates COP solving. While such an approach
+has not yet been competitive and leaves a rather large gap in the ultimate performance metrics, this paper shows that the reason is not fundamental, but suboptimal hardware and formulation.
+A co-designed system can overcome performance gap and helps to achieve a LDPC decoder which is 4 times more efficient in energy consumption per bit compared to  state of the art.
+
+\blue{Low density parity code (LDPC) has become the standard channel coding for many communication applications, including the 5G-NR. Fast and energy efficient LDPC decoding is thus crucial for the modern communication infrastructure and the society that depends on it. The vast majority of research and prototyping effort in decoding LDPC is focused on engineering an efficient custom circuitry hardwiring a variant of a Belief Propagation (BP) algorithm. An alternative approach is to express the decoding as a Combinatorial Optimization Problem (COP) and leverage recent hardware advances that accelerate COP solving. While such an approach has yet to be competitive and leaves a rather large gap in the ultimate performance metrics, this paper shows that the reason is not fundamental but suboptimal hardware and formulation. A co-designed system can overcome the performance gap and helps to achieve an LDPC decoder that is 4 times more efficient in energy consumption per bit compared to state of the art.}
+\end{comment}
+
+Due to 5G deployment, there is significant interest in LDPC decoding.
+While much research is devoted on efficient hardwiring of algorithms 
+based on Belief Propagation (BP), it has been shown that LDPC decoding can be formulated as a
+combinatorial optimization problem, which could benefit from significant
+acceleration of physical computation mechanisms such as
+Ising machines. This approach has so far resulted in poor
+performance. This paper shows that the reason is not fundamental but
+suboptimal hardware and formulation. A co-designed Ising machine-based 
+system can improve speed by 3 orders of magnitude. As a result,
+a physical computation approach can outperform hardwiring
+state-of-the-art algorithms. In this paper, we show such an
+augmented Ising machine that is 4.4$\times$ more energy efficient than
+the state of the art in the literature.
+
+
+
+\begin{comment}
+\begin{itemize}
+    \item LDPC codes are important ECC codes for its ability to reach the Shannon limit
+    \item they have been standardized for many different applications
+    \item The decoding of LDPC codes is a combinatorial optimization problem
+    \item Ising machines have shown to solve COPs very effectively
+    \item major problem: to map cop with constraints on ising machines needs to be converted into a QUBO which requiers some extra spins
+    \item this makes the state space for search increase exponentially
+    \item with changes to the hardware of BRIM we can directly map decoding LDPC without conversion
+    \item this leads to design of LDPC decoder with \blue{118.6 Gbits/sec} through, \blue{158.24mW} power consumption.
+    \item this design helps in reduction of energy consumption per bit by an order of magnitude compared to other state of art LDPC decoders
+    
+\end{itemize}
+\end{comment}
+
+\end{abstract}
+
+\begin{IEEEkeywords}
+Ising model, QUBO, Min-Sum algorithm
+\end{IEEEkeywords}

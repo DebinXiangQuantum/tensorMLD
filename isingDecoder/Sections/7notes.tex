@@ -1,0 +1,88 @@
+\todo{Find out performance/energy of ``baseline Ising machine" so that we can discuss this improvement in abstract.}
+\note{According to the following paper "https://arxiv.org/abs/2007.11069" a 2048 qbit dwave machine can implement a 420bit problem, which can achieve 0.021 gbits/sec  throughput. Whereas state of the art machines achieve 33.2 gbits/sec and we achive 81.6 gbits/sec}
+
+\note{
+expansion factor 4, binary;  number of spins: 689 , couplers: 15616; unary, number of spins: 1029 , couplers 25148; actual spins (our model) 272, couplers 1264\\
+expansion factor 64, binary; number of spins:11009 ,
+Couplers:290688; unary number of spins: 16449, couplers: 443200; acutal spins (our model) 4352.0, couplers 20224.
+}
+
+\note{ SNR = power of signal / power of noise; (No units, generally expressed in dB)
+
+$N_0/2$ is the power spectral density of noise;
+
+2W be the bandwidth;
+
+P be the power of signal;
+
+power of noise = $N_0/2*2W$ = $N_0*w$
+
+so SNR = $P/N_0*W$
+
+If 2W is the bandwidth of the signal, Time required to transmit a symbol without interference (T) = $1/2W$ (According to Nyquist rate)
+
+So energy per symbol $(E_s)$ = P*T =  $P/2W$
+
+The energy of noise = variance of noise ($\sigma^2$) = $N_0/2$; (This is derived)
+
+so $E_s/\sigma^2$ = $P/N_0*W$ = SNR;
+
+For BPSK Modulation
+
+Energy per symbol = mean of square of symbol = $((-1)^2 + (1)^2)/2 = 1$
+
+Hence SNR = $1/\sigma^2$
+
+In an uncoded transmission number of information bits = number of symbols, Hence rate (R) = 1, but in a coded transmission R < 1, so to transmit same amount of information we need to use more energy in coded transmission compared to uncoded transmission. 
+
+To have fair comparison between coded and uncoded we use a metric called $E_b/N_0$ instead of SNR,
+
+$E_b$ = Energy per bit = $E_s/R$ = $(E_s*n)/k$
+
+SNR = $E_s/sigma^2$ = $2*R*E_b/N_0$
+
+$E_b/N_0 = 1/(2*R*\sigma^2)$
+
+From the above formula we can calculate sigma for the noise based on $E_b/N_0$ value.
+
+}
+\note{equation of energy per bit: (power*latency)/number of bits }
+\note{Time : SA = 1340ms; OMS = 1.4ms; ~\cite{thi2021low}=752ns; BRIM style ldpc\_decoder = 220ns}
+
+\note{Solving G001: number of nodes: 800 
+SA : number of instructions 2388227818
+Number of spin flips: 220759
+Total time per flip: (total number of instr per flip*time per cycle)/IPC
+
+Assumming IPC: 2
+total number of instr per flip = 10818
+clk speed =  3 GHz  0.33ns
+Total time per flip: $(10818*0.33*10^{(-9)})/2 = 2e-06$
+
+BRIM: total time 2.2e-06
+Number of spin flips: 105660
+Total time per flip in BRIM : 2e-11
+
+so total speedup = 2e-06/2e-11 = $10^5$
+
+}
+
+\note{minsum on cpu could solve in 1.4ms, ~\cite{thi2021low} solve in 752ns, approx 3 orders of speed up compared to cpu, compared to SA BRIM\_ldpc\_decoder is $6.5*10^6$ X faster approximated by scaling}
+
+\note{ Explaining the speedup: ~\cite{thi2021low} has 56X19 functional units which is 3 orders more functional units compared to cpu.
+}
+
+\note{100 Messages SNR:3; exp\_f:2 each message was annealed 20 times
+
+      1) annealing time 1.5 $\mu s$, number of anneals 1, BER: 5.11E-03;
+      
+      2 a) annealing time 300ns, number of anneals 5, total time 1.5 $\mu s$ BER: 7.05E-03;
+      
+      2 b) start from end result 
+
+      2 c) start from hard decision point. 
+      
+      annealing time 150ns, number of anneals 9 and 1 anneal to get to the energy point at 150ns in total annealing time of approx 1.5 $\mu s$ BER: 8.85E-03
+
+      annealing time 270ns, number of anneals 5  1 anneal to get the energy point at 30ns in total annealing time of 300ns total time 1.380 $\mu s$ BER:7.29E-03
+}

@@ -37,10 +37,13 @@ OUT_PREFIX = "__OUT__::"
 DELTA_TAG = "DELTA_INDEX"
 
 # Maximum delta tensor order before switching to chain decomposition.
-# A single delta tensor of order k with dim d requires d^k elements.
-# For d=2 and k=40, that's 2^40 ≈ 1 TB — instant OOM.
-# Chain decomposition uses k-1 small nodes (d^2 or d^3 each) instead.
-DELTA_CHAIN_THRESHOLD = 16
+# Per ISCA paper §4: every tensor in the initial TN must be order ≤ 3.
+# For degree-k delta with k > 3, chain-decompose into k-1 nodes:
+#   chain[0]: identity(d,d) — order 2
+#   chain[1..k-3]: delta(d,d,d) — order 3
+#   chain[k-2]: delta(d,d,d) — order 3
+# All resulting nodes are order ≤ 3.
+DELTA_CHAIN_THRESHOLD = 3
 
 # Global defaults (can be changed via `set_global_decoder_config`).
 GLOBAL_BOND_DIM = 32
@@ -326,9 +329,37 @@ def _parity_to_mps(data: np.ndarray) -> Optional[list[np.ndarray]]:
     return cores
 
 
+def _adaptive_bond_dim(s: np.ndarray, chi: int,
+                       max_trunc_error: float = 0.0) -> int:
+    """Compute adaptive bond dimension: min(chi, error_based_chi).
+
+    Given singular values *s* (descending), find the smallest k >= 1 such
+    that sum(s[k:]) <= max_trunc_error, then return min(k, chi).
+    When max_trunc_error <= 0 (disabled), falls back to chi.
+    """
+    n = len(s)
+    if n == 0:
+        return 1
+    if max_trunc_error <= 0:
+        return min(n, chi) if chi > 0 else n
+    cumsum = np.cumsum(s)
+    total = float(cumsum[-1])
+    threshold = total - max_trunc_error
+    if threshold <= 0:
+        error_chi = 1
+    else:
+        idx = int(np.searchsorted(cumsum, threshold))
+        error_chi = min(idx + 1, n)
+    error_chi = max(1, error_chi)
+    if chi > 0:
+        return min(error_chi, chi)
+    return error_chi
+
+
 def _svd_to_mps(data: np.ndarray,
                 chi: int,
-                cutoff: float = 1e-12) -> list[np.ndarray]:
+                cutoff: float = 1e-12,
+                max_trunc_error: float = 0.0) -> list[np.ndarray]:
     """Generic sequential SVD decomposition into an MPS."""
     if data.ndim == 0:
         return []
@@ -347,8 +378,8 @@ def _svd_to_mps(data: np.ndarray,
         keep = np.where(s > cutoff)[0]
         if keep.size == 0:
             keep = np.array([0], dtype=np.int64)
-        if chi > 0:
-            keep = keep[:chi]
+        rank = _adaptive_bond_dim(s[keep], chi, max_trunc_error)
+        keep = keep[:rank]
 
         rank = int(keep.size)
         u = u[:, keep]
@@ -365,7 +396,8 @@ def _svd_to_mps(data: np.ndarray,
 
 def decompose_tensor_to_mps(data: np.ndarray,
                             chi: int,
-                            cutoff: float = 1e-12) -> tuple[list[np.ndarray], str]:
+                            cutoff: float = 1e-12,
+                            max_trunc_error: float = 0.0) -> tuple[list[np.ndarray], str]:
     """Decompose a tensor into MPS cores, returning (cores, decomp_type).
 
     Priority (all exact decompositions tried before lossy SVD):
@@ -387,7 +419,8 @@ def decompose_tensor_to_mps(data: np.ndarray,
     if parity_mps is not None:
         return parity_mps, "parity"
 
-    return _svd_to_mps(arr, chi=chi, cutoff=cutoff), "svd"
+    return _svd_to_mps(arr, chi=chi, cutoff=cutoff,
+                       max_trunc_error=max_trunc_error), "svd"
 
 
 def mps_to_raw(mps: list[np.ndarray]) -> np.ndarray:
@@ -568,7 +601,8 @@ def count_internal_edges(active_nodes: set[int],
 
 
 def build_mps_nodes(pairwise: PairwiseGraphData, chi: int,
-                    cutoff: float) -> dict[int, Any]:
+                    cutoff: float,
+                    max_trunc_error: float = 0.0) -> dict[int, Any]:
     """Instantiate catn-style MPS nodes with exact-structure decomposition."""
     nodes: dict[int, Any] = {}
     decomp_counts: dict[str, int] = {}
@@ -584,10 +618,12 @@ def build_mps_nodes(pairwise: PairwiseGraphData, chi: int,
             svdopt=True,
             swapopt=True,
             verbose=0,
+            max_trunc_error=max_trunc_error,
         )
         node.neighbor = neighbors
         node.mps, _decomp_type = decompose_tensor_to_mps(
-            raw_tensor, chi=chi, cutoff=cutoff)
+            raw_tensor, chi=chi, cutoff=cutoff,
+            max_trunc_error=max_trunc_error)
         node._decomp_type = _decomp_type
         node._tags = pairwise.node_tags.get(node_id, set())
         node.cano = len(node.mps) - 1 if node.mps else 0
@@ -616,6 +652,90 @@ def _collect_internal_edges(active_nodes: set[int],
                 a, b = (i, nb) if i < nb else (nb, i)
                 edges.add((a, b))
     return sorted(edges)
+
+
+def _rcm_ordering(adjacency: dict[int, set]) -> list[int]:
+    """Reverse Cuthill-McKee ordering of the preserved-node graph.
+
+    Orders the N preserved nodes so that connected nodes are close together,
+    minimising the bandwidth of the adjacency matrix.  This gives the optimal
+    1-D site ordering that minimises the maximum entanglement cut across any
+    virtual bond in the final MPS chain.
+
+    Uses ``scipy.sparse.csgraph.reverse_cuthill_mckee`` when available;
+    falls back to a double-BFS (pseudo-peripheral) approximation otherwise.
+
+    Args:
+        adjacency: Mapping ``node_id -> set_of_neighbor_ids`` for the
+            preserved-node graph (output of ``_build_internal_adjacency``).
+
+    Returns:
+        List of node IDs in RCM order, position 0 being the leftmost site.
+    """
+    nodes_list = sorted(adjacency.keys())
+    n = len(nodes_list)
+    if n == 0:
+        return []
+    if n == 1:
+        return nodes_list
+
+    node_to_idx = {v: i for i, v in enumerate(nodes_list)}
+
+    try:
+        import scipy.sparse as _sp
+        from scipy.sparse.csgraph import reverse_cuthill_mckee as _rcm
+
+        rows, cols, data = [], [], []
+        for v, neighbors in adjacency.items():
+            vi = node_to_idx[v]
+            for u in neighbors:
+                ui = node_to_idx.get(u)
+                if ui is not None:
+                    rows.append(vi)
+                    cols.append(ui)
+                    data.append(1)
+
+        if not rows:
+            return nodes_list  # no edges → any order is fine
+
+        A = _sp.csr_matrix((data, (rows, cols)), shape=(n, n))
+        perm = _rcm(A, symmetric_mode=True)
+        return [nodes_list[i] for i in perm]
+
+    except ImportError:
+        pass
+
+    # --- Fallback: double-BFS approximation (Cuthill-McKee without scipy) ---
+    def _bfs_from(start: int) -> list[int]:
+        visited: list[int] = [start]
+        queue: list[int] = [start]
+        seen: set[int] = {start}
+        while queue:
+            cur = queue.pop(0)
+            for nb in sorted(adjacency.get(cur, set()),
+                             key=lambda v: len(adjacency.get(v, set()))):
+                if nb not in seen and nb in node_to_idx:
+                    seen.add(nb)
+                    visited.append(nb)
+                    queue.append(nb)
+        return visited
+
+    # Start from a min-degree node, BFS twice to find pseudo-peripheral node.
+    start = min(nodes_list, key=lambda v: len(adjacency.get(v, set())))
+    order1 = _bfs_from(start)
+    order2 = _bfs_from(order1[-1])  # peripheral node → better starting point
+
+    seen: set[int] = set(order2)
+    full_order: list[int] = list(order2)
+    for v in nodes_list:
+        if v not in seen:
+            sub = _bfs_from(v)
+            for u in sub:
+                if u not in seen:
+                    seen.add(u)
+                    full_order.append(u)
+
+    return list(reversed(full_order))  # reverse for RCM effect
 
 
 @dataclass
@@ -693,12 +813,14 @@ def _cut_bondim_opt(
         i: int,
         idx_k_in_i: int,
         Dmax: int,
-        cutoff: float = 1e-15) -> float:
+        cutoff: float = 1e-15,
+        max_trunc_error: float = 0.0) -> float:
     """Truncate the physical bond dimension at a specific edge.
 
     After merging duplicate edges, the bond dimension between nodes i and k
     can grow large.  This function performs QR + SVD to reduce it back to
-    at most *Dmax*, returning the total truncation error.
+    at most *Dmax* (or fewer if adaptive truncation suffices), returning the
+    total truncation error.
 
     This mirrors ``cut_bondim_opt`` from ``catn/tensor_network_np.py``.
     """
@@ -743,7 +865,7 @@ def _cut_bondim_opt(
         s_eff = s[:1]
 
     error = float(s[len(s_eff):].sum())
-    myd = min(len(s_eff), Dmax) if Dmax > 0 else len(s_eff)
+    myd = _adaptive_bond_dim(s_eff, Dmax, max_trunc_error)
     if myd == 0:
         myd = 1
 
@@ -775,6 +897,7 @@ def compress_until_preserved(
         compress_each_step: bool = True,
         verbose: bool = False,
         chi: int = 0,
+        max_trunc_error: float = 0.0,
         snapshot_callback: Optional[Callable] = None) -> OfflineCompressionResult:
     """Run contraction-swap-merge until only preserved nodes remain active.
 
@@ -853,8 +976,9 @@ def compress_until_preserved(
             truncation_error += m_err
             # Truncate the merged bond dimension (critical for 1D chain)
             idx_k_in_i = int(nodes[i].find_neighbor(k))
-            if idx_k_in_i >= 0 and chi > 0:
-                cut_err = _cut_bondim_opt(nodes, i, idx_k_in_i, Dmax=chi)
+            if idx_k_in_i >= 0 and (chi > 0 or max_trunc_error > 0):
+                cut_err = _cut_bondim_opt(nodes, i, idx_k_in_i, Dmax=chi,
+                                          max_trunc_error=max_trunc_error)
                 step_merge_err += cut_err
                 truncation_error += cut_err
 
@@ -939,17 +1063,39 @@ def merge_preserved_to_path(
         nodes: dict[int, Any],
         active_nodes: set[int],
         chi: int = 0,
+        max_trunc_error: float = 0.0,
         max_steps: int = 100000,
         verbose: bool = False,
-        snapshot_callback: Optional[Callable] = None) -> float:
+        snapshot_callback: Optional[Callable] = None,
+        ordering_strategy: str = 'degree_stable') -> float:
     """Merge preserved nodes until the internal adjacency graph is a 1D path.
 
     After ``compress_until_preserved`` the residual graph may still have nodes
     with degree > 2 (i.e. not a simple path).  This function iteratively
-    contracts edges between preserved nodes, choosing edges that maximally
-    reduce the *maximum* degree, until every node has degree <= 2.
+    contracts edges between preserved nodes until every node has degree <= 2.
 
     Args:
+        ordering_strategy: How to choose the merge order.
+            ``'degree_stable'`` – (default) Degree heuristic with a
+                           chi-independent tiebreaker.  Primary key: minimise
+                           the resulting max degree (same as ``'degree'``).
+                           Tiebreaker: sum of current MPS orders (number of
+                           sites) of the two endpoints, which is purely
+                           structural and does not depend on bond dimensions or
+                           chi.  This fixes the "chi paradox" (error increasing
+                           with chi) while retaining the good performance of
+                           the degree heuristic for dense preserved graphs.
+                           Direction: larger node (more MPS sites) eats smaller.
+            ``'rcm'``    – Reverse Cuthill-McKee.  Computes the optimal 1-D
+                           linear arrangement of preserved nodes once at the
+                           start (chi-independent), then contracts edges in
+                           left-to-right RCM order.  Works well for sparse
+                           preserved graphs; can be worse than degree heuristic
+                           for dense graphs (many cross-connections).
+            ``'degree'`` – Original greedy heuristic: primary key = resulting
+                           max degree, tiebreaker = _edge_cost (chi-dependent).
+                           Kept for legacy comparison; exhibits the chi paradox
+                           on large QLDPC codes.
         snapshot_callback: Optional callable invoked after each merge step.
             Signature: (step, active_nodes, nodes, contracted_edge, truncation_error)
 
@@ -957,6 +1103,20 @@ def merge_preserved_to_path(
     """
     truncation_error = 0.0
     steps = 0
+
+    # ------------------------------------------------------------------ #
+    # Pre-computation for chi-independent strategies (done ONCE, before   #
+    # any merge).  Both 'degree_stable' and 'rcm' are fully determined    #
+    # by the initial graph structure → same merge order for all chi.      #
+    # ------------------------------------------------------------------ #
+    rcm_pos: dict[int, int] = {}
+    if ordering_strategy == 'rcm':
+        init_adj = _build_internal_adjacency(active_nodes, nodes)
+        rcm_order = _rcm_ordering(init_adj)
+        rcm_pos = {v: i for i, v in enumerate(rcm_order)}
+        if verbose:
+            print(f"[merge_preserved] RCM ordering computed for "
+                  f"{len(rcm_order)} preserved nodes")
 
     if snapshot_callback is not None:
         snapshot_callback(0, active_nodes, nodes, None, truncation_error)
@@ -974,26 +1134,69 @@ def merge_preserved_to_path(
         if not edges:
             break
 
-        # Heuristic: pick the edge (i, j) that results in the lowest max
-        # degree after merging. When i eats j, the merged node's degree is:
-        #   deg(i) + deg(j) - 2 - 2*|common_neighbors(i,j)|
-        # (−2 for the contracted edge, −2 per shared neighbor that gets merged).
-        # We want to minimize the *resulting* degree of the merged node, then
-        # break ties by contraction cost.
-        def _merge_priority(edge):
-            a, b = edge
-            neigh_a = adjacency.get(a, set())
-            neigh_b = adjacency.get(b, set())
-            common = len(neigh_a & neigh_b)
-            result_deg = len(neigh_a) + len(neigh_b) - 2 - 2 * common
-            cost = _edge_cost(nodes, a, b)
-            return (result_deg, cost)
+        if ordering_strategy in ('degree_stable', 'degree_triangle'):
+            # Degree heuristic with chi-independent tiebreaker.
+            # Primary key: minimise the max degree of the merged result.
+            # Tiebreaker: sum of current MPS orders (site count) – structural,
+            # does NOT depend on bond dimensions or chi.  This prevents the
+            # merge order from changing when chi changes (chi paradox fix).
+            #
+            # 'degree_triangle' adds a secondary key: prefer edges with MORE
+            # common neighbours (triangles).  When merging (a,b), each common
+            # neighbour k triggers merge(a,k) instead of add_neighbor(k), so
+            # the merged node gains fewer new legs → lower bond-dim growth.
+            # This is adapted from catn/tn_np.py select_edge_min_dim_triangle.
+            use_triangle = (ordering_strategy == 'degree_triangle')
+
+            def _merge_priority(edge):
+                a, b = edge
+                neigh_a = adjacency.get(a, set())
+                neigh_b = adjacency.get(b, set())
+                common = len(neigh_a & neigh_b)
+                result_deg = len(neigh_a) + len(neigh_b) - 2 - 2 * common
+                # chi-independent tiebreaker: total site count (structural)
+                order_cost = nodes[a].order() + nodes[b].order()
+                if use_triangle:
+                    # Secondary key: prefer more triangles (common neighbours).
+                    # Negated so that heapq/min picks the LARGEST common count.
+                    return (result_deg, -common, order_cost)
+                return (result_deg, order_cost)
+        elif ordering_strategy == 'rcm' and rcm_pos:
+            # RCM priority: contract edges in left-to-right RCM order.
+            # NOTE: _edge_cost is used only as a secondary tiebreaker here;
+            # the primary key (max rcm_pos) is chi-independent.
+            def _merge_priority(edge):
+                a, b = edge
+                priority_key = max(rcm_pos.get(a, 0), rcm_pos.get(b, 0))
+                cost = _edge_cost(nodes, a, b)
+                return (priority_key, cost)
+        else:
+            # Original degree heuristic with chi-DEPENDENT tiebreaker.
+            # Kept for legacy comparison; exhibits the chi paradox.
+            def _merge_priority(edge):  # type: ignore[misc]
+                a, b = edge
+                neigh_a = adjacency.get(a, set())
+                neigh_b = adjacency.get(b, set())
+                common = len(neigh_a & neigh_b)
+                result_deg = len(neigh_a) + len(neigh_b) - 2 - 2 * common
+                cost = _edge_cost(nodes, a, b)
+                return (result_deg, cost)
 
         i, j = min(edges, key=_merge_priority)
 
-        # Ensure larger node eats the smaller one.
-        if nodes[j].order() > nodes[i].order():
-            i, j = j, i
+        # ---------------------------------------------------------------- #
+        # Direction: larger node (more MPS sites) eats the smaller one.   #
+        # Moving the contraction site to the tail of the larger node is    #
+        # cheaper on average, since larger nodes tend to have their        #
+        # connections nearer the boundary after previous eat operations.   #
+        # For RCM, override: lower-RCM-position node is the accumulator.  #
+        # ---------------------------------------------------------------- #
+        if ordering_strategy == 'rcm' and rcm_pos:
+            if rcm_pos.get(j, 0) < rcm_pos.get(i, 0):
+                i, j = j, i  # always: lower-RCM node eats higher-RCM node
+        else:
+            if nodes[j].order() > nodes[i].order():
+                i, j = j, i
 
         idx_j_in_i = int(nodes[i].find_neighbor(j))
         idx_i_in_j = int(nodes[j].find_neighbor(i))
@@ -1040,8 +1243,9 @@ def merge_preserved_to_path(
             step_merge_err += m_err
             truncation_error += m_err
             idx_k_in_i = int(nodes[i].find_neighbor(k))
-            if idx_k_in_i >= 0 and chi > 0:
-                cut_err = _cut_bondim_opt(nodes, i, idx_k_in_i, Dmax=chi)
+            if idx_k_in_i >= 0 and (chi > 0 or max_trunc_error > 0):
+                cut_err = _cut_bondim_opt(nodes, i, idx_k_in_i, Dmax=chi,
+                                          max_trunc_error=max_trunc_error)
                 truncation_error += cut_err
 
         # Compress the merged node.
@@ -1050,6 +1254,13 @@ def merge_preserved_to_path(
 
         nodes[j].clear()
         active_nodes.discard(j)
+
+        # Update RCM position: the merged super-node inherits the LEFT boundary
+        # (= smaller position) of the two merged nodes.  This is deterministic
+        # and chi-independent, so the merge ordering stays stable across chi.
+        if ordering_strategy == 'rcm' and rcm_pos:
+            rcm_pos[i] = min(rcm_pos.get(i, 0), rcm_pos.get(j, 0))
+            rcm_pos.pop(j, None)
 
         steps += 1
 
@@ -1060,7 +1271,7 @@ def merge_preserved_to_path(
             adj = _build_internal_adjacency(active_nodes, nodes)
             max_deg = max((len(v) for v in adj.values()), default=0)
             print(f"[merge_preserved] step={steps}, active={len(active_nodes)}, "
-                  f"max_degree={max_deg}")
+                  f"max_degree={max_deg}, ordering={ordering_strategy}")
 
     return truncation_error
 
@@ -1860,12 +2071,30 @@ def compile_to_1d_chain(
         logical_inds: set[str],
         chi: Optional[int] = None,
         cutoff: float = 1e-12,
+        max_trunc_error: float = 0.0,
         max_steps: int = 100000,
-        verbose: bool = False) -> CompileResult:
+        verbose: bool = False,
+        ordering_strategy: str = 'degree_stable') -> CompileResult:
+    """Compile a tensor network into a 1-D MPS chain for fast online decoding.
+
+    Args:
+        ordering_strategy: Merge ordering for ``merge_preserved_to_path``.
+            ``'degree_stable'`` (default) uses the degree heuristic with a
+            chi-independent tiebreaker (MPS site count), fixing the chi paradox
+            where error paradoxically increased with chi for large codes.
+            ``'degree_triangle'`` extends ``'degree_stable'`` by preferring
+            edges with more common neighbours (triangles) as a secondary key,
+            reducing bond-dimension growth when many shared connections exist.
+            ``'rcm'`` uses Reverse Cuthill-McKee ordering (works well for sparse
+            graphs). ``'degree'`` uses the original chi-dependent heuristic
+            (legacy, exhibits chi paradox).  See ``merge_preserved_to_path``
+            for full details.
+    """
     if chi is None:
         chi = GLOBAL_BOND_DIM
     pairwise = build_pairwise_graph_from_tn(tn, preserve_inds=preserve_inds)
-    nodes = build_mps_nodes(pairwise, chi=chi, cutoff=cutoff)
+    nodes = build_mps_nodes(pairwise, chi=chi, cutoff=cutoff,
+                            max_trunc_error=max_trunc_error)
 
     offline = compress_until_preserved(
         nodes=nodes,
@@ -1875,6 +2104,7 @@ def compile_to_1d_chain(
         compress_each_step=True,
         verbose=verbose,
         chi=chi,
+        max_trunc_error=max_trunc_error,
     )
 
     # Phase 1.5: try direct extraction first; if the residual graph is
@@ -1898,8 +2128,10 @@ def compile_to_1d_chain(
             nodes=offline.nodes,
             active_nodes=offline.active_nodes,
             chi=chi,
+            max_trunc_error=max_trunc_error,
             max_steps=max_steps,
             verbose=verbose,
+            ordering_strategy=ordering_strategy,
         )
         offline.stats.truncation_error += merge_err
 

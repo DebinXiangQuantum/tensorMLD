@@ -106,9 +106,10 @@ def _run_qubo_sa(
     errors: np.ndarray, syndromes: np.ndarray,
     noise_p: float, seed: int,
     alpha, num_reads: int, num_steps_per_qubit: int, T_init: float,
+    convergence_patience: int, bp_max_iter: int, cycle_time_ns: float,
     verbose: bool,
 ) -> dict[str, Any]:
-    """Run modified-QUBO SA decoder."""
+    """Run modified-QUBO SA decoder with variable latency tracking."""
     K = int(lz.shape[0])
     num_errors = H.shape[1]
     shots = syndromes.shape[0]
@@ -120,21 +121,35 @@ def _run_qubo_sa(
         alpha=alpha, num_reads=num_reads,
         num_steps_per_qubit=num_steps_per_qubit,
         T_init=T_init, seed=seed,
+        convergence_patience=convergence_patience,
+        bp_max_iter=bp_max_iter,
     )
     actual_alpha = decoder.alpha
     init_ms = (time.perf_counter() - t0) * 1e3
 
     all_preds = np.zeros((shots, K), dtype=np.int8)
     total_violations = 0
+    total_sa_steps = 0
+    total_bp_init_iters = 0
+    total_hw_cycles = 0
     t1 = time.perf_counter()
     for i in range(shots):
         res = decoder.decode(syndromes[i])
         for k in range(K):
             all_preds[i, k] = int(res.result[k] >= 0.5)
         total_violations += decoder.last_timing.parity_violations
+        total_sa_steps += decoder.last_timing.actual_sa_steps
+        total_bp_init_iters += decoder.last_timing.bp_init_iters
+        # Hardware cycles per shot: BP init cycles + SA annealing cycles
+        bp_cycles = decoder.last_timing.bp_init_iters * 2
+        # SA steps map to cycles: each step ≈ 1 cycle in hardware
+        sa_cycles = decoder.last_timing.actual_sa_steps
+        total_hw_cycles += bp_cycles + sa_cycles
     decode_ms = (time.perf_counter() - t1) * 1e3
 
     ler = _block_logical_error_rate(errors, lz, all_preds)
+    avg_hw_cycles = total_hw_cycles / shots
+    avg_hw_latency_ns = avg_hw_cycles * cycle_time_ns
     result = {
         "status": "ok",
         "alpha_actual": round(actual_alpha, 2),
@@ -143,10 +158,17 @@ def _run_qubo_sa(
         "per_shot_ms": round(decode_ms / shots, 3),
         "logical_error_rate": round(ler, 6),
         "avg_parity_violations": round(total_violations / shots, 2),
+        "avg_sa_steps": round(total_sa_steps / shots, 1),
+        "avg_bp_init_iters": round(total_bp_init_iters / shots, 1),
+        "avg_hw_cycles": round(avg_hw_cycles, 1),
+        "avg_hw_latency_ns": round(avg_hw_latency_ns, 1),
     }
     if verbose:
         print(f"    QUBO-SA: LER={ler:.4f}, {decode_ms/shots:.2f} ms/shot, "
-              f"violations={total_violations/shots:.1f}, alpha={actual_alpha:.1f}")
+              f"violations={total_violations/shots:.1f}, alpha={actual_alpha:.1f}, "
+              f"hw_latency={avg_hw_latency_ns:.0f}ns "
+              f"(bp_init={total_bp_init_iters/shots:.0f}it + "
+              f"sa={total_sa_steps/shots:.0f}steps)")
     return result
 
 
@@ -154,15 +176,16 @@ def _run_bp_decoder(
     dec_name: str, DecClass, dec_kwargs: dict,
     H: np.ndarray, lz: np.ndarray,
     errors: np.ndarray, syndromes: np.ndarray,
-    noise_p: float,
+    noise_p: float, cycle_time_ns: float,
     verbose: bool,
 ) -> dict[str, Any]:
-    """Run a BP-family decoder (BP, BP-OSD, BP-LSD)."""
+    """Run a BP-family decoder (BP, BP-OSD, BP-LSD) with iteration tracking."""
     K = int(lz.shape[0])
     num_errors = H.shape[1]
     shots = syndromes.shape[0]
     H_int = H.astype(np.uint8)
     channel_probs = np.full(num_errors, noise_p)
+    max_iter = dec_kwargs.get("max_iter", 50)
 
     t0 = time.perf_counter()
     bp_dec = DecClass(
@@ -173,24 +196,38 @@ def _run_bp_decoder(
     init_ms = (time.perf_counter() - t0) * 1e3
 
     predictions_list = []
+    total_bp_iters = 0
     t1 = time.perf_counter()
     for i in range(shots):
         correction = bp_dec.decode(syndromes[i].astype(np.uint8))
         logical_vals = (correction @ lz.T.astype(np.int8)) % 2
         predictions_list.append(logical_vals.tolist())
+        # Track actual BP iterations (ldpc exposes .iter)
+        bp_iters = getattr(bp_dec, "iter", max_iter)
+        if bp_iters is None or bp_iters <= 0:
+            bp_iters = max_iter
+        total_bp_iters += int(bp_iters)
     decode_ms = (time.perf_counter() - t1) * 1e3
 
     preds = np.array(predictions_list, dtype=np.int8)
     ler = _block_logical_error_rate(errors, lz, preds)
+    avg_iters = total_bp_iters / shots
+    # BP hardware cycles: each iteration = 2 cycles (forward + backward pass)
+    avg_hw_cycles = avg_iters * 2
+    avg_hw_latency_ns = avg_hw_cycles * cycle_time_ns
     result = {
         "status": "ok",
         "init_ms": round(init_ms, 2),
         "total_decode_ms": round(decode_ms, 2),
         "per_shot_ms": round(decode_ms / shots, 3),
         "logical_error_rate": round(ler, 6),
+        "avg_bp_iters": round(avg_iters, 1),
+        "avg_hw_cycles": round(avg_hw_cycles, 1),
+        "avg_hw_latency_ns": round(avg_hw_latency_ns, 1),
     }
     if verbose:
-        print(f"    {dec_name}: LER={ler:.4f}, {decode_ms/shots:.2f} ms/shot")
+        print(f"    {dec_name}: LER={ler:.4f}, {decode_ms/shots:.2f} ms/shot, "
+              f"hw_latency={avg_hw_latency_ns:.0f}ns ({avg_iters:.0f}it)")
     return result
 
 
@@ -256,6 +293,9 @@ def _run_single_code_single_p(
     num_steps_per_qubit: int,
     T_init: float,
     annealing_time_ns: float,
+    cycle_time_ns: float,
+    bp_max_iter: int,
+    convergence_patience: int,
     ising_sim_cycles: int,
     verbose: bool,
 ) -> dict[str, Any]:
@@ -289,7 +329,8 @@ def _run_single_code_single_p(
         record["decoders"]["qubo_sa"] = _run_qubo_sa(
             H, lz, errors_all[:sa_shots], syndromes_all[:sa_shots],
             noise_p, seed,
-            alpha, num_reads, num_steps_per_qubit, T_init, verbose)
+            alpha, num_reads, num_steps_per_qubit, T_init,
+            convergence_patience, bp_max_iter, cycle_time_ns, verbose)
     except Exception as e:
         record["decoders"]["qubo_sa"] = {"status": "error", "error": str(e)}
         if verbose:
@@ -311,7 +352,7 @@ def _run_single_code_single_p(
                 record["decoders"][dec_name] = _run_bp_decoder(
                     dec_name, DecClass, kwargs,
                     H, lz, errors_all[:shots], syndromes_all[:shots],
-                    noise_p, verbose)
+                    noise_p, cycle_time_ns, verbose)
             except Exception as e:
                 record["decoders"][dec_name] = {"status": "error", "error": str(e)}
                 if verbose:
@@ -351,6 +392,7 @@ def run_benchmark(
     annealing_time_ns: float = 320.0,
     cycle_time_ns: float = 4.0,
     bp_max_iter: int = 50,
+    convergence_patience: int = 3,
     ising_sim_cycles: int = 500,
     verbose: bool = True,
     output_json: Optional[str] = None,
@@ -406,6 +448,9 @@ def run_benchmark(
                 alpha=alpha, num_reads=num_reads,
                 num_steps_per_qubit=num_steps_per_qubit,
                 T_init=T_init, annealing_time_ns=annealing_time_ns,
+                cycle_time_ns=cycle_time_ns,
+                bp_max_iter=bp_max_iter,
+                convergence_patience=convergence_patience,
                 ising_sim_cycles=ising_sim_cycles, verbose=verbose,
             )
             rec["ising_machine"] = hw
@@ -552,6 +597,8 @@ def main():
                         help="Hardware cycle time in ns (default: 4)")
     parser.add_argument("--bp_max_iter", type=int, default=50,
                         help="BP init max iterations (default: 50)")
+    parser.add_argument("--convergence_patience", type=int, default=3,
+                        help="SA early stop patience (0=disabled, default: 3)")
     parser.add_argument("--ising_sim_cycles", type=int, default=500)
     parser.add_argument("--output", type=str, default=None)
     parser.add_argument("--quiet", action="store_true")
@@ -573,6 +620,7 @@ def main():
         annealing_time_ns=args.annealing_time_ns,
         cycle_time_ns=args.cycle_time_ns,
         bp_max_iter=args.bp_max_iter,
+        convergence_patience=args.convergence_patience,
         ising_sim_cycles=args.ising_sim_cycles,
         verbose=not args.quiet,
         output_json=args.output,

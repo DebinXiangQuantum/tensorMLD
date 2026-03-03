@@ -1,0 +1,139 @@
+%\section{Introduction}
+
+\begin{comment}
+    
+
+Error-correcting codes (ECCs) are essential in detecting and correcting
+errors in modern communication and storage infrastructures. The central idea
+of any ECC is that the sender encodes redundant information into the coded
+message. The redundancy allows the receiver to deal with a limited number
+of errors induced by the communication channel or storage media. There
+have been many ECCs introduced in the literature, such as Hamming codes
+~\cite{hamming1950error}, convolutional codes~\cite{viterbi1971convolutional},
+polar codes~\cite{arikan2008performance}, turbo codes~\cite{berrou1993near},
+etc. However, among them, the low density parity check (LDPC)
+codes~\cite{gallager1962low} have become more popular due to their
+ability to approach the Shannon limit~\cite{mackay1999good}. Recently
+they have been introduced in the 5G-NR standard along with Polar
+codes~\cite{tr20175g}.
+
+Decoding LDPC is, at the moment, computationally intensive. 
+Perhaps the most popular approach to LDPC decoding is a Belief Propagation (BP) type algorithm. More specifically, several digital ASIC designers~\cite{peng2011115mw,roth201015,tran2014asic} have all adopted a particular version called the Min-Sum algorithm~\cite{fossorier1999reduced}, where an approximation is applied to the canonical BP algorithm to reduce computational intensity. Combined with well-designed custom hardware, we can expect a decoder with a throughput of 30Gbps, with a power consumption of 250mW when targetting 5G applications.
+\note{the above is speculative for now}
+
+Fundamentally, regardless of the implementation details, these efforts share a broadly similar approach with the same end goal: to minimize the likelihood of a bit error in the decoded word. The optimization's objective function can be explicitly derived with a channel noise model. The problem can also be solved like a standard combinatorial optimization problem (COP) and benefit from hardware annealers designed for these problems. For instance, Kasi and Jamieson~\cite{kasi2020towards} looked at this approach using D-Wave's quantum annealer. They found it to outperform an FPGA-based implementation of a variant of BP. 
+
+However, mapping LDPC decoding to Ising machines needs converting to QUBO format. A standard conversion approach causes the problem size to be doubled. As the state space of a combinatorial optimization increases exponentially with regard to the problem size, such an increase in problem size has a devastating impact on any solvers.
+In this chapter, we address this problem by modifying the hardware of 
+a state-of-the-art electronic Ising machine to more efficiently
+solve LDPC decodes without drawbacks from the standard formulation approach. For a given annealing time our results show that new formulation can obtain better Bit Error Rate (BER) compare to the conventional mapping. We still need to investigate if the proposed design would result in a better LDPC decoder compared to the state of the art.
+
+%Our preliminary results show that the proposed modification helped to achieve an LDPC decoder with a  throughput of 118 Gbps and power consumption of 158.24mW, representing a 6x reduction in energy per bit compared to state-of-the-art decoders for 5G standards.
+\end{comment}
+
+%\begin{comment}
+\section{Introduction}
+
+Error-correcting codes (ECCs) are essential in detecting and correcting
+errors in modern communication and storage infrastructures. The central idea
+of any ECC is to encode redundant information into the message sent. 
+The redundancy allows the receiver to deal with a limited number
+of errors induced by the communication channel or storage media. There
+have been many ECCs introduced in literature, such as Hamming codes~\cite{hamming1950error}, convolutional codes~\cite{viterbi1971convolutional},
+polar codes~\cite{arikan2008performance}, turbo codes~\cite{berrou1993near},
+etc. However, among them, \emph{low density parity check} (LDPC)
+codes~\cite{gallager1962low} have become more popular due to their
+ability to achieve the Shannon limit~\cite{mackay1999good}. Recently
+they have been introduced in the 5G-NR standard along with Polar
+codes~\cite{bae2019overview}.
+
+%\todo{ Ideally we will also summarize how many chips/designs along the line of OMS have been published with a range of performance of these chips.}
+
+%\todo{I vaguely recall there's some notion that LDPC decode costs half of all energy in the entire chain. Do you remember that? Either way please go dig out a citation.}
+Decoding LDPC is at the moment computationally intensive. 
+Perhaps the most popular approach to LDPC decoding 
+is a Belief Propagation (BP) type algorithm. More specifically, more than 200 ASIC
+designs have been discussed in literature~\cite{shao2019survey,soton399259} 
+all using some variant of
+the Min-Sum algorithm~\cite{fossorier1999reduced}, where an
+approximation is applied to the canonical BP algorithm to reduce 
+computational intensity. 
+An alternative approach to LDPC decoding is to treat it as a 
+combinatorial optimization problem (COP). 
+Algorithmically, Min-Sum variants are far more efficient 
+than a typical COP solver when targeting
+real-world LDPC decoding. However, the latter can benefit from 
+orders-of-magnitude acceleration from emerging hardware
+Ising machines~\cite{afoakwa.hpca21, inagaki2016cim, DBLP:journals/corr/abs-1903-07163}. 
+Indeed, one such design using D-Wave's quantum annealer was found
+to outperform an FPGA-based implementation of a variant of BP~\cite{kasi2020towards}.
+
+\begin{comment}
+\red{A natural question is whether the latter approach (formulating the 
+problem as a COP and leverage a hardware annealer) 
+is a more promising approach. The answer is a qualified yes.
+While the rest of the paper discusses the many details, the main takeaways are:
+\begin{itemize}
+    \item For a typical LDPC decoding problem, Min-Sum style algorithm is 
+    far more efficient (by about \fixme{1000x}) than solving it as a blackbox COP 
+    for von Neumann architectures.
+    \item Hardwiring Min-Sum in an ASIC can achieve \fixme{$10^3$} improvement in speedups. Similarly, a state-of-the-art hardware annealer can 
+\end{itemize}
+
+
+word under some model of noise behavior 
+
+a generic optimization approach of using an annealer.
+
+LDPC decoding can also be formulated as 
+a constrained combinatorial optimization problem. Consequently, special-purpose annealers can be employed to perform decoding.}
+\end{comment}
+
+Nevertheless, LDPC decoding using Ising machines is not yet competitive with the state-of-the-art
+ASIC designs hard-wiring Min-Sum algorithm.
+Depending on the details of the custom hardware, these ASICs can expect a decoder throughput of 
+roughly 0.13 - 271Gbps, with a power consumption of 5mW - 12W.
+Using D-Wave hardware to solve an LDPC decoding problem today can only
+achieve 21 Mb/s throughput, not to mention the kilo-watt power consumption.
+Of course, part of that is specific to D-Wave hardware. But there are intrinsic
+reasons as well. In this paper, we change this picture and show 
+an efficient LDPC decoder based on physical computation
+with the following contributions: \begin{enumerate}
+\item \textbf{Fundamental analysis:} we show an important factor prohibiting out-performance is in 
+current problem formulation when mapping to an Ising machine. 
+
+\item \textbf{Co-designed architecture:} We address this problem by 
+proposing a novel, co-designed Ising machine architecture that allows better expressivity of the target problem.
+
+\item \textbf{Evaluation:} Using detailed simulation, we show 
+decoding throughput of 81 Gbits/sec and a power consumption of 158.24mW, representing at least 4 times reduction in energy compared to state-of-the-art decoder ASICs for 5G standards.
+
+\end{enumerate}
+
+
+%We still need to investigate if the proposed design would result in a better LDPC decoder compared to the state of the art.
+
+
+
+\begin{comment}
+In a related but different track of work, researchers are trying to solve a combinatorial optimization problem by mapping to physical processes such that the resulting state represents an answer to the problem. Quantum computers marketed by D-Wave Systems are prominent examples. Unlike circuit model quantum computers~\cite{google_quantum,pednault2019leveraging}, D-Wave machines perform quantum annealing~\cite{bunyk_2014_tas}. The idea is to map a combinatorial optimization problem to a system of qubits such that the system's energy maps to the metric of minimization. Then, when the system is controlled to settle down to a low-energy state, the qubits can be read out, which correspond to a solution of the mapped problem.
+
+Indeed, several alternative designs have emerged recently, showing good quality solutions for non-trivial sizes in milli- or micro-second latencies~\cite{inagaki2016cim, wang2019oim, carmes_comm2020}. These systems all share the property that a problem can be mapped to the machine's setup. Then the machine's state evolves according to the physics of the system. This evolution has the effect of optimizing a formula called the Ising model (more on that later). 
+Hence they are called Ising Machines. Reading out the state of such a system at the end of the evolution thus has the effect of obtaining a solution (usually a very good one) to the problem mapped. 
+
+%Quadratic Unconstrained binary optimization (QUBO) problem. 
+%Bistable Resistively-coupled Ising Machine (BRIM) is a CMOS-compatible Ising machine that is shown to outperform many existing Ising machines~\cite{afoakwa.hpca21}, which we use as a baseline system.
+
+LDPC decoding can be formulated as an optimization problem for a standard Ising machine. However, the problem itself is a form of constrained optimization. A standard formulation approach causes the problem size to 
+be doubled. 
+As the state space of in a combinatorial optimization increases 
+exponentially with regard to the problem size, such increase in problem
+size comes with devastating impact on any solvers.
+In this paper, we address this problem by modifying the hardware of 
+a state-of-the-art electronic Ising machine so that it more efficiently
+solve LDPC decodes without drawback from the standard formulation approach.
+The proposed modification helps to achieve an LDPC decoder with a 
+throughput of \blue{118 Gbits/sec} and a power consumption of \blue{158.24mW}, 
+representing at least an order of magnitude reduction in energy compared to state-of-the-art decoders for 5G standards.
+
+\end{comment}

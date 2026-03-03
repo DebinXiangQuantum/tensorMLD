@@ -1,0 +1,29 @@
+\section{Conclusions}\label{sec:conclusion}
+%\todo{needs to be changed}
+
+Low density parity code (LDPC) has become the standard channel coding for many communication applications, including the 5G-NR. Fast and energy efficient LDPC decoding is thus crucial for  modern communication infrastructure and the society that depends on it. The vast majority of research and prototyping efforts in decoding LDPC are focused on engineering an efficient custom circuitry hard-wiring a variant of a Belief Propagation (BP) algorithm. An alternative approach is to express the decoding as a Combinatorial Optimization Problem (COP) and leverage recent hardware advances that accelerate COP solving. However, traditional QUBO formulations of LDPC
+decoding require many auxiliary spins with their own degrees of freedom, thus
+increasing the problem state space and negatively affecting the solution quality given a
+fixed annealing time budget.
+This paper shows a new way of solving LDPC decoding by co-designing the hardware and formulation.
+The new approach significantly improves solution quality over traditional formulations.
+Enabled by a state-of-the-art Ising machine architecture, our proposed hardware is estimated
+to achieve a 4.4 times reduction in energy per bit compared to the most efficient
+decoder in literature. 
+
+%still need to investigate if the proposed design would result in a better LDPC decoder compared to the state of the art. %Our preliminary results show that the proposed modification helped to achieve an LDPC decoder with a throughput of 118 Gbps and power consumption of 158.24mW, representing a 6x reduction in energy per bit compared to state-of-the-art decoders for 5G standards.
+
+\begin{comment}
+\begin{itemize}
+    \item  LDPC codes are important ECC codes for its ability to reach the Shannon limit
+    \item they have been standardized for many different applications
+    \item The decoding of LDPC codes is a combinatorial optimization problem
+    \item Ising machines have shown to solve COPs very effectively
+    \item major problem: to map cop with constraints on ising machines needs to be converted into a QUBO which requiers some extra spins
+    \item this makes the state space for search increase exponentially
+    \item with changes to the hardware of BRIM we can directly map decoding LDPC without conversion
+    \item this leads to design of LDPC decoder with \blue{118.6 Gbits/sec} through, \blue{158.24mW} power consumption.
+    \item this design helps in reduction of energy consumption per bit by an order of magnitude compared to other state of art LDPC decoders
+    
+\end{itemize}
+\end{comment}

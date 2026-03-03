@@ -1,0 +1,217 @@
+\section{Background and Related Work}
+\label{sec:background}
+In this section, we discuss LDPC codes, the decoding algorithm of LDPC codes, the Ising model, conversion of decoding problem into a QUBO, and existing Ising machines.
+\section{Background}
+\subsection{Low Density Parity Check Code}
+Low Density Parity Check codes are a class of linear block codes. The parity bits (redundant information) are obtained using bitwise XOR operation on a selected number of message bits. These codes are specified by a generator matrix $G_{k \times n}$ and a parity check matrix $H_{m \times n}$~\footnote{can be obtained from another by using the following relation $H\xor G^\top =0$}. The name Low Density comes from the sparse structure of the parity check matrix. The Generator matrix is used for encoding a message ($M$) into a code word (C) using the following equation $C = G^\top \xor M$. $m$ is a number of parity bits, $n$ is the total number of bits in the encoded code word, and $k$ is the number of bits in a message ($k=n-m$). The ratio of the length of the message (k) to the size of the code word (n) is called Rate (r) = $k/n$. At the receiver side the decoded message is obtained from both received message (R) and the parity check matrix.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.38\textwidth]{FIGS/tanner_graph.pdf}
+    \caption{Tanner graph constructed using parity check matrix H shown in figure.}
+    \label{fig:tg}
+\end{figure} 
+
+LDPC codes can be represented graphically using Tanner graphs. These graphs are bipartite, meaning that the graph nodes are separated into two distinctive sets, and edges only connect nodes of two different types. The two types of nodes in a Tanner graph are variable and check nodes. Figure \ref{fig:tg} is an example of a Tanner graph that is constructed using parity check matrix H shown above. It consists of m check nodes (the number of parity bits) and n variable nodes (the number of bits in an encoded message). Check node $P_i$ is connected to variable node $c_j$ if the element $h_{ij}$ of H is a 1. These graphical structures are handy for analysis and decoding purposes.
+
+There are many LDPC codes like regular, irregular, systematic, and nonsystematic. In regular code, the degree of rows and columns of parity check matrix are equal, i.e., the number of ones in rows and columns are identical. In a systematic code, an encoded message is constructed with message bits followed by parity bits. The main advantage of systematic code is that the message can be directly obtained from the decoded code word. Most commonly used LDPC codes are irregular systematic codes. These codes can also be constructed using a base graph as a template; hence they are called protographic.
+
+\subsection{Binary Phase shift Keying}
+To efficiently transmit messages over communication channels, modulation schemes are employed. In this paper, we consider binary phase-shift keying (BPSK). This technique utilizes a single-frequency carrier signal and encodes digital data onto the signal by applying a phase shift. For a 0 in the data, no phase shift is applied; for a 1, the phase of the carrier signal is shifted by $180$ degrees. The data can then be recovered by the receiver by simply checking for the presence of this shift during each clock cycle by comparing it to a reference signal. If the carrier during that period has a phase shift present, the transmitted bit is decoded as 1; if not, the transmitted bit is decoded as 0.
+
+%\todo{I could explain more here and go into tradeoffs of using BPSK if you want, but I felt this keeps it simple and is enough to understand the uses of BPSK in the paper}
+
+% I'm not sure if this mathematical explanation is really necessary to get the point across, and introducing more equations can serve to complicate the paper if they're not really required
+ 
+Mathematically, encoding a message using BPSK modulation can be represented as follows. If $M$ is the message used for transmission, $S$ is the modulated signal, then $S = 1-2 \times M$. The received signal $R$ can be defined as $R= S+ n$, where $n$ is the noise added to the signal by the channel. 
+
+\subsection{Decoding LDPC codes using Belief Propagation}
+
+LDPC codes are decoded using \textit{belief propagation} algorithm. The code word $\tilde{C}$ is decoded from the received message by calculating each bit's belief, or log-likelihood ratio (LLR), of being zero. The LLR of each bit of codeword has two components: intrinsic ($LLR_I$) and extrinsic ($LLR_E$). An intrinsic component of a bit $i$ (${LLR_I}_i$) is calculated using the corresponding bit ($R_i$) in the received message. The extrinsic component is calculated using the rest of the bits of the received message.
+
+The decoding process of LDPC code uses tanner graph representation. First, the tanner graph variable nodes are initialized using the intrinsic LLRs, and these values are broadcasted to the neighboring check nodes. An extrinsic LLR is calculated at each check node based on the received LLRs from other adjacent variable nodes for each neighboring variable node. Once the calculation is done, the extrinsic LLRs are again broadcasted back to each corresponding neighboring variable node. After receiving the extrinsic LLRs from the check nodes, LLRs are recalculated for each connected check node using both received extrinsic LLRs from other check nodes and the intrinsic LLR of that variable node. Once the calculation is done, it is broadcasted again to check nodes. This passing process is carried out until the maximum iteration count is attained or until the decoded code word can satisfy the parity check conditions. This decoding methodology is also popularly known as a message-passing algorithm.
+
+Let us assume the received message is $R$ of length $n$ been transmitted over a channel with additive white Gaussian noise and the signal is modulated using BPSK modulation scheme. It is encoded using LDPC code (k, n). Let us also assume the decode code word be $\tilde{C}$. Let the set of variable nodes that are connected to check node $c$ be denoted as $N(c)$, and the set of check nodes that are connected to variable node $v$ be denoted as M(v). Also $N(c)\backslash v$ and $M(v)\backslash c$ denote the set N(c) and M(v) excluding bit node v and check node c. The conventional iterative decoding process is based on the following steps:
+
+%\note{A couple of ambiguities. $\tilde{c}$ is the decoded word, which means M+N bits long? But $c$ is a "node"? meaning it's not a word or related to word $\tilde{c}$, using deliberately the same letter implied some connection -- that one is a variation of the other.}
+
+Step 1:
+
+Each variable node v, is initialized using the intrinsic log-likelihood ratio  calculated by using following formula, 
+
+\begin{equation}
+    LLR_{I_{v_i}} = \log \frac{P(v_i=0/R_i)}{P(v_i=1/R_i)} = \frac{2R_i}{\sigma^2} 
+\end{equation}
+
+%\note{$0/r_i$ is still 0. Do you mean conditional probability given $r_i$}
+
+where $\sigma$ represents the estimated variance of the Gaussian noise of the channel and $P(v_i=0/R_i)$ conditional probability of $v_i$ being zero, given $R_i$.
+%\note{Do you mean estimated/assumed variance}
+
+Step 2:
+
+Once the LLR values are calculated at variable nodes, they are passed to the neighboring check nodes. Let $LLR_{c,v}$ be the LLR received by the check node $c$ from variable node $v$.
+
+At the check node $c$ for each neighboring variable node $v$, an extrinsic LLR ($LLR_{v,c}$) is calculated  using equation~\ref{eq::llrc2v} and passed to that corresponding node.
+
+\begin{equation}
+%\begin{split}
+    \label{eq::llrc2v}
+    LLR_{v,c} = 2 \times \arctanh\{   \\ \prod_{v_{i} \in N(c)\backslash v}  \frac{1+e^{-|LLR_{c,v_{i}}|}}{1-e^{-|LLR{c,v_{i}}|}}\}
+%    \end{split}
+\end{equation}
+
+Step 3:
+
+After receiving the messages from the check nodes, the extrinsic messages to the neighboring check nodes are computed using equation ~\ref{eq::llrv2c} and passed to corresponding check nodes.
+
+\begin{equation}
+    \label{eq::llrv2c}
+    LLR_{c,v} = \sum_{c_{i} \in M(v)\backslash c} LLR_{v,c{_i}} + LLR_{I_{v}}
+\end{equation}
+
+The value of each bit of code word is decided at the variable node by calculating the final LLR by summing all LLRs received from the check nodes along with the intrinsic LLR. If the final LLR value is greater than zero, then the value of the bit is decided as zero; otherwise, 1. Step2 and Step3 are repeated until a maximum number of iterations are reached or if the decoded code word satisfies the constraint $H \xor c =\hat{0}$.
+
+($LLR_{v,c}$) calculated using equation~\ref{eq::llrc2v} is approximately equal to the minimum absolute value of the LLRs received from variable nodes. The sign of $LLR_{v,c}$ is equal to the product of the sign of $LLR_{c,v}$ with the product of all received LLRs. 
+
+Based on this approximation, a variation of the Belief propagation called the Min-Sum algorithm was developed. The LLRs that need to be propagated to the neighboring variable node are calculated by replacing all the received LLRs with the minimum value, and the minimum value is replaced with the second minimum value. The product of the signs of received LLRs decides whether to flip the signs or not.
+
+\subsection{Ising Model}\label{sec:ising_mode}
+The Ising model is used to describe the Hamiltonian \ie the total energy, of a system of coupled
+spins. The spins have one degree of freedom and take one of two values ($+1$,
+$-1$). The energy of the system is a function of pair-wise coupling of the
+spins ($J_{ij}$) and the interaction ($h_i$)
+of some external field ($\mu$) with each
+spin. The resulting Hamiltonian (Energy function)~\footnote{In this context we use Hamiltonian and energy function interchangeably.} is as follows:
+
+\begin{equation}
+\label{eqn:Ising_w_field}
+% H = -\sum_{(i<j)} J_{ij}\sigma_i\sigma_j - \mu \sum_i h_i\sigma_i
+E = -\sum_{\mathclap{(i<j)}} J_{ij}\sigma_i\sigma_j - \mu \sum_{\mathclap{i}} h_i\sigma_i
+\end{equation}
+
+
+A physical system with such a Hamiltonian naturally tends towards low-energy
+states. It is as if nature tries to solve an optimization problem with
+Eq.~\ref{eqn:Ising_w_field} as the objective function, which is not a trivial
+task. Indeed, the cardinality of the state space grows exponentially with the
+number of spins, and the optimization problem is NP-complete: it is easily
+convertible to and from a generalized max-cut problem, which is part of the
+original list of NP-complete problems~\cite{Karp1972}.
+
+Thus if a physical system of spins somehow offers programmable coupling
+parameters ($J_{ij}$ and $\mu h_i$ in Eq.~\ref{eqn:Ising_w_field}), they can
+be used as a special purpose computer to solve\footnote{Throughout
+the paper, by ``solving" an optimization problem we mean the
+searching for a good solution rather than necessarily finding the global optimum, 
+equivalent to reaching the ground state.} optimization problems that
+can expressed in the form of an Ising formula (Eq.~\ref{eqn:Ising_w_field}). In fact, all
+problems in the Karp NP-complete set have their Ising formula
+derived~\cite{lucas2014ising}. Also, if a problem already has a QUBO (quadratic
+unconstrained binary optimization) formulation, mapping to Ising formula is as
+easy as substituting bits for spins: $\sigma_i = 2b_i-1$.
+
+Because of the broad class of problems that can map to the Ising formula,
+building nature-based computing systems that solve these problems has
+attracted significant attention~\cite{kim2010quantum,berloff2017realizing,
+barends2016digitized,yamaoka201520k,bunyk2014architectural,king2018observation,
+bohm2019poor,hamerly2019towards,pierangeli2019large}.
+Loosely speaking, an Ising machine's design goes through four
+steps:
+\begin{enumerate}
+
+\item Identify the physical variable to represent a spin (be it a 
+qubit~\cite{PhysRevB.82.024511}, the phase of an optical pulse~\cite{inagaki2016coherent}, 
+or the polarity of a capacitor's voltage~\cite{afoakwa.hpca21}).
+
+\item Identify the mechanism of coupling and how to program the coefficients.
+
+\item Demonstrate the problem solving capability showing both the theory of its
+operation (reveal the ``invisible hand" of nature) and satisfactory results
+of practice.
+
+\item Demonstrate superior machine metrics (solution time, energy consumption,
+and construction costs).
+
+\end{enumerate} It is important to note that different approaches may
+offer different fundamental tradeoffs and goes through varying gestation
+speeds. Thus it could be premature to evaluate a general approach based on
+observed instances of prototypes. Nevertheless, we provide a broad-brushed
+characterization, which can help researchers get a 
+basic sense of the landscape -- as long as the caveats are properly understood.
+
+\subsection{Decoding of LDPC codes to QUBO} \label{sec:QUBO_formulation}
+
+The decoding of LDPC codes can be modeled as a combinatorial optimization problem with the following objectives. The decoded codeword $\tilde{C}$ should be closer to the received message and should satisfy the parity check matrix. If we use the BPSK modulation scheme, the objective function can be represented by the following equation~\ref{eq::obj}.
+
+\begin{comment}
+\begin{equation}
+\label{eq::obj}
+\begin{split}
+    F = \sum_{i=0}^{n-1}(R_i - (1-2\tilde{C_i}))^2 \\
+   with\ constraint\ that\  H \xor \tilde{C} = \hat{0}
+\end{split}
+\end{equation}
+\end{comment}
+
+\begin{equation}
+\label{eq::obj}
+\begin{split}
+    F = \sum_{i=0}^{n-1}(R_i - (1-2\tilde{C_i}))^2 +  (H \xor \tilde{C})
+\end{split}
+\end{equation}
+The higher order function XOR operation in equation~\ref{eq::obj} poses constraints in this problem. Mapping a combinatorial optimization problem with higher order terms on an Ising Machines needs to be converted into a  Quadratic Unconstrained binary optimization (QUBO). There are many ways of this conversion, but here we discuss one of the conversions, which uses minimum auxiliary spins~\cite{tawada2020new}. The constraint in the objective function of LDPC decoding is that modulo2 (or XOR operation) of matrix-vector multiplication of parity check matrix $H$ and $\tilde{C}$ must result in a vector of zeros. It means that the dot product of each row of the parity check matrix with $\tilde{c}$ must result in an even number. It can be represented as $H_j \cdot \tilde{C} = 2L_j$, where j is a row of parity check matrix(H), and $L_j$ is some arbitrary integer.
+
+This condition can be represented using the following objective function
+
+\begin{equation}
+    F_s = \sum_{j=1}^{m}(\sum_{i=1}^{n} H_{j,i}\tilde{C}_i - 2L_j)^2
+\end{equation}
+
+Consider encoding an arbitrary integer $L_j$ with auxiliary variables
+$y_{j,k}$ where $y_{j,k} \in \{0,1\}$. If the number of 1’s in $H_j$ is $|H_j|$, the range of $L_j$ is $0 \leq l \leq \lfloor \frac{|H_j|}{2} \rfloor $. $L_j$ can be encoded using either the unary encoding or the binary encoding as follows 
+
+\begin{itemize}
+    \item Unary encoding \\
+             $L_j = \sum_{k=0}^{\lfloor \frac{|H_j|}{2} \rfloor} y_{j,k}$
+    \item Binary encoding \\
+             $L_j = \sum_{k=0}^{\lfloor \log_2 (\frac{|H_j|}{2})\rfloor} 2^k y_{j,k}$
+\end{itemize}
+
+so the objective function can be written as 
+
+\begin{equation}
+\label{eq::obj_ising}
+\begin{split}
+    F = \sum_{i=0}^{n-1}(R_i - (1-2\tilde{C_i}))^2 + \alpha F_s
+\end{split}
+\end{equation}
+
+~\cite{tawada2020new} suggested to chose $\alpha > \sum_{i=1}^{n} 4|R_i|$. In our observation using this equation resulted in poor results, hence we enumerated alpha values and chose the one which gave us good result.
+
+F can be written in the following format: $F = x^\top Qx +c$ where $x$ represents the variables of $\tilde{C}$ and auxiliary variables $y_{j,k}$. The matrix $Q$ is mapped on to Ising machines to find $X$ that results in optimal solution of $F$.  
+
+As we can see, the conversion of LDPC decoding into a QUBO problem requires extra spins, which increases the size of the problem.
+
+\subsection{Ising Machines}
+
+We divide existing Ising Machines into three categories based on the technology used for their design: Quantum, Optical, and Electronic annealers. 
+
+The latest Quantum Ising annealer manufactured by D-wave can support up to 2000 qubits~\cite{D-Wave}. The qubits are coupled to form a chimera graph. As a result of local coupling, the D-wave machine can only map up to 64 nodes all to all connected graph~\cite{hamerly2019experimental, hamerly2018scaling}. These annealers are also susceptible to noise, necessitating cryogenic operating condition that consumes much power (25KW for D-Wave 2000q)~\cite{dwave_stats}.
+
+The Most popular optical-based Ising machine is the Coherent Ising Machine (CIM)~\cite{inagaki2016cim, cim_yamamoto, McMahon614, 16bit_cim, ncomm_bohm2019}. It uses an optical parametric oscillator to generate and manipulate the signal to represent one spin. Unlike D-Wave, CIM nodes are all-to-all coupled. The machine has two components: an optical cavity built using kilometers of fibers, and an auxiliary computer to implement coupling between nodes. Every pulse's amplitude and phase in the optical cavity are detected, and its interaction with all other pulses is calculated using an auxiliary computer (FPGA). This computation is then used to modulate new pulses that are injected back into the optical cavity. Strictly speaking, the current implementation is a nature-simulation hybrid Ising machine. Thus, beyond the challenge of constructing the cavity, CIM  also requires a significant supporting structure that involves fast conversions between optical and electrical signals. 
+
+
+ The operating principle of CIM can be viewed as a Kuramoto model~\cite{Takeda_2017},  so in theory, we can achieve a similar goal using other oscillators. This led to the design of an electronic Oscillator-based Ising Machines. These systems use LC tanks for spins and (programmable) resistors as coupling units. However, inductors are often a source of practical challenges for on-chip integration. They are area intensive and have undesirable parasitics with reduced quality and increased phase noise, which poses practical challenges in maintaining frequency uniformity and phase synchronicity between thousands of on-chip oscillators. 
+
+
+Another electronic design with resistive coupling is the Bistable Resistively-coupled Ising Machine (BRIM)~\cite{afoakwa.hpca21}, in which the Ising spin is implemented as capacitor voltage controlled by a feedback circuit, making it bistable. Since it uses voltage (as opposed to phase) to represent spin, it enables a straightforward interface to implement additional architectural support for computational tasks. In BRIM, the polarity of the voltage across a capacitor represents the spin of the node and the coupling strength is inversely proportional to the resistance of the coupling resistors, i.e., $R_{ij}=\frac{R}{\abs{J_{ij}}}$, where $R$ is a scaling coefficient and the negative coupling is achieved by cross coupling the capacitors in neighboring nodes.
+
+\begin{comment}
+\subsection{Existing LDPC decoders}
+\todo{need to discuss about existing hardware LDPC decoders and existing Ising machines }
+
+Most of the LDPC decoders in literature are designed by a hard-wiring a specific algorithm for a particular parity check matrix based on a chosen standard. ~\cite{?} discuss the design of LDPC decoder for 5g standard implementing offset Min-Sum Layered algorithm. The following design only supports the LDPC decoder for 5g base graph1 with an expansion factor of 384. ~\cite{?} discuss the design of the same 5g standard LDPC decoder implementing the same offset Min-sum algorithm but with support for all graphs possible in the standard. ~\cite{?} discuss pipelining the layered Min-sum algorithm for IEEE 802.e. standard to achieve high throughput.
+
+Ising Machines have also been used for implementing decoders for LDPC codes. ~\cite{?} discuss how to convert LDPC codes into QUBO format and implement LDPC codes on D-wave. This implementation's main drawback is that it cannot fit an LDPC code of standards. This system's bit error rate (BER) is not as good as the Min-Sum algorithm's.
+\end{comment}

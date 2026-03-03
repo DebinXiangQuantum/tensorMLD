@@ -1,0 +1,425 @@
+[
+  {
+    "code": "QCC_18_4_4",
+    "N": 11,
+    "K": 4,
+    "M": 7,
+    "max_chi": 6,
+    "single_decode": {
+      "min_us": 101.08800232410431,
+      "p25_us": 102.62399911880493,
+      "median_us": 103.34399715065956,
+      "mean_us": 104.74223990738392,
+      "p75_us": 104.45599816739559,
+      "p99_us": 119.3363196402788,
+      "max_us": 207.13600516319275,
+      "std_us": 5.648093990357871
+    },
+    "batch_decode": {
+      "1": {
+        "batch_size": 1,
+        "total_us_mean": 109.00127992033958,
+        "total_us_median": 110.1439967751503,
+        "per_decode_us": 109.00127992033958,
+        "throughput_per_sec": 9174.204199536198
+      },
+      "10": {
+        "batch_size": 10,
+        "total_us_mean": 114.88352030515671,
+        "total_us_median": 114.31999877095222,
+        "per_decode_us": 11.48835203051567,
+        "throughput_per_sec": 87044.68642184474
+      },
+      "100": {
+        "batch_size": 100,
+        "total_us_mean": 115.97152009606361,
+        "total_us_median": 115.42399972677231,
+        "per_decode_us": 1.1597152009606362,
+        "throughput_per_sec": 862280.6695744455
+      },
+      "1000": {
+        "batch_size": 1000,
+        "total_us_mean": 144.71808031201363,
+        "total_us_median": 143.8400000333786,
+        "per_decode_us": 0.14471808031201364,
+        "throughput_per_sec": 6909986.629479813
+      }
+    }
+  },
+  {
+    "code": "LDPC_25_3_4",
+    "N": 15,
+    "K": 3,
+    "M": 12,
+    "max_chi": 64,
+    "single_decode": {
+      "min_us": 166.72000288963318,
+      "p25_us": 172.08800092339516,
+      "median_us": 174.3360012769699,
+      "mean_us": 174.78300800919533,
+      "p75_us": 175.78400298953056,
+      "p99_us": 190.9462410211563,
+      "max_us": 304.3839931488037,
+      "std_us": 9.245537386426683
+    },
+    "batch_decode": {
+      "1": {
+        "batch_size": 1,
+        "total_us_mean": 172.45312049984932,
+        "total_us_median": 171.88800126314163,
+        "per_decode_us": 172.45312049984932,
+        "throughput_per_sec": 5798.677328085077
+      },
+      "10": {
+        "batch_size": 10,
+        "total_us_mean": 176.4144004881382,
+        "total_us_median": 175.6640002131462,
+        "per_decode_us": 17.64144004881382,
+        "throughput_per_sec": 56684.71492310167
+      },
+      "100": {
+        "batch_size": 100,
+        "total_us_mean": 181.13791972398758,
+        "total_us_median": 182.44799971580505,
+        "per_decode_us": 1.8113791972398758,
+        "throughput_per_sec": 552065.5208604413
+      },
+      "1000": {
+        "batch_size": 1000,
+        "total_us_mean": 314.2892798781395,
+        "total_us_median": 313.9680027961731,
+        "per_decode_us": 0.3142892798781395,
+        "throughput_per_sec": 3181782.084287869
+      }
+    }
+  },
+  {
+    "code": "LDPC_30_6_4",
+    "N": 19,
+    "K": 6,
+    "M": 13,
+    "max_chi": 66,
+    "single_decode": {
+      "min_us": 235.55199801921844,
+      "p25_us": 238.8480007648468,
+      "median_us": 240.87999761104584,
+      "mean_us": 241.28918388485909,
+      "p75_us": 242.65600740909576,
+      "p99_us": 255.8409634232521,
+      "max_us": 328.67199182510376,
+      "std_us": 4.424600540317727
+    },
+    "batch_decode": {
+      "1": {
+        "batch_size": 1,
+        "total_us_mean": 244.45792064070702,
+        "total_us_median": 241.64800345897675,
+        "per_decode_us": 244.45792064070702,
+        "throughput_per_sec": 4090.6835719581936
+      },
+      "10": {
+        "batch_size": 10,
+        "total_us_mean": 252.51327767968178,
+        "total_us_median": 252.03201174736023,
+        "per_decode_us": 25.251327767968178,
+        "throughput_per_sec": 39601.8779364355
+      },
+      "100": {
+        "batch_size": 100,
+        "total_us_mean": 266.5203195810318,
+        "total_us_median": 264.5759880542755,
+        "per_decode_us": 2.665203195810318,
+        "throughput_per_sec": 375205.91359487845
+      },
+      "1000": {
+        "batch_size": 1000,
+        "total_us_mean": 586.7184007167816,
+        "total_us_median": 584.9440097808838,
+        "per_decode_us": 0.5867184007167816,
+        "throughput_per_sec": 1704395.155799308
+      }
+    }
+  },
+  {
+    "code": "TOR_50_2_5",
+    "N": 26,
+    "K": 2,
+    "M": 24,
+    "max_chi": 128,
+    "single_decode": {
+      "min_us": 421.1519956588745,
+      "p25_us": 424.83198642730713,
+      "median_us": 775.1680016517639,
+      "mean_us": 716.8834243118763,
+      "p75_us": 790.6160056591034,
+      "p99_us": 1181.4096474647522,
+      "max_us": 1947.3919868469238,
+      "std_us": 285.64323972407476
+    },
+    "batch_decode": {
+      "1": {
+        "batch_size": 1,
+        "total_us_mean": 440.2819213271141,
+        "total_us_median": 439.7119879722595,
+        "per_decode_us": 440.2819213271141,
+        "throughput_per_sec": 2271.271999962576
+      },
+      "10": {
+        "batch_size": 10,
+        "total_us_mean": 1291.1497628688812,
+        "total_us_median": 1289.9680137634277,
+        "per_decode_us": 129.11497628688812,
+        "throughput_per_sec": 7745.0349197140495
+      },
+      "100": {
+        "batch_size": 100,
+        "total_us_mean": 2936.4640069007874,
+        "total_us_median": 2934.864044189453,
+        "per_decode_us": 29.364640069007873,
+        "throughput_per_sec": 34054.56350392741
+      },
+      "1000": {
+        "batch_size": 1000,
+        "total_us_mean": 13686.16702079773,
+        "total_us_median": 13685.00804901123,
+        "per_decode_us": 13.686167020797729,
+        "throughput_per_sec": 73066.47642691947
+      }
+    }
+  },
+  {
+    "code": "QCC_60_8_4",
+    "N": 34,
+    "K": 8,
+    "M": 26,
+    "max_chi": 128,
+    "single_decode": {
+      "min_us": 944.927990436554,
+      "p25_us": 950.5280256271362,
+      "median_us": 954.0959894657135,
+      "mean_us": 954.5750721096992,
+      "p75_us": 957.3760032653809,
+      "p99_us": 972.8381037712097,
+      "max_us": 1075.2960443496704,
+      "std_us": 7.18789115536792
+    },
+    "batch_decode": {
+      "1": {
+        "batch_size": 1,
+        "total_us_mean": 981.4854407310486,
+        "total_us_median": 981.2160134315491,
+        "per_decode_us": 981.4854407310486,
+        "throughput_per_sec": 1018.8638144801834
+      },
+      "10": {
+        "batch_size": 10,
+        "total_us_mean": 1027.0214343070984,
+        "total_us_median": 1026.2080430984497,
+        "per_decode_us": 102.70214343070984,
+        "throughput_per_sec": 9736.895127945123
+      },
+      "100": {
+        "batch_size": 100,
+        "total_us_mean": 1851.4399993419647,
+        "total_us_median": 1851.8080115318298,
+        "per_decode_us": 18.514399993419648,
+        "throughput_per_sec": 54012.01229072604
+      },
+      "1000": {
+        "batch_size": 1000,
+        "total_us_mean": 9329.943342208862,
+        "total_us_median": 9321.552276611328,
+        "per_decode_us": 9.329943342208862,
+        "throughput_per_sec": 107181.78699713842
+      }
+    }
+  },
+  {
+    "code": "QCC_72_12_6",
+    "N": 42,
+    "K": 12,
+    "M": 30,
+    "max_chi": 128,
+    "single_decode": {
+      "min_us": 1062.0479583740234,
+      "p25_us": 1067.4240589141846,
+      "median_us": 1068.6399936676025,
+      "mean_us": 1069.4870402812958,
+      "p75_us": 1070.055991411209,
+      "p99_us": 1083.714542388916,
+      "max_us": 1164.86394405365,
+      "std_us": 6.192892451240776
+    },
+    "batch_decode": {
+      "1": {
+        "batch_size": 1,
+        "total_us_mean": 1095.67391872406,
+        "total_us_median": 1095.5680012702942,
+        "per_decode_us": 1095.67391872406,
+        "throughput_per_sec": 912.6802992303816
+      },
+      "10": {
+        "batch_size": 10,
+        "total_us_mean": 1215.8268773555756,
+        "total_us_median": 1214.1920328140259,
+        "per_decode_us": 121.58268773555756,
+        "throughput_per_sec": 8224.855188059346
+      },
+      "100": {
+        "batch_size": 100,
+        "total_us_mean": 2117.0035243034363,
+        "total_us_median": 2116.25599861145,
+        "per_decode_us": 21.170035243034363,
+        "throughput_per_sec": 47236.57700707101
+      },
+      "1000": {
+        "batch_size": 1000,
+        "total_us_mean": 10888.998079299927,
+        "total_us_median": 10887.48836517334,
+        "per_decode_us": 10.888998079299927,
+        "throughput_per_sec": 91835.8137927316
+      }
+    }
+  },
+  {
+    "code": "QCC_90_8_10",
+    "N": 49,
+    "K": 8,
+    "M": 41,
+    "max_chi": 128,
+    "single_decode": {
+      "min_us": 1455.4239511489868,
+      "p25_us": 1460.4400098323822,
+      "median_us": 1461.7919921875,
+      "mean_us": 1462.3613122701645,
+      "p75_us": 1463.3920192718506,
+      "p99_us": 1477.3779046535492,
+      "max_us": 1491.2320375442505,
+      "std_us": 3.5641382940057382
+    },
+    "batch_decode": {
+      "1": {
+        "batch_size": 1,
+        "total_us_mean": 1494.82528090477,
+        "total_us_median": 1493.6320185661316,
+        "per_decode_us": 1494.82528090477,
+        "throughput_per_sec": 668.9745034247294
+      },
+      "10": {
+        "batch_size": 10,
+        "total_us_mean": 1921.3257610797882,
+        "total_us_median": 1920.9280014038086,
+        "per_decode_us": 192.13257610797882,
+        "throughput_per_sec": 5204.739457810623
+      },
+      "100": {
+        "batch_size": 100,
+        "total_us_mean": 3023.1356811523438,
+        "total_us_median": 3022.1279859542847,
+        "per_decode_us": 30.231356811523437,
+        "throughput_per_sec": 33078.23748151538
+      },
+      "1000": {
+        "batch_size": 1000,
+        "total_us_mean": 15753.334093093872,
+        "total_us_median": 15751.503944396973,
+        "per_decode_us": 15.753334093093873,
+        "throughput_per_sec": 63478.62580013405
+      }
+    }
+  },
+  {
+    "code": "QCC_108_8_10",
+    "N": 58,
+    "K": 8,
+    "M": 50,
+    "max_chi": 128,
+    "single_decode": {
+      "min_us": 1953.1519412994385,
+      "p25_us": 1964.1519784927368,
+      "median_us": 1966.3360118865967,
+      "mean_us": 1966.250911474228,
+      "p75_us": 1968.1040048599243,
+      "p99_us": 1981.327075958252,
+      "max_us": 2075.1359462738037,
+      "std_us": 5.788736305075487
+    },
+    "batch_decode": {
+      "1": {
+        "batch_size": 1,
+        "total_us_mean": 1998.5471951961517,
+        "total_us_median": 1998.1119632720947,
+        "per_decode_us": 1998.5471951961517,
+        "throughput_per_sec": 500.3634652229731
+      },
+      "10": {
+        "batch_size": 10,
+        "total_us_mean": 3068.866238594055,
+        "total_us_median": 3068.719983100891,
+        "per_decode_us": 306.8866238594055,
+        "throughput_per_sec": 3258.532377279929
+      },
+      "100": {
+        "batch_size": 100,
+        "total_us_mean": 4127.376341819763,
+        "total_us_median": 4128.384113311768,
+        "per_decode_us": 41.27376341819763,
+        "throughput_per_sec": 24228.46663793928
+      },
+      "1000": {
+        "batch_size": 1000,
+        "total_us_mean": 23612.574768066406,
+        "total_us_median": 23603.888511657715,
+        "per_decode_us": 23.612574768066406,
+        "throughput_per_sec": 42350.31587289658
+      }
+    }
+  },
+  {
+    "code": "QCC_144_12_12",
+    "N": 78,
+    "K": 12,
+    "M": 66,
+    "max_chi": 128,
+    "single_decode": {
+      "min_us": 2545.9840297698975,
+      "p25_us": 2556.78391456604,
+      "median_us": 2563.3599758148193,
+      "mean_us": 2564.770852327347,
+      "p75_us": 2570.8160400390625,
+      "p99_us": 2584.0029883384705,
+      "max_us": 2868.8321113586426,
+      "std_us": 13.542907622242849
+    },
+    "batch_decode": {
+      "1": {
+        "batch_size": 1,
+        "total_us_mean": 2586.1084723472595,
+        "total_us_median": 2586.9439840316772,
+        "per_decode_us": 2586.1084723472595,
+        "throughput_per_sec": 386.6813827388912
+      },
+      "10": {
+        "batch_size": 10,
+        "total_us_mean": 4383.548798561096,
+        "total_us_median": 4382.991790771484,
+        "per_decode_us": 438.3548798561096,
+        "throughput_per_sec": 2281.2566848309093
+      },
+      "100": {
+        "batch_size": 100,
+        "total_us_mean": 5574.785590171814,
+        "total_us_median": 5573.920011520386,
+        "per_decode_us": 55.74785590171814,
+        "throughput_per_sec": 17937.909607913374
+      },
+      "1000": {
+        "batch_size": 1000,
+        "total_us_mean": 29390.26496887207,
+        "total_us_median": 29382.880210876465,
+        "per_decode_us": 29.39026496887207,
+        "throughput_per_sec": 34024.87187710366
+      }
+    }
+  }
+]

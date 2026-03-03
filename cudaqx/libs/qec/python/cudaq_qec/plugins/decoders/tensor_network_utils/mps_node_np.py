@@ -8,7 +8,9 @@ except ImportError:
     from npsvd import svd, rsvd  # type: ignore[no-redef]
 
 class MPSNode:
-    def __init__(self, tensor, index, neighbor,chi=32,cutoff=1.0e-15,norm_method=1,svdopt=True,swapopt=True,verbose=0):
+    def __init__(self, tensor, index, neighbor,chi=32,cutoff=1.0e-15,
+                 norm_method=1,svdopt=True,swapopt=True,verbose=0,
+                 max_trunc_error=0.0):
         self.tensor = tensor
         self.svdopt=svdopt
         self.swapopt = swapopt
@@ -17,10 +19,39 @@ class MPSNode:
         self.index = index
         self.chi=chi
         self.cutoff=cutoff
+        self.max_trunc_error = float(max_trunc_error)  # per-step error budget
         self.neighbor = neighbor
         self.type="mps"
         self.mps = self.raw2mps(tensor)
         self.cano=0 # position of canonicalization
+
+    def _adaptive_myd(self, s):
+        """Compute adaptive bond dimension: min(chi, error_based_chi).
+
+        Given singular values *s* (descending), find the smallest k >= 1 such
+        that sum(s[k:]) <= max_trunc_error, then return min(k, chi).
+        When max_trunc_error <= 0 (disabled), falls back to chi.
+        """
+        n = len(s)
+        if n == 0:
+            return 1
+        if self.max_trunc_error <= 0:
+            # Disabled: use chi directly (original behaviour)
+            return min(n, self.chi) if self.chi > 0 else n
+        # Find smallest k >= 1 where sum(s[k:]) <= max_trunc_error
+        cumsum = np.cumsum(s)
+        total = cumsum[-1]
+        threshold = total - self.max_trunc_error
+        if threshold <= 0:
+            error_chi = 1  # even k=1 is within budget
+        else:
+            # searchsorted finds first index where cumsum >= threshold
+            idx = int(np.searchsorted(cumsum, threshold))
+            error_chi = min(idx + 1, n)
+        error_chi = max(1, error_chi)
+        if self.chi > 0:
+            return min(error_chi, self.chi)
+        return error_chi
 
     def find_neighbor(self,j):
         re=np.argwhere(self.neighbor==j)
@@ -46,7 +77,9 @@ class MPSNode:
             tensor = tensor.reshape(dleft*shape[i+1],-1)
             [U,s,V] = svd(tensor)
             s_eff = s[s>self.cutoff]
-            myd = min(len(s_eff),self.chi)
+            if len(s_eff) == 0:
+                s_eff = s[:1]
+            myd = self._adaptive_myd(s_eff)
             s_eff=s_eff[:myd]
             U=U[:,:myd]
             V=V[:,:myd]
@@ -185,7 +218,9 @@ class MPSNode:
             mat = np.einsum("ijk,kab->ijab",tl,tr).reshape(d0*d1,d2*d3)  # notice the difference to self. swap()
             [U,s,V] = svd(mat)
             s_eff = s[s>self.cutoff]
-            myd = min(len(s_eff),self.chi)
+            if len(s_eff) == 0:
+                s_eff = s[:1]
+            myd = self._adaptive_myd(s_eff)
             if(myd == 0):
                 raise RuntimeError("compress(): zero matrix encountered during SVD truncation")
             s_eff=s_eff[:myd]
@@ -258,7 +293,7 @@ class MPSNode:
             s_eff = s[s>self.cutoff]
             if(len(s_eff) == 0):
                 s_eff = s[:1]
-            myd = min(len(s_eff),self.chi)
+            myd = self._adaptive_myd(s_eff)
             if(myd == 0):
                 raise RuntimeError("compress_opt(): zero matrix encountered during SVD truncation")
             s_eff=s_eff[:myd]
@@ -267,9 +302,6 @@ class MPSNode:
             V=V[:,:myd]
             s=np.diag(s_eff)
             U = U@s
-#            if flag:
-#                U = Ql @ U
-#                V =  Qr @ V
             if flag_left:
                 U = Ql @ U
             if flag_right:
@@ -321,7 +353,7 @@ class MPSNode:
         s_eff = s[s>self.cutoff]
         if(len(s_eff) == 0):
             s_eff = s[:1]
-        myd = min(len(s_eff),self.chi)
+        myd = self._adaptive_myd(s_eff)
         if(myd == 0):
             raise RuntimeError("swap(): zero matrix encountered during SVD truncation")
         s_eff=s_eff[:myd]

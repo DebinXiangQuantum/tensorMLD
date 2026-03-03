@@ -179,6 +179,8 @@ def plot_latency_bars(
     fig, ax = plt.subplots(1, 1, figsize=figsize, constrained_layout=True)
 
     # Collect latency per code per decoder at target_p
+    # All decoders use avg_hw_latency_ns if available (hardware cycle model),
+    # otherwise fall back to software wall-clock per_shot_ms.
     latency_data: dict[str, dict[str, float]] = defaultdict(dict)
     for rec in records:
         code = str(rec.get("code", ""))
@@ -188,19 +190,18 @@ def plot_latency_bars(
         if abs(p - target_p) > 1e-6:
             continue
         decoders = rec.get("decoders", {})
-        hw = rec.get("ising_machine", {})
 
         for dec_name in DECODER_ORDER:
             dec_info = decoders.get(dec_name, {})
             if not isinstance(dec_info, dict) or dec_info.get("status") != "ok":
                 continue
 
-            if dec_name == "qubo_sa":
-                # Use hardware latency: total_cycles * cycle_time_ns
-                hw_latency_ns = hw.get("hardware_latency_ns", 0)
-                latency_data[code][dec_name] = hw_latency_ns  # in ns
+            # Prefer hardware cycle-based latency (avg_hw_latency_ns)
+            hw_lat = dec_info.get("avg_hw_latency_ns", 0)
+            if hw_lat > 0:
+                latency_data[code][dec_name] = hw_lat
             else:
-                # Use software latency: per_shot_ms -> ns
+                # Fallback: software wall-clock time -> ns
                 ms = dec_info.get("per_shot_ms", 0)
                 latency_data[code][dec_name] = ms * 1e6  # ms -> ns
 

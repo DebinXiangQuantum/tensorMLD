@@ -39,6 +39,8 @@ class DecodeTimingInfo:
     sa_ms: float = 0.0
     num_reads: int = 0
     num_steps: int = 0
+    actual_sa_steps: int = 0       # steps actually used (with early stopping)
+    bp_init_iters: int = 0         # actual BP initialization iterations
     best_energy: float = float("inf")
     parity_violations: int = 0
 
@@ -146,19 +148,30 @@ def _gf2_kernel_basis(H: np.ndarray) -> np.ndarray:
 # ---------------------------------------------------------------------------
 # Optional BP initialization
 # ---------------------------------------------------------------------------
-def _try_bp_init(H: np.ndarray, syndrome: np.ndarray, noise_p: float) -> Optional[np.ndarray]:
-    """Try to use BP decoder for initialization. Returns error pattern or None."""
+def _try_bp_init(
+    H: np.ndarray, syndrome: np.ndarray, noise_p: float,
+    max_iter: int = 50,
+) -> tuple[Optional[np.ndarray], int]:
+    """Try to use BP decoder for initialization.
+
+    Returns:
+        (error_pattern or None, actual_iterations_used).
+    """
     try:
         from ldpc import BpDecoder
         H_int = H.astype(np.uint8)
         channel_probs = np.full(H.shape[1], noise_p)
         bp = BpDecoder(H_int, error_rate=noise_p,
                        channel_probs=channel_probs,
-                       max_iter=50, bp_method="ms")
+                       max_iter=max_iter, bp_method="ms")
         correction = bp.decode(syndrome.astype(np.uint8))
-        return correction.astype(np.int8)
+        # ldpc BpDecoder exposes .iter for actual iterations used
+        bp_iters = getattr(bp, "iter", max_iter)
+        if bp_iters is None or bp_iters <= 0:
+            bp_iters = max_iter
+        return correction.astype(np.int8), int(bp_iters)
     except Exception:
-        return None
+        return None, 0
 
 
 class IsingDecoder:
@@ -201,6 +214,8 @@ class IsingDecoder:
         use_bp_init: bool = True,
         use_stabilizer_moves: bool = True,
         stabilizer_move_prob: float = 0.3,
+        convergence_patience: int = 0,
+        bp_max_iter: int = 50,
         seed: Optional[int] = None,
     ):
         self.H = np.asarray(H, dtype=np.int8)
@@ -237,6 +252,10 @@ class IsingDecoder:
         self.use_bp_init = use_bp_init
         self.use_stabilizer_moves = use_stabilizer_moves
         self.stabilizer_move_prob = stabilizer_move_prob
+        # Early stopping: 0 = disabled, >0 = stop if no energy improvement
+        # for this many consecutive steps
+        self.convergence_patience = convergence_patience
+        self.bp_max_iter = bp_max_iter
         self.rng = np.random.default_rng(seed)
 
         # Precompute neighborhood structure (sparse H)
@@ -286,12 +305,14 @@ class IsingDecoder:
 
     def _init_candidates(
         self, syndrome: np.ndarray
-    ) -> list[np.ndarray]:
+    ) -> tuple[list[np.ndarray], int]:
         """Generate diverse initial error patterns.
 
-        Returns a list of binary error patterns (0/1) to seed SA reads.
+        Returns:
+            (list of binary error patterns, actual BP iterations used).
         """
         candidates: list[np.ndarray] = []
+        bp_iters_used = 0
 
         # 1. GF(2) exact solution (guarantees syndrome satisfaction)
         gf2_sol = _gf2_solve(self.H, syndrome)
@@ -300,7 +321,10 @@ class IsingDecoder:
 
         # 2. BP initialization (if available and enabled)
         if self.use_bp_init:
-            bp_sol = _try_bp_init(self.H, syndrome, float(self.noise_p[0]))
+            bp_sol, bp_iters_used = _try_bp_init(
+                self.H, syndrome, float(self.noise_p[0]),
+                max_iter=self.bp_max_iter,
+            )
             if bp_sol is not None:
                 candidates.append(bp_sol.copy())
 
@@ -329,23 +353,29 @@ class IsingDecoder:
                 perturbed[flip_mask] = 1 - perturbed[flip_mask]
                 candidates.append(perturbed)
 
-        return candidates[:self.num_reads]
+        return candidates[:self.num_reads], bp_iters_used
 
     def _simulated_annealing(
         self, syndrome: np.ndarray
-    ) -> tuple[np.ndarray, float, int]:
+    ) -> tuple[np.ndarray, float, int, int, int]:
         """Run SA to minimize modified QUBO energy.
 
         Uses:
           - GF(2) / BP / stabilizer-perturbed initialization
           - Mix of single-spin flips and stabilizer row-flip moves
+          - Optional convergence-based early stopping
+
+        Returns:
+            (best_spins, best_energy, best_violations,
+             total_actual_sa_steps, bp_init_iters)
         """
         syn_signs = np.where(syndrome == 0, 1.0, -1.0)
-        candidates = self._init_candidates(syndrome)
+        candidates, bp_iters_used = self._init_candidates(syndrome)
 
         best_spins = None
         best_energy = float("inf")
         best_violations = self.m
+        total_actual_steps = 0
 
         for read_idx in range(self.num_reads):
             # Initialize from candidate (or random if we ran out)
@@ -363,8 +393,12 @@ class IsingDecoder:
             for j in range(self.m):
                 check_products[j] = np.prod(spins[self.check_qubits[j]])
 
-            # --- SA loop ---
+            # --- SA loop with optional early stopping ---
+            read_best_energy = float("inf")
+            no_improve_count = 0
+            actual_steps_this_read = 0
             for step in range(self.num_steps):
+                actual_steps_this_read = step + 1
                 frac = step / max(1, self.num_steps - 1)
                 if self.schedule == "exponential":
                     T = self.T_init * (self.T_final / self.T_init) ** frac
@@ -439,6 +473,19 @@ class IsingDecoder:
                         for j in self.qubit_checks[i]:
                             check_products[j] *= -1.0
 
+                # --- Convergence check (periodically, every n steps) ---
+                if self.convergence_patience > 0 and step % self.n == 0 and step > 0:
+                    cur_energy, _ = self._energy(spins, syn_signs)
+                    if cur_energy < read_best_energy - 1e-8:
+                        read_best_energy = cur_energy
+                        no_improve_count = 0
+                    else:
+                        no_improve_count += 1
+                    if no_improve_count >= self.convergence_patience:
+                        break  # early stop this read
+
+            total_actual_steps += actual_steps_this_read
+
             # Evaluate final energy
             energy, violations = self._energy(spins, syn_signs)
             if energy < best_energy:
@@ -446,14 +493,16 @@ class IsingDecoder:
                 best_spins = spins.copy()
                 best_violations = violations
 
-        return best_spins, best_energy, best_violations
+        return best_spins, best_energy, best_violations, total_actual_steps, bp_iters_used
 
     def decode(self, syndrome: Union[list[float], np.ndarray]) -> DecoderResult:
         """Decode a single syndrome."""
         t0 = time.perf_counter()
         syndrome = np.asarray(syndrome, dtype=np.int8)
 
-        best_spins, best_energy, violations = self._simulated_annealing(syndrome)
+        best_spins, best_energy, violations, actual_sa_steps, bp_init_iters = (
+            self._simulated_annealing(syndrome)
+        )
         errors = self._spins_to_errors(best_spins)
         logical_vals = (errors @ self.logical_obs.T) % 2
 
@@ -461,6 +510,8 @@ class IsingDecoder:
         self.last_timing = DecodeTimingInfo(
             total_ms=elapsed, sa_ms=elapsed,
             num_reads=self.num_reads, num_steps=self.num_steps,
+            actual_sa_steps=actual_sa_steps,
+            bp_init_iters=bp_init_iters,
             best_energy=best_energy, parity_violations=violations,
         )
 

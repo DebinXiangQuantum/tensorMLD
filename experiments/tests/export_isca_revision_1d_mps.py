@@ -153,6 +153,7 @@ def export_isca_revision_1d_mps(args: argparse.Namespace) -> dict[str, Any]:
         "output_dir": str(output_dir),
         "bond_dim": int(args.bond_dim),
         "cutoff": float(args.cutoff),
+        "max_trunc_error": float(args.max_trunc_error),
         "max_steps": int(args.max_steps),
         "noise_p": float(args.noise_p),
         "seed": int(args.seed),
@@ -196,6 +197,7 @@ def export_isca_revision_1d_mps(args: argparse.Namespace) -> dict[str, Any]:
             logical_inds=set(logical_obs_inds),
             chi=int(args.bond_dim),
             cutoff=float(args.cutoff),
+            max_trunc_error=float(args.max_trunc_error),
             max_steps=int(args.max_steps),
             verbose=args.verbose,
         )
@@ -304,6 +306,13 @@ def _build_arg_parser() -> argparse.ArgumentParser:
         type=float,
         default=1.0e-12,
         help="SVD cutoff used by offline compression.",
+    )
+    parser.add_argument(
+        "--max-trunc-error",
+        type=float,
+        default=0.0,
+        help=("Per-step max truncation error for adaptive chi. "
+              "0 = disabled (use fixed chi). E.g. 1e-10."),
     )
     parser.add_argument(
         "--max-steps",

@@ -561,9 +561,23 @@ if __name__ == "__main__":
     out_path = out_dir / "chi_sweep_results.json"
     step_path = out_dir / "chi_sweep_step_errors.json"
 
-    # Incremental save: save after EACH chi value to survive OOM crashes.
+    # Resume: load existing results and skip already-completed (code, p, chi).
     all_results: list[dict] = []
     all_step_errors: list[dict] = []
+    done_keys: set[tuple[str, float, int]] = set()
+
+    if out_path.exists():
+        with open(out_path) as f:
+            all_results = json.load(f)
+        done_keys = {
+            (r["code"], r["noise_p"], r["chi"])
+            for r in all_results
+        }
+        print(f"[resume] Loaded {len(all_results)} existing records, "
+              f"{len(done_keys)} (code,p,chi) done")
+    if step_path.exists():
+        with open(step_path) as f:
+            all_step_errors = json.load(f)
 
     def _save_incremental():
         with open(out_path, "w") as f:
@@ -583,20 +597,34 @@ if __name__ == "__main__":
 
     for code_name, code in loaded_codes:
         for p in noise_p_values:
-            print(f"\n>>> Running {code_name} p={p} ...")
-            # Run ONE chi at a time so incremental save survives OOM
+            # Check how many chi values need running
+            pending_chi = [c for c in chi_values
+                           if (code_name, p, c) not in done_keys]
+            if not pending_chi:
+                print(f"\n>>> SKIP {code_name} p={p} (all {len(chi_values)} chi done)")
+                continue
+
+            print(f"\n>>> Running {code_name} p={p} "
+                  f"({len(pending_chi)}/{len(chi_values)} chi pending) ...")
             batch_ok = 0
             batch_total = 0
-            for chi in chi_values:
+
+            # Run BP-OSD if needed (first pending chi and no prior result)
+            need_bposd = (not args.no_bposd
+                          and not any(r.get("bposd") for r in all_results
+                                      if r["code"] == code_name
+                                      and r["noise_p"] == p))
+
+            for chi in pending_chi:
                 batch = _run_one_code_one_p(
                     code_name, code,
                     chi_values=[chi], shots=args.shots, noise_p=p,
                     seed=args.seed, verbose=True, use_gpu=use_gpu,
-                    run_bposd=(not args.no_bposd and chi == chi_values[0]),
+                    run_bposd=(need_bposd and chi == pending_chi[0]),
                 )
                 for r in batch:
                     # Carry BP-OSD result to all chi records
-                    if "bposd" not in r and all_results:
+                    if "bposd" not in r:
                         prev = [x for x in all_results
                                 if x["code"] == code_name
                                 and x["noise_p"] == p
@@ -604,6 +632,7 @@ if __name__ == "__main__":
                         if prev:
                             r["bposd"] = prev[0]["bposd"]
                     all_results.append(r)
+                    done_keys.add((r["code"], r["noise_p"], r["chi"]))
                     if r.get("step_errors"):
                         all_step_errors.append({
                             "code": r["code"], "N": r["N"], "K": r["K"],
@@ -616,7 +645,6 @@ if __name__ == "__main__":
                     batch_total += 1
                     if r.get("status") == "ok":
                         batch_ok += 1
-                    # Save after EVERY chi value — survives OOM on next chi
                     _save_incremental()
 
             print(f"  >>> {code_name} p={p}: {batch_ok}/{batch_total} ok, "

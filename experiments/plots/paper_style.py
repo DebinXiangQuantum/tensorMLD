@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 INCHES_PER_PT = 1.0 / 72.27
 SINGLE_COLUMN_PT = 240.0
 DOUBLE_COLUMN_PT = 510.0
-BASE_FONT_SIZE = 8.0
+BASE_FONT_SIZE = 7.0
 
 DECODER_COLORS = {
     "mps_tn": "#1b9e77",
@@ -25,13 +25,30 @@ METHOD_COLORS = {
     "our_mps": "#1b9e77",
 }
 
+# 5-method ablation study colors
+METHOD_COLORS_5 = {
+    "onthefly_oc": "#e7298a",       # magenta-pink
+    "full_tn_oc": "#d95f02",        # orange
+    "quimb_compress": "#7570b3",    # purple
+    "exact_mps": "#66a61e",         # green
+    "compressed_mps": "#1b9e77",    # teal
+}
+
+METHOD_DISPLAY_5 = {
+    "onthefly_oc": "On-the-fly + OC",
+    "full_tn_oc": "Full TN + OC",
+    "quimb_compress": "Quimb Compress",
+    "exact_mps": "Exact 1D MPS",
+    "compressed_mps": "Compressed MPS",
+}
+
 
 def figure_size(
     *,
     width_pt: float = SINGLE_COLUMN_PT,
     ncols: int = 1,
     nrows: int = 1,
-    panel_aspect: float = 4.0 / 3.0,
+    panel_aspect: float = 4.0 / 2.0,
 ) -> tuple[float, float]:
     """Return (width, height) in inches from publication point units.
 
@@ -76,9 +93,11 @@ def apply_paper_style(
             "lines.markersize": 5,
             "lines.linewidth": 1.2,
             "lines.markeredgewidth": 0.3,
-            "grid.linewidth": 0.2,
-            "grid.alpha": 0.5,
+            "grid.linewidth": 0.3,
+            "grid.alpha": 0.4,
             "grid.color": "gray",
+            "grid.linestyle": "--",
+            "axes.grid.axis": "y",
             "axes.linewidth": 0.5,
             "xtick.major.width": 0.5,
             "ytick.major.width": 0.5,
@@ -101,7 +120,7 @@ def save_figure(fig: plt.Figure, output_dir: Path, stem: str) -> list[Path]:
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     saved: list[Path] = []
-    for ext in ("pdf", "png"):
+    for ext in ("pdf", "png", "svg"):
         path = output_dir / f"{stem}.{ext}"
         fig.savefig(path)
         saved.append(path)
@@ -126,3 +145,7 @@ def method_display_name(name: str) -> str:
         "our_mps": "Our MPS",
     }
     return mapping.get(str(name), str(name))
+
+
+def method_display_name_5(name: str) -> str:
+    return METHOD_DISPLAY_5.get(str(name), str(name))

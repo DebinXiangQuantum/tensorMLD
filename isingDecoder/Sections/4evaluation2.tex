@@ -1,0 +1,251 @@
+\section{Experimental Analysis}
+\label{sec:evaluations}
+
+In this section, we discuss the experimental analysis of our design by describing benchmarks and experimental methodology and comparing our system to existing LDPC decoders in solution quality, throughput, and energy consumption. 
+
+Existing LDPC decoders are explicitly designed to either a particular code or a standard based on a decoding algorithm. These can be implemented using GPUs, FPGAs, or as ASICs. We have surveyed the literature and chosen the state of the art ASIC decoders designed for 5G-NR standard for comparing against our design.
+
+%The LDPC decoder designed by modifying BRIM is modeled using equation~\ref{eqn:rim_node_simplifed}. 
+
+The proposed LDPC decoder was simulated using MATLAB’s nonstiff, single step, 5th-order differential solver (ode45). All circuits are modeled in Cadence 45nm using Generic Process Design Kit (GPDK045) to obtain power and area. To obtain solution quality for LDPC decoding using the QUBO formulation, we used the original BRIM model described in paper~\cite{afoakwa.hpca21} using Matlab.
+
+\subsection{Comparison with existing LDPC decoders }
+
+To compare the solution quality of different algorithms, we use a metric called Bit Error Rate (BER). It defines the probability of a bit being erroneous; mathematically, it is defined as the ratio of the number of error bits by the total number of bits. The number of error bits is equal to the Hamming distance between the decoded and original message. Lower is better.
+
+%The LDPC decoders are designed for different standards based on other design principles using alien technology. So we decided to use $Gbits/sec/Watt$ as the final figure of merit for comparison among different LDPC decoders
+%\subsection{Architectural details for 5G-NR standards}\label{sec:5g-nr}
+%\subsection{Comparison with existing LDPC decoders}
+
+\begin{comment}
+\begin{table*}[htb]
+\centering
+\caption{comparison of hybrid LDPC decoder with existing decoders}
+\label{table:comparision}
+%\resizebox{\columnwidth}{!}
+{
+%\setlength{\tabcolsep}{4pt}
+\begin{tabular}{|c|c|c|c|c|c|c|} 
+\hline
+\bf {Design\textbackslash Decoder} & \thead{~\cite{schlafer2013new}}  & \thead{~\cite{lin202133}} & \thead{~\cite{cheng2014fully}}   & \thead {~\cite{lee2022multi}}  & \thead{~\cite{thi2021low}} & \thead{this work}\\  
+\hline\hline
+
+CMOS Technology  &   65nm LVT  & 28nm & 90nm   & 65nm  & 65nm & 45nm\\ 
+\hline
+Standard        &  IEEE802.11ad   & 5G-NR   & -    &5G-NR & 5G-NR & 5G-NR \\ 
+\hline
+Decoding Algorithm & Min-Sum & \thead{ Normalized\\Min-Sum}   &  \thead{ Normalized\\Min-Sum}  & \thead{ offset\\Min-Sum} & \thead{Combined \\ Min-Sum} & \thead{hybrid \\ Ising model}  \\
+\hline
+Block size         &  672  &  \thead{all cases of 5G}  & 2048 & \thead{all cases of 5G} & 3808 & \thead{all cases of 5G} \\
+\hline
+\thead{Decoding Latency \\(iterations or annealing time) }  &  10 & 5 &  9 & 3 &10 & 0.22 $\mu sec$\\
+\hline
+Max Throughput (GBs/sec) & 160.8 & 6.7  & 45.09  & 21.78 &3.04 & 118.6 \\
+\hline
+Max Power (mW)    & 5360 & 232 & 1110 & 413 & 259 & 1566 \\
+\hline
+Area ($mm^2$) &   12.09  & 1.97 & 9.6 & 5.74 & 1.49 & 33\\
+\hline
+Energy (pJ/bit)  & 36.1 & 145  & 20.33  & 94.89 & 85.2& 13.14\\
+
+%\hline
+%Gbits/Sec/$mm^2$  & 13.30 & 3.4  & 4.7  & 3.82 & 2.04& -\\
+%\hline
+
+\hline
+\end{tabular}
+}
+\end{table*} 
+
+
+\subsection{Comparison with existing LDPC decoders}
+
+\begin{table*}[htb]
+\centering
+\caption{comparison of hybrid LDPC decoder with existing decoders}
+\label{table:comparision}
+%\resizebox{\columnwidth}{!}
+{
+%\setlength{\tabcolsep}{4pt}
+\begin{tabular}{|c|c|c|c|c|c|} 
+\hline
+\bf {Design\textbackslash Decoder} & \thead{~\cite{schlafer2013new}}  & \thead{~\cite{lin202133}}   & \thead {~\cite{lee2022multi}}  & \thead{~\cite{thi2021low}} & \thead{this work}\\  
+\hline\hline
+
+CMOS Technology  &   65nm LVT  & 28nm   & 65nm  & 65nm & 45nm\\ 
+\hline
+Standard        &  IEEE802.11ad   & 5G-NR & 5G-NR & 5G-NR & 5G-NR \\ 
+\hline
+Decoding Algorithm & Min-Sum & \thead{ Normalized\\Min-Sum}   &  \thead{ offset\\Min-Sum} & \thead{Combined \\ Min-Sum} & \thead{hybrid \\ Ising model}  \\
+\hline
+Block size         &  672  &  \thead{all cases of 5G}  & \thead{all cases of 5G} & 3808 & 1088 \\
+\hline
+\thead{Decoding Latency per iteration\\ (nsec)} &  4  & 787 & 1530  & 125.33  & 220  \\
+\hline
+\thead{Max Throughput per iteration \\(GBs/sec)} & 160.8 & 33.2  & 17.06 & 30.38 & 4 \\
+\hline
+Max Power (mW)    & 5360 & 232  & 413 & 259 & 6.59 \\
+\hline
+Area ($mm^2$) &   12.09  & 1.97  & 5.74 & 1.49 & - \\
+\hline
+Energy (pJ/bit) per iteration  & 36.1 & 29  & 24.2 & 8.52 & 1.33\\
+\hline
+\thead{BER @ SNR 3 \\ exp\_factor = 16 \\ bit width =8bits }  &  5.69E-02 & \red{3.67E-02}  & 3.67E-02 & \red{3.67E-02} & 1.61E-02\\
+\hline
+\end{tabular}
+}
+\end{table*}
+\end{comment}
+
+\todo{block size must be the same, increase either area or latency to compensate for the block size, equation}
+
+
+\note{equation of energy per bit: (power*latency)/number of bits }
+\note{Time : SA = 1340ms; OMS = 1.4ms; ~\cite{thi2021low}=752ns; BRIM style ldpc\_decoder = 220ns}
+
+\note{Solving G001: number of nodes: 800 
+SA : number of instructions 2388227818
+Number of spin flips: 220759
+Total time per flip: (total number of instr per flip*time per cycle)/IPC
+
+Assumming IPC: 2
+total number of instr per flip = 10818
+clk speed =  3 GHz  0.33ns
+Total time per flip: $(10818*0.33*10^(-9))/2 = 2e-06$
+
+BRIM: total time 2.2e-06
+Number of spin flips: 105660
+Total time per flip in BRIM : 2e-11
+
+so total speedup = 2e-06/2e-11 = $10^5$
+
+}
+
+\note{minsum on cpu could solve in 1.4ms, ~\cite{thi2021low} solve in 752ns, approx 3 orders of speed up compared to cpu, compared to SA BRIM\_ldpc\_decoder is $6.5*10^6$ X faster approximated by scaling}
+
+\note{ Explaining the speedup: ~\cite{thi2021low} has 56X19 functional units which is 3 orders more functional units compared to cpu.
+}
+
+\note{100 Messages SNR:3; exp\_f:2 each message was annealed 20 times
+
+      1) annealing time 1.5 $\mu s$, number of anneals 1, BER: 5.11E-03;
+      
+      2 a) annealing time 300ns, number of anneals 5, total time 1.5 $\mu s$ BER: 7.05E-03;
+      
+      2 b) start from end result 
+
+      2 c) start from hard decision point. 
+      
+      annealing time 150ns, number of anneals 9 and 1 anneal to get to the energy point at 150ns in total annealing time of approx 1.5 $\mu s$ BER: 8.85E-03
+
+      annealing time 270ns, number of anneals 5  1 anneal to get the energy point at 30ns in total annealing time of 300ns total time 1.380 $\mu s$ BER:7.29E-03
+}
+
+
+\begin{table}[htb]
+\centering
+\caption{comparison of hybrid LDPC decoder with existing decoders, all parameters are adjusted to implement highest lifting size}
+%\resizebox{\columnwidth}{!}
+\label{table:comparision}
+\resizebox{\columnwidth}{!}{
+\setlength{\tabcolsep}{4pt}
+
+\label{table:comparision}
+{
+\begin{tabular}{|c|c|c|c|c|} 
+\hline
+\bf {Design\textbackslash Decoder}  & \thead{~\cite{lin202133}}   & \thead {~\cite{lee2022multi}}  & \thead{~\cite{thi2021low}} & \thead{this work}\\  
+\hline\hline
+
+CMOS Technology    & 28nm   & 65nm  & 65nm & 45nm\\ 
+\hline
+Standard          & 5G-NR & 5G-NR & 5G-NR & 5G-NR \\ 
+\hline
+Decoding Algorithm & \thead{ Normalized\\Min-Sum}   &  \thead{ offset\\Min-Sum} & \thead{Combined \\ Min-Sum} & \thead{hybrid \\ Ising model}  \\
+\hline
+Block size         &  26112 & 26112 & \red{26112} & \red{26112} \\
+\hline
+\thead{Decoding Latency per iteration\\ (nsec)}  & 787 & 1530  & \red{860}  & \red{220}  \\
+\hline
+\thead{Max Throughput per iteration \\(GBs/sec)}  & 33.2  & 17.06 & \red{30.36} & \red{118.6} \\
+\hline
+Max Power (mW)     & 232  & 413 & 259 & \red{158.24} \\
+\hline
+Area ($mm^2$)  & 1.97  & 5.74 & 1.49 & \red{5.44} \\
+\hline
+Energy (pJ/bit) per iteration   & 29  & 24.2 & \red{8.52} & \red{1.33}\\
+\hline
+%BER SNR 1.5 & 4.3797e-07 & 7.4420e-05 & - &-\\
+%\hline
+%quantization   & 5  & 8  & 4 & -\\
+%\hline
+%metric  & -  & -  & - & -\\
+%\hline
+
+\end{tabular}
+}
+}
+\end{table}
+
+Table ~\ref{table:comparision} shows a detailed comparison of our work with existing ASIC LDPC decoders. These ASIC LDPC decoders are designed for 5g-NR standards with different technologies. They are designed by hard-wiring different variations of the Min-Sum algorithm. ~\cite{lin202133}, ~\cite{thi2021low} can implement all the codes defined by the standard where as ~\cite{thi2021low} is designed for a specific expansion factor 56. For fair comparison we converted all the numbers reported to represent an implementation of an LDPC code constructed using base graph 1 with an expansion factor of 384 and with a code rate of 1/3. 
+
+In base graph 1 with an expansion factor of 384, there are $121344$ non zero entries. So to construct our decoder we need $121344*2$ xnor gates and $26112$ capacitors. The gates and capacitors are connected to from $17664$ parity equation and $26112$ nodes. The annealing time 220ns is estimate by obtaining same bit error rate as of offset Min-sum algorithm at different SNRs for one iteration. For same annealing time we estimated the power consumption to be 158.24mw. According to the table we can see that there is 6.4X reduction in energy consumption per bit.
+
+
+\begin{comment}
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.45\textwidth]{LDPC codes/FIGS/perfomance_ldpc.pdf}
+    \caption{Performance vs Power Consumption of various LDPC decoders implemented in literature}
+    \label{fig:ldpc_results}
+\end{figure}
+
+Figure~\ref{fig:ldpc_results} shows the graph of throughput vs power consumption of ASIC LDPC decoders. The graph is obtained from the following survey papers ~\cite{kingston2021certain,maunder2016survey}. \blue{Even in this graph, all the LDPC decoders are designed with different technology and for different standards. The graph shows that power consumption grows exponentially with the growth in throughput. In our design, parity units are responsible for most power consumption. They grow linear to the expansion factor. Hence, using our design, we could achieve linear growth in power consumption with throughput.}
+\end{comment}
+
+
+\subsection{Comparison of solution quality with QUBO Formulation }\label{sec:solution_quality}
+
+One thousand messages were encoded using different LDPC codes to obtain the solution quality. These codes were constructed using the 5G-NR standard's base graph 1 with varying factors of expansion. The encoded messages were then modulated using BPSK modulation. The noise was added to the modulated signals based on the signal-to-noise ratio (SNR). These corrupted signals were used to test the different algorithms for solution quality. 
+
+Figure~\ref{fig:ber} shown the solution quality of LDPC decoding using QUBO formulation and proposed algorithm (modified QUBO). Both modified QUBO and QUBO were annealed for 0.22$\mu$s to obtain BER. As both QUBO and modified QUBO are probabilistic we used a different metric called Expected BER to estimate the solution quality. Each message (or instance) was annealed 100 times with random initializations. Each different anneal gives us a different solution. We find the distinct solutions in these different anneals and rank them according to their Ising energies. Considering this order static, the \textit{expected} Bit Error rate (E(BER($N_a$)))~\cite{kim2019leveraging} for each instance is calculated using the formula~\ref{eqn:expected_ber}.
+
+\begin{equation}\label{eqn:expected_ber}
+\begin{split}
+E(BER(N_a)) = \sum_{k=1}^{L} \left[ (\sum_{r=k}^{L} P_I(r))^{N_a} -  (\sum_{r=k+1}^{L} P_I(r))^{N_a}\right] \\ F_I(k)/N     
+\end{split}
+\end{equation}
+
+where N is the number of bits in the message, L is the number of unique solutions obtained by different anneals, r is the rank index of each solution, $P_I(r)$ is the probability of obtaining the $r_{th}$ solution, and $F_I$ is the number of bit errors in the $k^{th}$ solution, relative to the ground truth. The average of 1000 different expected BER is reported as the final Bit Error rate for each SNR. As shown in the figure, modified QUBO gives us the best BER when compared to QUBO formulation.
+
+\begin{figure}[htb]
+  \centering
+ \begin{minipage}[b]{.40\textwidth}
+   \includegraphics[width =\textwidth]{LDPC codes/FIGS/expf_16.pdf}
+  %\caption{This is first figure}
+  \end{minipage}%
+  \hfill
+  \begin{minipage}[b]{.5\textwidth}
+  \includegraphics[width = 0.4\textwidth]{LDPC codes/FIGS/expf_2.pdf} 
+  \includegraphics[width = 0.4\textwidth]{LDPC codes/FIGS/expf_4.pdf}
+  %\caption{caption}
+  \end{minipage} 
+  \caption{Bit Error rate achieved by different algorithms at different Signal-noise ratios. Lower the better.}
+\label{fig:ber}
+\end{figure}
+
+\section{Things need to be done}
+
+Need to evaluate if BRIM can obtain same Bit Error rate as of Offset Min-Sum algorithm at higher iterations. 
+
+Need to determine the actual architecture of the system.
+
+Perform Noise analysis
+
+
+\todo{To be implemented}
+
+%\subsection{Circuit Implementation using Cadence}
+
+%\todo{To be implemented}
+

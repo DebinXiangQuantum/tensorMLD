@@ -1,0 +1,15 @@
+[
+  {
+    "code": "QCC_144_12_12",
+    "num_syndromes": 50,
+    "K": 12,
+    "M": 66,
+    "max_chi": 0,
+    "decision_match_rate": 0.915,
+    "marginal_max_diff": 1.4210854715202004e-14,
+    "marginal_mean_diff": 1.0658141036401502e-15,
+    "fp64_median_us": 1804.5759797096252,
+    "fp32_median_us": 1424.832046031952,
+    "speedup": 1.2665183835071867
+  }
+]

@@ -35,7 +35,7 @@ from codes.gnd_ldpc_codes import (
     qcc_90_8_10, qcc_108_8_10, qcc_144_12_12,
     ldpc_25_3_4, ldpc_30_6_4, tor_50_2_5,
 )
-from erasure_tensor_network_decoder import ErasureTensorNetworkDecoder
+from erasure_tensor_network_decoder import ErasureTensorNetworkDecoder, OptimizedErasureTNDecoder
 from simple_decoders import (
     LdpcBpOsdDecoder,
     LdpcMinSumBpDecoder,
@@ -47,7 +47,7 @@ from simple_decoders import (
 # Decoder registry – maps name → class so we can pickle job descriptions
 # ---------------------------------------------------------------------------
 DECODER_REGISTRY: Dict[str, type] = {
-    'tensor_network_mld': ErasureTensorNetworkDecoder,
+    'tensor_network_mld': OptimizedErasureTNDecoder,
 }
 if LDPC_AVAILABLE:
     DECODER_REGISTRY['bp_osd'] = LdpcBpOsdDecoder
@@ -132,36 +132,47 @@ def decode_with_decoder(
     converged_count = 0
     start_time = time.time()
 
-    for shot in range(num_shots):
-        try:
-            if decoder_class == ErasureTensorNetworkDecoder:
-                decoder = decoder_class(
-                    H=H,
-                    logical_obs=logical_obs[:1],
-                    error_probabilities=error_probs,
-                    erasure_mask=erasure_masks[shot],
-                    debug=(debug and shot == 0)
-                )
-            else:
+    # --- Optimized TN decoder: create once, reuse across shots ---
+    if decoder_class is OptimizedErasureTNDecoder:
+        decoder = decoder_class(
+            H=H,
+            logical_obs=logical_obs[:1],
+            error_probabilities=error_probs,
+            debug=(debug),
+        )
+        for shot in range(num_shots):
+            try:
+                result = decoder.decode(
+                    syndromes[shot], erasure_mask=erasure_masks[shot])
+                predicted = result['logical_error_prob'] > 0.5
+                if result.get('converged', True):
+                    converged_count += 1
+                actual = actual_logicals[shot, 0]
+                if predicted == actual:
+                    correct_count += 1
+            except Exception as e:
+                if debug:
+                    print(f"  Shot {shot} error: {e}")
+    else:
+        # --- Standard decoders: rebuild per shot (erasure_mask changes priors) ---
+        for shot in range(num_shots):
+            try:
                 decoder = decoder_class(
                     H=H,
                     logical_obs=logical_obs[:1],
                     error_probabilities=error_probs,
                     erasure_mask=erasure_masks[shot]
                 )
-
-            result = decoder.decode(syndromes[shot].tolist())
-            predicted = result['logical_error_prob'] > 0.5
-
-            if result.get('converged', True):
-                converged_count += 1
-
-            actual = actual_logicals[shot, 0]
-            if predicted == actual:
-                correct_count += 1
-        except Exception as e:
-            if debug:
-                print(f"  Shot {shot} error: {e}")
+                result = decoder.decode(syndromes[shot].tolist())
+                predicted = result['logical_error_prob'] > 0.5
+                if result.get('converged', True):
+                    converged_count += 1
+                actual = actual_logicals[shot, 0]
+                if predicted == actual:
+                    correct_count += 1
+            except Exception as e:
+                if debug:
+                    print(f"  Shot {shot} error: {e}")
 
     elapsed_time = time.time() - start_time
     ler = 1.0 - (correct_count / num_shots) if num_shots > 0 else float('nan')
@@ -240,7 +251,36 @@ def _run_single_job(args: Tuple) -> Dict[str, Any]:
 
         # Resolve decoder class
         decoder_class = DECODER_REGISTRY[decoder_name]
-        max_shots = tn_max_shots if decoder_name == 'tensor_network_mld' else None
+        if decoder_name == 'tensor_network_mld':
+            # Adaptive TN shot limit based on code size (exact TN is exponential)
+            code_n = int(code.N)
+            if code_n >= 90:
+                max_shots = 0  # skip — intractable
+            elif code_n >= 72:
+                max_shots = min(tn_max_shots, 1_000)
+            elif code_n >= 60:
+                max_shots = min(tn_max_shots, 5_000)
+            else:
+                max_shots = tn_max_shots
+        else:
+            max_shots = None
+
+        if max_shots == 0:
+            elapsed = time.time() - t0
+            print(f"{tag} — SKIPPED (code too large for TN) ({elapsed:.1f}s)", flush=True)
+            return {
+                'code_name': code_name,
+                'error_rate': error_rate,
+                'erasure_rate': erasure_rate,
+                'decoder_name': decoder_name,
+                'result': None,
+                'error': f'TN skipped: N={int(code.N)} too large for exact contraction',
+                'code_params': {
+                    'N': int(code.N),
+                    'K': int(code.K),
+                    'D': int(code.D) if not np.isnan(code.D) else None,
+                },
+            }
 
         result = decode_with_decoder(
             decoder_class, decoder_name, data,
@@ -323,7 +363,7 @@ def main():
     error_rates = [0.001, 0.003, 0.005, 0.008, 0.01]
     erasure_rates = [0.0, 0.05, 0.1, 0.15]
     num_shots = 1_000_000
-    tn_max_shots = 1_000_000
+    tn_max_shots = 100_000
     random_seed = 42
 
     # Build job list

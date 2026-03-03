@@ -1,0 +1,241 @@
+\section {Architecture}
+\label{sec:arch}
+
+
+%In this section, we discuss about the algorithm change to QUBO formulation of decoding of LDPC codes and it's formulation.
+
+\subsection{Intuition}
+
+
+
+\subsubsection{Modifications to QUBO formulation}\label{secc:m_qubo}The state space for an Ising model scales with $2^n$ where $n$ is the number of nodes, also referred to as the problem size. The number of  auxiliary spins required for QUBO formulation discussed in section ~\ref{sec:QUBO_formulation} is almost equal to number of spins in the problem\footnote{ For binary representation, unary representation requires more.}. This causes a considerable problem for solution quality (which will be shown in a following section, ~\ref{sec:solution_quality}), as well as wasting hardware. So we have come with a new methodology of mapping LDPC decoding problems without any conversion. The XOR operation can be converted into a multiplication operation by replacing 0 with 1 and 1 with -1. It can be seen in the following truth table: Table ~\ref{tabel:truth_table}. 
+
+\begin{table}[h]\centering
+\caption{Conversion of XOR operation into multiplication  }
+\label{tabel:truth_table}
+\begin{tabular}{|c|c|c|c|c|c|} 
+\hline
+$A$ &  $B$ &  $A \xor B$ & $\sigma_A$ & $\sigma_B$ & $\sigma_A.\sigma_B$ \\ 
+\hline\hline
+ 0 &  0  & 0 & 1 & 1 & 1\\  
+\hline
+0  &  1 & 1 & 1 & -1 & -1\\   
+\hline
+1    & 0 & 1 & -1& 1& -1\\ 
+\hline
+1    & 1 & 0  & -1 & -1 & 1\\ 
+\hline
+\end{tabular}
+\end{table}
+
+Hence the equation~\ref{eq::obj} can be written as follows:
+
+\begin{equation}
+\label{eq::mul_obj}
+\begin{split}
+    f = \sum_{i=0}^{n-1}(R_i - \tilde{C_i})^2  + \sum_{j=0}^{m-1}(1-(\Pi_{i=0}^{n-1} H_{i,j} \tilde{C_i}))/2
+\end{split}
+\end{equation}
+
+by removing constants equation~\ref{eq::mul_obj} can be written as:
+
+\begin{equation}
+\label{eq::LDPC_ising}
+\begin{split}
+    f = \sum_{i=0}^{n-1}-2r_i\tilde{C_i}  - \sum_{i=0}^{n-1}\sum_{j=0}^{m-1} H_{i,j} \tilde{C_i} P_{j\backslash i} \\
+    where\ P_{j\backslash i}\ =\ \Pi_{k=0 \backslash i }^{n-1} H_{k,j} \tilde{C_k}
+\end{split}
+\end{equation}
+
+
+We can see that equation~\ref{eq::LDPC_ising} bears a significant resemblance to the Ising model described in section~\ref{sec:ising_mode} where $P_{j\backslash i}$ is a higher order term. So we modified BRIM to implement these higher order terms so that we could map LDPC codes without conversion.
+
+
+\subsubsection{Hardware representation}
+
+
+Consider 1 (0) to be high and -1 (1) to be low in the above truth table~\ref{tabel:truth_table}. The output ($\sigma_A.\sigma_B$) represents an XNOR logic. %~\footnote{ The output is high when both inputs are the same, and low when inputs are different}. 
+Hence $P_{j\backslash i}$ can be calculated by XNORing the state of node $V_i$ with parity equation $P_j$. 
+The parity equation can be evaluated by XNORing the states of nodes involved. In equation~\ref{eq::LDPC_ising}, for simplicity, if we consider that the system energy only depends upon satisfying the parity equations. If a parity equation is satisfied, the current states of nodes that make it up should not be changed. Otherwise, they should be flipped so that the equation will be satisfied. This behavior can be easily mimicked using the circuit shown in Figure~\ref{fig:circuit_digaram}.
+
+\begin{figure}[htp]
+    \centerline{\includegraphics[width=0.40\textwidth]{LDPC codes/FIGS/circuit_diagram.pdf}}
+    \caption{Logical implementation of proposed LDPC decoder }
+    \label{fig:circuit_digaram}
+\end{figure}
+
+We can consider that Figure~\ref{fig:circuit_digaram} shows the circuit implementation of equation~\ref{eq::LDPC_ising} with a parity check matrix that has only one parity equation. The voltage on capacitors represents the states of nodes. The parity equation $P$ is implemented by XNORing all the nodes involved \ie, $V_1$ to $V_4$. $P_{\backslash i}$ at each node is calculated by XNORing the state of node $V_i$ with parity equation $P_j$.
+
+Suppose we consider $P$ being satisfied when it is high. In the figure, when $P$ is high, the output of XNOR gates, connected to the capacitor of nodes representing $P_{\backslash i}$, is the same as that of the node's states. So when a parity equation P is satisfied, the states of nodes $V_1$ to $V_4$ are not changed. When the parity equation ($P$) is low,  $P_{\backslash i}$ contradicts the node's states. So the output of XNOR gates will flip the states of nodes. Hence this circuit can find a code word that satisfies a parity equation. 
+
+ To achieve the code word closer to the received message, we can apply a bias voltage at each node representing the received message. The sign of the received message determines whether to charge or discharge the node. The amount of charging or discharging depends on the value of the message.
+
+By modifying the coupling units and nodes to implement the above circuit, we can directly map the LDPC decoding problem to BRIM without converting it into a QUBO.
+
+
+\subsection{Architecture of hybrid LDPC decoder}
+\label{ssec:arch}
+
+We now discuss the architectural changes made to BRIM to implement an LDPC decoder. The system is illustrated in Fig.~\ref{fig:BRIM_arch} and consists of: 
+\ding{172} bistable nodes (V1 to V4) and their digital interface (DFF 1-4); 
+\ding{173} parity units connecting the nodes ($PU_{ij}$); \ding{174} 
+programming units to configure parity units (including: memory, multiplexers,
+digital-to-analog converters, and the column control systems); and \ding{175} annealing control. The rows (i) represent the variable nodes, and the columns (j) represent check nodes in a Tanner graph. Row $i$ is used for calculating $\sum_j P_{j\backslash i}$ of a node $i$ by summing the output currents from parity units of that row. Column $j$  is used to evaluate the parity equation "$P_j$." We discuss each unit in turn as follows:
+
+\begin{figure}[htp]
+    \centerline{\includegraphics[width=0.45\textwidth]{LDPC codes/FIGS/ldpc_new_arch.pdf}}
+    \caption{Block diagram of BRIM based LDPC decoder's system components. Nodes are $N_i$ and parity units $PU_{i,j}$. The multi-colored interconnecting links are wires}
+    \label{fig:BRIM_arch}
+\end{figure}
+
+\subsubsection{\bf Nodes}
+
+We slightly modified bistable nodes $v_i$ of BRIM to implement biasing. In Fig.~\ref{fig:node_and_iv} we show a more detailed illustration of one node. A ZIV diode is used as the feedback circuit to stabilize the voltages at the desired levels (\eg $\pm V_{dd}$). The figure shows the IV curve of the ZIV diode. When capacitor voltages are in between $-V_{dd}$ and $V_{dd}$, the diode acts as an active element charging its voltage closer to $\pm V_{dd}$. Conversely, for voltages outside the range, the ZIV diode acts essentially as a linear resistor to discharge the capacitor. 
+
+Each node is supplied with two pairs of switches to set the capacitor voltage to a known spin state. It is helpful for specific initialization or to change the system state as described in the  "Annealing Control "(Sec.~\ref{ssec:anneal_control}). Finally, the spin of the node can be read 
+out by a digital latch (\eg a D flip-flop) connected to the ZIV diode's 
+$V+$ terminal. It converts the spin to a bit (1 or 0). The pins labeled $V+$, and $V-$ are used to connect to the parity units' inputs and outputs. The bias determined by the received message is applied as a voltage through resistors (B+, B-) as shown in figure~\ref{fig:node_and_iv}. The value of resistance depends upon the value and sign of the received message.
+
+%If the sign of the message is positive, switch B+ is turned on, and B- is turned off, and vice versa. These switches are programmed using the programming pin.
+
+\begin{figure}[htp]\centering
+\includegraphics[width=0.28\textwidth]{LDPC codes/FIGS/variable_node.pdf}
+\includegraphics[width=0.20\textwidth]{ziv_curve.pdf}
+\caption{Simplified schematic of one BRIM node (left) and ZIV diode's IV 
+characteristic (right). \label{fig:node_and_iv}}
+\end{figure}
+
+\subsubsection{\bf Parity Unit}
+
+The parity unit ($PU_{ij}$) represents the coupling unit in BRIM. Here, it is used for coupling node $V_i$ to parity equation $P_j$ and vice versa. It has the following functionalities \ding{172} to determine value $P_{j \backslash i}$ and pass it to node $V_i$ ,\ding{173} to evaluate the parity equation $p_j$ if node $V_i$ is connected to parity equation $P_j$, otherwise just pass the previous value of $P_j$ value to other nodes in same column.
+
+ As shown in Fig ~\ref{fig:PU} an XNOR gate (X1) with inputs $V_i+$ and $P_j^{in}$ are used to determine function \ding{172}. The output of the gate X1 is connected to $V_i-$ via a programmable coupling resistor ($T_1$) which acts as a switch. The programmable coupling resistor is implemented using a transistor whose charge on gate capacitance determines if the switch is on or off. According to parity equation $P_j$, if node $V_i$ is involved, then the switch $T_1$ would be turned on; otherwise, off. \ding{173} function is implemented using another XNOR gate (X2). As shown in Fig ~\ref{fig:PU} the inputs of XNOR (X2) gate are $P_j^{out}$ and $V_i+$.  $P_j^{out}$ represents the value of the parity equation ($P_j$) determined by the previous nodes in the column. If node $V_i$ is involved in the equation, then the node's current state should be XNORed with $P_j^{out}$ to determine the final value. If it is not involved in the equation, we should pass the value on to other nodes. To implement this, we used two switches $T_2$ and $T_3$ operating conversely. If node $V_i$ is involved then $T_2$ is turned on and $T_3$ is off; otherwise $T_3$ is turned on and $T_2$ is left off. These coupling resistors are programmed using a row selector and a column selector, which will be discussed in the next section. After determining the final value of $P_j$, it is passed as input to the parity units to calculate $P_j\backslash i$. The nodes c1, c2, and c3 in Figure~\ref{fig:BRIM_arch} represent the connection of wires between the $P_j^{out}$ and $P_j^{in}$. In this way, we have changed the architecture, nodes, and coupling unit structure of BRIM to directly map the LDPC decoding problem to the system. The rest of the unit's functionality is the same as BRIM, but we discuss it here also.
+ 
+\begin{figure}[htp]
+    \centerline{\includegraphics[width=0.5\textwidth]{LDPC codes/FIGS/parity_unit_ldpc.pdf}}
+    \caption{Schematic of parity unit. Color schemes are matched to system-level block diagram in Fig ~\ref{fig:BRIM_arch} }
+    \label{fig:PU}
+\end{figure}
+
+\subsubsection{\bf Programming units}
+Both the initial nodal values and the coupling resistances in parity units are programmable.
+Programming of a resistor is achieved through a transistor with adjustable 
+gate voltage.
+% The details of the circuit design are discussed in Appendix~\ref{ ssec:circuit}. 
+To the right of the parity unit array in 
+Fig.~\ref{fig:BRIM_arch} is the programming array. This array consists of 
+digital memory for storing the weights which drive an array of digital-to-analog 
+converters (DACs).
+
+A small amount of such DACs are sufficient to program all the parity units in a time-interleaved fashion per column. In such configuration, 
+we need corresponding column selectors and pull-down logic as shown below 
+the coupling units in Fig.~\ref{fig:BRIM_arch}.
+
+\subsubsection{\bf Annealing control}\label{ssec:anneal_control}
+
+As our system is primarily an optimizer, it can get stuck in local minima. To avoid this, two commonly used mechanisms for annealers were adopted and incorporated to allow the system to escape local optima. First, the coupling strength is globally increased over time. In this way, at the very beginning, the machine is only weakly coupled, rendering the energy landscape relatively flat. It helps the system explore the landscape in a coarse granularity. We choose an exponential annealing schedule because (a) it is a common practice, and (b) it can be conveniently achieved by discharging an appropriately-sized capacitor as the global annealing scheduler. The voltage from this capacitor is then used to control the variable gain buffer in each node to achieve the change in coupling strength.
+
+Second, we adopt a similar strategy as that used in simulated annealing. In Simulated annealing, the spins are flipped based on a probability decided by the differences in the energy. Doing the same thing in hardware is a complex process. To simplify the process, we use a "spin fix"; we randomly choose a node and briefly clip it to one of the supply rails. The nodal spin either maintains its current state or swaps to the opposite state. The probability/frequency of spin fixes is determined based on temperature. The temperature follows the same exponential annealing schedule discussed above. In other words, the frequency of spin fixes decays exponentially over time.
+
+\subsection{Theoretical analysis}
+We can theoretically define the evolution of above described LDPC decoder using equation~\ref{eqn:rim_node_simplifed}. It shows how the voltage of a capacitor representing each node change over time. $J_{ij}$ represents the effective conductance of the coupling with the parity equations. $B_i$ represents the bias current and  $g_{\!_{ZIV}}(v_{i})$ represents the current due to $ZIV$ diode.
+
+\begin{equation}\label{eqn:rim_node_simplifed}
+\begin{split}
+    \dv{v_i}{t} = \frac{1}{C}(I_{in} - I_{ZIV}) =  \frac{1}{C} \left[ \sum_{\mathclap{j}} J_{ij} P_{j\backslash i} + B_i - g_{\!_{ZIV}}(v_{i}) \right]
+\end{split}
+\end{equation}
+
+With this equation, we can provide the same Lyapunov stability analysis as shown in the following paper~\cite{afoakwa.hpca21} to prove our ability for optimum-seeking.
+
+
+\begin{comment}
+\todo{The commented section was not checked in editing -Andrew}
+
+\subsection{Theoretical analysis} \label{ssec:theory}
+
+\todo{Need to be modified}
+We present same  Lyapunov stability analysis
+of our LDPC decoder to show its ability for optimum-seeking as shown in the following paper~\cite{afoakwa.hpca21}.
+Fig.~\ref{fig:brim} shows a simplified node $i$ in LDPC decoder where other nodes are 
+coupled into $i$ from the right.
+Writing the current equation, we get Eq.~\ref{eqn:rim_node_simplifed}, where $J_{ij}$ is the 
+effective conductance of the coupling taking into account the polarity of
+the coupling:
+\begin{equation}\label{eqn:rim_node_simplifed}
+\begin{split}
+    \dv{v_i}{t} = \frac{1}{C}(I_{in} - I_{ZIV}) =  \frac{1}{C} \left[ \sum_{\mathclap{j}} J_{ij} P_{j\backslash i} - g_{\!_{ZIV}}(v_{i}) \right]
+\end{split}
+\end{equation}
+
+LDPC decoder is a continuous time system where the state is summarized by
+$v(t)=[v_1(t), v_2(t), ...\,, v_N(t)]^T$. (For brevity, in the following, $v_i(t)$
+will be abbreviated as $v_i$.) Recall that in Lyapunov analysis, if a function
+$H(v)$ can be found such that $\dv{H(v)}{t} = 0$ at point $v^e$
+and $\dv{H(v)}{t} < 0$ in the region around $v^e$, then $v^e$ is the
+equilibrium point~\cite{nonlinear_system_analysis}. In our case, this point is the solution to the equation set
+$\dv{v_i}{t} = 0;\ i=1..N$.
+\donotshow{\footnote{For those unfamiliar with the analysis, here is a roughly
+explanation: if the condition $\dv{H(v)}{t} \leq 0$ is satisfied in a region
+$v \in W$, that means once the system enters region $W$ at time $t_0$,
+function $H(v(t))$ can only decrease or maintain its value (because its time
+derivative is non-positive), thus a future state then clearly $H(v)$ can not
+increase for a dynamical system can be identified, the system can be shown to
+be stable at points where the function reaches minimum.}}
+In other words, once the system enters a region, it will inevitably evolve
+towards lowering $H(v)$ (because its time derivative is negative) until
+it reaches the equilibrium point $v^e$.
+
+To ensure $\dv{H(v)}{t}$ is non-positive, we can construct
+it to be in a negative square form. This can be achieved 
+by imposing the following construction rule.
+\begin{equation}
+\label{eqn:rule}
+\pdv{H(v)}{v_i}=-\alpha\dv{v_i}{t}; \ \alpha>0
+\end{equation} 
+
+Following the chain rule, it is not difficult to see that:
+\begin{equation}
+\label{eqn:H_partials}
+\dv{H(v)}{t} =\sum_{\mathclap{i}}\left(\pdv{H(v)}{v_i}\dv{v_i}{t} \right)
+=-\alpha\sum_{\mathclap{i}}\left(\dv{v_i}{t}\right)^2
+\end{equation}
+
+One choice of a Lyapunov function satisfying the conditions in Eq.
+\ref{eqn:rule} is shown in Eq.~\ref{eqn:Lyap_RIM}, where $G(v_i)$ is obtained
+from $g_{\!_{ZIV}}(v_i)$ by integration over $v_i$. 
+\begin{equation}
+\label{eqn:Lyap_RIM}
+H(v)= \frac{\alpha}{C}\Big(-\sum_{\mathclap{i}} \sum_{\mathclap{j}} J_{ij} P_{j\backslash i} v_i + \sum_i G(v_i)\Big)
+\end{equation}
+It is important to
+notice that the ``Z" shape of $g_{\!_{ZIV}}(v)$ will give $P(v)$ a double-well
+profile (as shown in Fig.~\ref{fig:brim}-right) with two stable equilibrium points at voltages corresponding to two
+non-trivial zero-crossings of the IV curve (\eg $v_i= \pm 1V $) and a saddle
+point at $v_i=0V$. Given the double-well profile of $P(v)$, the state of a
+stable solution will consist of voltages at (or at least very close to) 
+these equilibria (\eg $\pm 1V$).
+Thus, the second term of Eq.~\ref{eqn:Lyap_RIM} will be (close to) a constant. 
+Consequently, minimizing $H(v)$ is equal to minimizing the first term $-\sum_{i<j}J_{ij}v_iP_{j\backslash i}$, which is the Ising formula.
+
+% \begin{figure}[htp]\centering
+%     \includegraphics[width=0.4\textwidth]{double_well.pdf}
+%     \caption{\fixme{double well of the -P(v)}}
+%     \label{fig:double_well}
+% \end{figure}
+
+%Since function $H(v)$ satisfies the conditions in Eq.
+%\ref{eqn:H_partials} for all $i's$ representing a sufficient condition
+%for $\frac{dH(v)}{dt}=-\sum_{i}\frac{\partial H(v_i)}{\partial
+%v_i}\frac{dv_i}{dt}\leq0$, the system is stable in the Lyapunov sense and it
+%is guaranteed to converge to a minimum of $H(v)$.
+
+Note that this analysis does not guarantee that the system will converge to a
+\emph{global} minimum as it depends on the energy landscape and initial 
+conditions. This is similar to other annealers: None 
+has strong guarantees for reaching ground state in a typical usage scenario
+(as opposed to ideal conditions) or in an efficient manner. For example, it
+is shown that simulated annealing can reach ground state in a system with
+a finite phase space. However, the time it takes to do so may be longer than
+enumerating the space~\cite{varty2017simulated}.
+\end{comment}
